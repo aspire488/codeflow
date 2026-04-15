@@ -1,6 +1,19 @@
 {
   "routes": [
-    { "src": "/(.*)", "dest": "/" }
+    {
+      "src": "/[^.]+$",
+      "dest": "/"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot))",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
   ],
   "headers": [
     {
