@@ -20,6 +20,12 @@ function initRouter() {
     handleRouteChange();
   }
   window.addEventListener('hashchange', handleRouteChange);
+  
+  // Reset scroll on route change
+  window.addEventListener('hashchange', () => {
+    document.body.style.overflow = 'auto';
+    window.scrollTo(0, 0);
+  });
 }
 
 function parseHashRoute() {
