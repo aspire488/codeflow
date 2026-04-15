@@ -1,53 +1,96 @@
-// app.js - Main application initialization
+// ============================================
+// APP.JS - Main Application Bootstrap
+// ============================================
 
-// Application state
-let AppState = {
-  currentSubject: "c",
-  currentTopic: null,
-  mode: "study",
-  completedTopics: [],
-  quizScores: {},
-  xp: 0,
-  level: 1,
-  streak: 0,
-  levels: []
-};
+// Application initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize core systems
+    initRouter();
+    initEventSystem();
 
-let currentQuizTopic = null;
+    // Initialize renderers
+    renderDashboard();
 
-// Global functions for lesson renderer
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(reg => console.log('✓ Service Worker registered'))
+            .catch(err => console.log('✗ Service Worker registration failed:', err));
+    }
+
+    console.log('✓ CodeFlow application initialized');
+});
+
+// Global render functions (called by router)
 function renderDashboard() {
-  renderTopicList();
-  renderTopicGrid();
-  renderProgressSummary();
-  
-  // Render smart practice if AdaptiveEngine is loaded
-  if (typeof AdaptiveEngine !== 'undefined') {
-    setTimeout(() => {
-      const container = document.getElementById('smartPracticeContainer');
-      if (container) {
-        renderSmartPracticeUI('smartPracticeContainer');
-      }
-    }, 100);
-  }
+    // This function is implemented in ui/dashboardRenderer.js
+    // Called automatically by router when #dashboard is loaded
 }
 
-function renderTopic(topicId) {
-  if (!topicId) return;
-  renderLesson(topicId);
+function renderLesson(topicId) {
+    // This function is implemented in ui/lessonRenderer.js
+    // Called by router when #lesson/{topic} is loaded
 }
 
-function startQuiz(topicId) {
-  if (!topicId) topicId = "c-basics";
-  renderQuizScreen(topicId);
+function renderQuiz(topicId) {
+    // This function is implemented in ui/quizRenderer.js
+    // Called by router when #quiz/{topic} is loaded
 }
 
-function startVisualization(topicId) {
-  if (!topicId) topicId = "variables";
-  renderVisualization(topicId);
+function renderVisualization(topicId) {
+    // This function is implemented in ui/visualizationRenderer.js
+    // Called by router when #visualize/{topic} is loaded
 }
 
-function openGameMode() {
+function renderLogicQuest() {
+    // This function is implemented in ui/gameRenderer.js
+    // Called by router when #game is loaded
+}
+
+function renderChatbot() {
+    // This function is implemented in ui/chatbotRenderer.js
+    // Called by router when #chatbot is loaded
+}
+
+function renderLogicAnalyzer() {
+    // This function is implemented in ui/logicRenderer.js
+    // Called by router when #logic is loaded
+}
+
+// Legacy compatibility functions
+function renderTopicList() {
+    // Legacy function - now handled by dashboardRenderer
+}
+
+function renderTopicGrid() {
+    // Legacy function - now handled by dashboardRenderer
+}
+
+function renderProgressSummary() {
+    // Legacy function - now handled by dashboardRenderer
+}
+
+function renderLesson(topicId) {
+    // Legacy function - now handled by lessonRenderer
+}
+
+function renderQuizScreen(topicId) {
+    // Legacy function - now handled by quizRenderer
+}
+
+function startLogicQuestLevel(levelId) {
+    // This function is implemented in ui/gameRenderer.js
+}
+
+// Export functions for global access
+window.renderDashboard = renderDashboard;
+window.renderLesson = renderLesson;
+window.renderQuiz = renderQuiz;
+window.renderVisualization = renderVisualization;
+window.renderLogicQuest = renderLogicQuest;
+window.renderChatbot = renderChatbot;
+window.renderLogicAnalyzer = renderLogicAnalyzer;
+window.startLogicQuestLevel = startLogicQuestLevel;
   renderGameMode();
 }
 
