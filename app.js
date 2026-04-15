@@ -368,9 +368,205 @@ function initApp() {
   console.log('CodeFlow initialized successfully');
 }
 
+// ============================================
+// CHATBOT SCREEN RENDER
+// ============================================
+function renderChatbot() {
+  const content = document.getElementById('chatbotContent');
+  if (!content) return;
+  
+  content.innerHTML = `
+    <div class="flex flex-col h-full">
+      <main class="flex-1 overflow-y-auto p-4 md:p-6">
+        <div class="max-w-3xl mx-auto">
+          <div class="text-center mb-8">
+            <div class="text-6xl mb-4">🤖</div>
+            <h1 class="text-2xl font-bold text-on-surface mb-2">CodeFlow AI Assistant</h1>
+            <p class="text-on-surface-variant">Ask any question about C programming, HTML, CSS, or JavaScript</p>
+          </div>
+          <div id="chatMessages" class="space-y-4 mb-4"></div>
+        </div>
+      </main>
+      
+      <div class="bg-surface-container border-t border-outline-variant/20 p-4 md:p-6">
+        <div class="max-w-3xl mx-auto flex gap-3">
+          <input 
+            type="text" 
+            id="chatInput" 
+            placeholder="Ask your doubt..." 
+            class="flex-1 px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface placeholder-on-surface-variant outline-none focus:border-primary-container"
+          />
+          <button 
+            id="chatSendBtn" 
+            class="px-6 py-2 bg-primary text-on-primary rounded-lg font-semibold hover:brightness-110 transition-all active:scale-95 flex items-center gap-2"
+          >
+            <span class="material-symbols-outlined">send</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Initialize chatbot functionality
+  initChatbotScreen();
+}
+
+function initChatbotScreen() {
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('chatSendBtn');
+  const messagesContainer = document.getElementById('chatMessages');
+  
+  if (!input || !sendBtn || !messagesContainer) return;
+  
+  function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    
+    // Add user message
+    addChatMessage(text, 'user');
+    input.value = '';
+    
+    // Simulate response
+    setTimeout(() => {
+      if (typeof KNOWLEDGE_BASE !== 'undefined' && KNOWLEDGE_BASE.getResponse) {
+        const response = KNOWLEDGE_BASE.getResponse(text);
+        addChatMessage(response, 'bot');
+      } else {
+        addChatMessage('I\'m here to help! Ask me about programming concepts.', 'bot');
+      }
+    }, 300);
+  }
+  
+  function addChatMessage(text, sender) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+    msgDiv.innerHTML = `
+      <div class="max-w-[70%] ${sender === 'user' ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface'} rounded-lg px-4 py-2">
+        <p class="text-sm">${escapeHtml(text)}</p>
+      </div>
+    `;
+    messagesContainer.appendChild(msgDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+  
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+  
+  // Initial greeting
+  setTimeout(() => {
+    addChatMessage("Hi! I'm your CodeFlow AI Assistant. What programming concept can I help you with today?", 'bot');
+  }, 300);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ============================================
+// LOGIC ANALYZER SCREEN RENDER
+// ============================================
+function renderLogicAnalyzer() {
+  const content = document.getElementById('analyzerContent');
+  if (!content) return;
+  
+  content.innerHTML = `
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-on-surface mb-2">Logic Analyzer</h1>
+        <p class="text-on-surface-variant">Analyze and understand code logic in C, JavaScript, HTML, and CSS</p>
+      </div>
+      
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-surface-container rounded-lg p-6">
+          <h2 class="text-lg font-semibold text-on-surface mb-4">Enter Your Code</h2>
+          <textarea 
+            id="analyzerCode" 
+            placeholder="Paste your code here..." 
+            class="w-full h-64 p-4 bg-surface-container-low border border-outline-variant/20 rounded-lg font-code text-sm text-on-surface placeholder-on-surface-variant outline-none focus:border-primary-container resize-none"
+          ></textarea>
+          
+          <div class="mt-4 space-y-2">
+            <label class="block text-sm text-on-surface-variant">Language</label>
+            <select id="analyzerLanguage" class="w-full px-4 py-2 bg-surface-container-low border border-outline-variant/20 rounded-lg text-on-surface outline-none focus:border-primary-container">
+              <option value="c">C Programming</option>
+              <option value="javascript">JavaScript</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+            </select>
+          </div>
+          
+          <button 
+            onclick="analyzeCode()"
+            class="w-full mt-6 px-4 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary font-semibold rounded-lg hover:brightness-110 transition-all active:scale-95"
+          >
+            <span class="flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined">analytics</span>
+              Analyze Code
+            </span>
+          </button>
+        </div>
+        
+        <div class="bg-surface-container rounded-lg p-6">
+          <h2 class="text-lg font-semibold text-on-surface mb-4">Analysis Results</h2>
+          <div id="analyzerResults" class="space-y-3 text-sm">
+            <p class="text-on-surface-variant">Analysis results will appear here...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Make analyzeCode available globally
+  window.analyzeCode = function() {
+    const code = document.getElementById('analyzerCode').value;
+    const language = document.getElementById('analyzerLanguage').value;
+    const resultsDiv = document.getElementById('analyzerResults');
+    
+    if (!code.trim()) {
+      resultsDiv.innerHTML = '<p class="text-error">Please enter some code to analyze</p>';
+      return;
+    }
+    
+    if (typeof LogicAnalyzer !== 'undefined' && LogicAnalyzer.analyze) {
+      const analysis = LogicAnalyzer.analyze(code, language);
+      resultsDiv.innerHTML = `
+        <div class="space-y-2">
+          <div class="p-3 bg-surface-container-highest rounded">
+            <p class="text-xs uppercase tracking-wider text-outline mb-1">Complexity</p>
+            <p class="text-on-surface">${analysis.complexity || 'Unknown'}</p>
+          </div>
+          <div class="p-3 bg-surface-container-highest rounded">
+            <p class="text-xs uppercase tracking-wider text-outline mb-1">Issues Found</p>
+            <p class="text-on-surface">${analysis.issues?.length || 0} potential issues</p>
+          </div>
+          <div class="p-3 bg-surface-container-highest rounded">
+            <p class="text-xs uppercase tracking-wider text-outline mb-1">Suggestions</p>
+            <ul class="text-on-surface-variant space-y-1 text-xs">
+              ${(analysis.suggestions || []).map(s => `<li class="flex gap-2"><span class="text-tertiary">•</span>${s}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+    } else {
+      resultsDiv.innerHTML = `
+        <div class="space-y-2">
+          <p class="text-on-surface">Code length: ${code.length} characters</p>
+          <p class="text-on-surface">Language: ${language}</p>
+          <p class="text-on-surface-variant text-xs mt-2">Logic Analyzer engine initializing...</p>
+        </div>
+      `;
+    }
+  };
+}
+
 // Start app when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
+window.addEventListener('DOMContentLoaded', initApp);
+
+// Also initialize if DOM was already ready
+if (document.readyState !== 'loading') {
   initApp();
 }

@@ -219,3 +219,118 @@ code, pre, .code-font {
   background: #79b8ff;
   transform: scale(1.05);
 }
+
+/* ============================================ */
+/* MODAL OVERLAY SYSTEM - STITCH UI */
+/* ============================================ */
+
+/* Modal Overlay Base */
+.modal-overlay {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 40;
+}
+
+/* Active Modal State */
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Modal Content */
+.modal-content {
+  background: #1c2026;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Screen Container */
+.screen {
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.screen.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.screen:not(.active) {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Chat Panel - Fixed Positioning */
+.ai-chat {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+/* Prevent body scroll when modal is active */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* Scrolling improvements */
+.screen main,
+.screen > div {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Focus management for accessibility */
+.modal-overlay:focus,
+.modal-content:focus {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
+/* Button animations */
+button, [role="button"] {
+  transition: all 0.2s ease;
+}
+
+button:active, [role="button"]:active {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Input improvements */
+input, textarea, select {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #58a6ff;
+  background-color: rgba(88, 166, 255, 0.05);
+}
+
+/* Responsive media query */
+@media (max-width: 640px) {
+  .ai-chat {
+    width: 100%;
+    max-height: 400px;
+  }
+  
+  .screen main {
+    padding: 1rem 0.5rem;
+  }
+}
