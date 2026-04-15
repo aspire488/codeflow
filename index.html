@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta name="description" content="CodeFlow - Visualize • Practice • Master - Learn C Programming, HTML, CSS, JavaScript"/>
+    <meta name="theme-color" content="#10141a"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="CodeFlow"/>
+    
+    <title>CodeFlow - Visualize • Practice • Master</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json"/>
+    
+    <script src="tailwind.js"></script>
+    <style>
+      html, body, button, input, select, textarea { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      code, pre, .code-font { font-family: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .material-symbols-outlined { font-family: ui-sans-serif, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    </style>
+    <link rel="stylesheet" href="styles.css"/>
+    <!-- Material Symbols Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+</head>
+<body class="bg-surface overflow-hidden">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-14 backdrop-blur-xl bg-opacity-80 bg-[#10141a] dark:bg-[#10141a]">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[#58a6ff]">terminal</span>
+            <span class="text-lg font-bold tracking-tighter text-[#58a6ff] dark:text-[#58a6ff]">CodeFlow</span>
+            <div class="hidden md:flex items-center ml-8 gap-6">
+                <div class="flex flex-col gap-1 w-32">
+                    <div class="flex justify-between items-baseline">
+                        <span class="font-['Inter'] text-xs tracking-tight font-semibold text-[#58a6ff]">C Programming</span>
+                        <span class="code-font text-[10px] text-[#58a6ff]">70%</span>
+                    </div>
+                    <div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                        <div class="h-full bg-primary-container w-[70%]"></div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-1 w-32 opacity-60">
+                    <div class="flex justify-between items-baseline">
+                        <span class="font-['Inter'] text-xs tracking-tight font-semibold text-outline">Web Dev</span>
+                        <span class="code-font text-[10px] text-outline">30%</span>
+                    </div>
+                    <div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                        <div class="h-full bg-outline-variant w-[30%]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="navigateTo('dashboard')" class="hover:bg-[#262a31] transition-colors p-2 rounded-lg active:scale-95 duration-150 text-[#58a6ff]" title="Dashboard">
+                <span class="material-symbols-outlined">home</span>
+            </button>
+            <button onclick="navigateTo('game')" class="hover:bg-[#262a31] transition-colors p-2 rounded-lg active:scale-95 duration-150 text-[#58a6ff]" title="Game Mode">
+                <span class="material-symbols-outlined">sports_esports</span>
+            </button>
+            <button onclick="document.getElementById('chatPanel').style.display = document.getElementById('chatPanel').style.display === 'none' ? 'flex' : 'none'" class="hover:bg-[#262a31] transition-colors p-2 rounded-lg active:scale-95 duration-150 text-[#58a6ff]" title="Chatbot">
+                <span class="material-symbols-outlined">chat</span>
+            </button>
+            <button class="hover:bg-[#262a31] transition-colors p-2 rounded-lg active:scale-95 duration-150">
+                <span class="material-symbols-outlined text-[#58a6ff]">menu</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboard" class="screen active">
+        <aside class="hidden md:flex fixed inset-y-0 left-0 z-[60] flex flex-col pt-14 h-full w-[260px] bg-[#1c2026] dark:bg-[#1c2026] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-r border-outline-variant border-opacity-10">
+            <div class="p-6 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg overflow-hidden bg-surface-container-highest">
+                    <img class="w-full h-full object-cover" alt="User Profile" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250'%3E%3Crect width='100%25' height='100%25' fill='%23192029'/%3E%3Ctext x='50%25' y='50%25' fill='%23a2c9ff' font-size='24' font-family='Arial, sans-serif' dominant-baseline='middle' text-anchor='middle'%3EProfile%3C/text%3E%3C/svg%3E"/>
+                </div>
+                <div>
+                    <h3 class="font-['Inter'] text-[0.875rem] font-bold text-[#a2c9ff]">Engineering Student</h3>
+                    <p class="font-['Inter'] text-[0.75rem] text-[#8b949e]">C Programming • Lvl 12</p>
+                </div>
+            </div>
+            <div class="progress-summary" id="progressSummary"></div>
+            <nav class="topic-list flex-1 px-3 space-y-1" id="topicList">
+                <!-- Topics will be rendered here -->
+            </nav>
+            <div class="p-4 mt-auto">
+                <div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant border-opacity-20">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] uppercase tracking-widest text-outline">Active Task</span>
+                        <span class="text-[10px] code-font text-primary-container">IN PROGRESS</span>
+                    </div>
+                    <p class="text-xs font-medium mb-3">Logic Gates & Switch Stmt</p>
+                    <div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                        <div class="h-full bg-tertiary w-2/3"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <main class="flex-1 md:ml-[260px] overflow-y-auto bg-surface p-4 md:p-8">
+            <div class="max-w-5xl mx-auto space-y-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <p class="code-font text-primary-container text-xs mb-2">/root/learning/c_programming</p>
+                        <h1 class="text-3xl font-bold tracking-tight text-on-surface">Topic Explorer</h1>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="bg-[#262a31] text-[#58a6ff] text-xs font-bold px-4 py-2 rounded-lg hover:bg-surface-container-highest transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">terminal</span> Resume IDE
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="topicGrid">
+                    <!-- Topic cards will be rendered here -->
+                </div>
+                <div id="smartPracticeContainer" class="mt-6">
+                    <!-- Smart Practice UI will be rendered here -->
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 h-auto md:h-64">
+                    <div class="md:col-span-8 bg-surface-container-high rounded-xl overflow-hidden relative group">
+                        <div class="absolute inset-0 bg-gradient-to-r from-surface-container-high via-surface-container-high/60 to-transparent z-10"></div>
+                        <img class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="high-tech computer screen displaying complex code in a dark room with vibrant neon blue and cyan lighting" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250'%3E%3Crect width='100%25' height='100%25' fill='%23192029'/%3E%3Ctext x='50%25' y='50%25' fill='%23a2c9ff' font-size='24' font-family='Arial, sans-serif' dominant-baseline='middle' text-anchor='middle'%3EVisual%3C/text%3E%3C/svg%3E"/>
+                        <div class="relative z-20 p-8 flex flex-col h-full justify-center">
+                            <span class="text-[10px] font-bold code-font text-primary bg-primary-container/20 px-2 py-1 rounded w-fit mb-2">DAILY MISSION</span>
+                            <h2 class="text-2xl font-extrabold tracking-tighter mb-2">Debug the Matrix</h2>
+                            <p class="text-sm text-on-surface-variant max-w-sm mb-4">Identify the memory leak in the provided C program to earn +50 XP and a 'Leak Stopper' badge.</p>
+                            <button class="bg-primary text-on-primary font-bold text-xs py-2 px-6 rounded-lg w-fit shadow-lg shadow-primary/20">Analyze Now</button>
+                        </div>
+                    </div>
+                    <div class="md:col-span-4 bg-[#58a6ff] bg-opacity-10 border border-primary-container border-opacity-20 rounded-xl p-6 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-primary-container mb-1">Rank Progress</h3>
+                            <p class="text-on-surface-variant">Top 15% of Students</p>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-3xl font-black italic tracking-tighter text-primary">#1,420</span>
+                            <span class="material-symbols-outlined text-primary text-4xl">leaderboard</span>
+                        </div>
+                        <div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+                            <div class="bg-primary h-full w-[85%]"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Lesson Screen -->
+    <div id="lesson" class="screen">
+        <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-14 backdrop-blur-xl bg-opacity-80 bg-[#10141a] dark:bg-[#10141a]">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-[#58a6ff]">terminal</span>
+                <h1 class="text-lg font-bold tracking-tighter text-[#58a6ff] dark:text-[#58a6ff]">CodeFlow</h1>
+                <div class="ml-4 px-2 py-0.5 rounded-lg border border-outline-variant bg-surface-container-low flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-outline uppercase tracking-wider">Lesson 2.1</span>
+                    <span class="font-['Inter'] text-sm tracking-tight font-semibold text-[#58a6ff]" id="lessonTitle">Variables in C</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-1.5 bg-surface-container-low px-3 py-1 rounded-lg">
+                    <div class="w-24 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+                        <div class="h-full bg-primary-container w-[45%]"></div>
+                    </div>
+                    <span class="font-code text-[10px] text-on-surface-variant">45%</span>
+                </div>
+                <span class="material-symbols-outlined text-[#414752] hover:bg-[#262a31] transition-colors p-1.5 rounded-lg cursor-pointer">menu</span>
+            </div>
+        </header>
+        <aside class="fixed inset-y-0 left-0 z-[60] flex flex-col h-full w-[260px] bg-[#1c2026] dark:bg-[#1c2026] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform -translate-x-full lg:translate-x-0 transition-all duration-200 ease-in-out">
+            <div class="p-6 border-b border-outline-variant/10">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+                        <span class="material-symbols-outlined text-on-primary">person</span>
+                    </div>
+                    <div>
+                        <p class="font-['Inter'] text-[0.875rem] font-medium text-[#a2c9ff] font-bold">Engineering Student</p>
+                        <p class="text-[0.75rem] text-[#8b949e] uppercase tracking-widest">Lvl 12 • C Programming</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4" id="lessonSidebar">
+                <!-- Sidebar topics -->
+            </nav>
+            <div class="p-4 bg-surface-container-lowest">
+                <div class="p-3 bg-surface-container-high rounded-lg flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-tertiary">bolt</span>
+                        <span class="text-xs font-medium text-tertiary">Daily Streak</span>
+                    </div>
+                    <span class="font-code text-xs">07</span>
+                </div>
+            </div>
+        </aside>
+        <main class="lg:ml-[260px] pt-14 pb-20 min-h-screen px-4 md:px-8 max-w-5xl mx-auto" id="lessonContent">
+            <!-- Lesson content will be rendered here -->
+        </main>
+        <button class="fixed bottom-24 right-6 w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-container shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-center text-on-primary active:scale-90 transition-transform z-50" id="aiFab">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+        </button>
+        <div class="fixed bottom-20 right-6 w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-container shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-center text-on-primary active:scale-90 transition-transform z-50" id="chatPanel" style="display: none;">
+            <div class="ai-chat">
+                <div class="ai-header">🤖 AI Doubt Assistant</div>
+                <div class="ai-messages" id="aiMessages"></div>
+                <div class="ai-input-area">
+                    <input type="text" id="aiInput" placeholder="Type your doubt (C, HTML, CSS, JS)...">
+                    <button id="aiSend">➤</button>
+                </div>
+            </div>
+        </div>
+        <footer class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-opacity-95 backdrop-blur-md bg-[#10141a] dark:bg-[#10141a] border-t border-[#414752] border-opacity-20">
+            <button onclick="navigateTo('dashboard')" class="flex flex-col items-center justify-center text-[#414752] hover:text-[#a2c9ff] transition-all">
+                <span class="material-symbols-outlined">home</span>
+            </button>
+            <button onclick="navigateTo('game')" class="flex flex-col items-center justify-center text-[#414752] hover:text-[#a2c9ff] transition-all">
+                <span class="material-symbols-outlined">sports_esports</span>
+            </button>
+            <button onclick="document.getElementById('chatPanel').style.display = document.getElementById('chatPanel').style.display === 'none' ? 'flex' : 'none'" class="flex flex-col items-center justify-center text-[#414752] hover:text-[#a2c9ff] transition-all">
+                <span class="material-symbols-outlined">chat</span>
+            </button>
+            <button class="flex flex-col items-center justify-center text-[#414752] hover:text-[#a2c9ff] transition-all">
+                <span class="material-symbols-outlined">leaderboard</span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz" class="screen">
+        <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-14 backdrop-blur-xl bg-opacity-80 bg-[#10141a] dark:bg-[#10141a]">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-[#58a6ff]">school</span>
+                <h1 class="text-lg font-bold tracking-tighter text-[#58a6ff] dark:text-[#58a6ff]">CodeFlow</h1>
+                <div class="ml-4 px-2 py-0.5 rounded-lg border border-outline-variant bg-surface-container-low flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-outline uppercase tracking-wider">Quiz</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="material-symbols-outlined text-[#414752] hover:bg-[#262a31] transition-colors p-1.5 rounded-lg cursor-pointer">menu</span>
+            </div>
+        </header>
+        <main class="pt-14 pb-20 min-h-screen px-4 md:px-8 max-w-5xl mx-auto" id="quizContent">
+            <!-- Quiz content will be rendered here -->
+        </main>
+        <button class="fixed bottom-24 right-6 w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-container shadow-lg flex items-center justify-center text-on-primary active:scale-90 transition-transform z-50">
+            <span class="material-symbols-outlined">psychology</span>
+        </button>
+    </div>
+
+    <!-- Visualize Screen -->
+    <div id="visualize" class="screen">
+        <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-14 backdrop-blur-xl bg-opacity-80 bg-[#10141a] dark:bg-[#10141a]">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-[#58a6ff]" data-icon="terminal">terminal</span>
+                <h1 class="text-lg font-bold tracking-tighter text-[#58a6ff] dark:text-[#58a6ff]">CodeFlow</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="font-['Inter'] text-sm tracking-tight font-semibold text-[#58a6ff]">Execution Simulator: variables.c</span>
+                <span class="material-symbols-outlined text-[#414752] hover:bg-[#262a31] transition-colors p-1 rounded-lg cursor-pointer" data-icon="menu">menu</span>
+            </div>
+        </header>
+        <aside class="fixed inset-y-0 left-0 z-[60] hidden md:flex flex-col bg-[#1c2026] dark:bg-[#1c2026] h-full w-[260px] rounded-r-sm shadow-[0_20px_50px_rgba(0,0,0,0.5)] mt-14">
+            <div class="p-6 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center overflow-hidden">
+                    <img alt="User Profile" class="w-full h-full object-cover" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250'%3E%3Crect width='100%25' height='100%25' fill='%23192029'/%3E%3Ctext x='50%25' y='50%25' fill='%23a2c9ff' font-size='24' font-family='Arial, sans-serif' dominant-baseline='middle' text-anchor='middle'%3EProfile%3C/text%3E%3C/svg%3E"/>
+                </div>
+                <div>
+                    <p class="text-[#a2c9ff] font-bold text-sm">Engineering Student</p>
+                    <p class="text-[#8b949e] text-xs">C Programming</p>
+                </div>
+            </div>
+            <nav class="flex-1 px-3 space-y-1">
+                <div class="flex items-center gap-3 px-3 py-2 text-[#8b949e] hover:bg-[#10141a] transition-all duration-200 ease-in-out cursor-pointer group">
+                    <span class="material-symbols-outlined group-hover:text-[#58a6ff]" data-icon="folder">folder</span>
+                    <span class="font-['Inter'] text-[0.875rem] font-medium">Basics</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 bg-[#262a31] text-[#58a6ff] border-l-2 border-[#58a6ff] transition-all duration-200 ease-in-out cursor-pointer">
+                    <span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+                    <span class="font-['Inter'] text-[0.875rem] font-medium">Variables</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 text-[#8b949e] hover:bg-[#10141a] transition-all duration-200 ease-in-out cursor-pointer group">
+                    <span class="material-symbols-outlined group-hover:text-[#58a6ff]" data-icon="alt_route">alt_route</span>
+                    <span class="font-['Inter'] text-[0.875rem] font-medium">Control Flow</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 text-[#8b949e] hover:bg-[#10141a] transition-all duration-200 ease-in-out cursor-pointer group">
+                    <span class="material-symbols-outlined group-hover:text-[#58a6ff]" data-icon="extension">extension</span>
+                    <span class="font-['Inter'] text-[0.875rem] font-medium">Functions</span>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 text-[#8b949e] hover:bg-[#10141a] transition-all duration-200 ease-in-out cursor-pointer group">
+                    <span class="material-symbols-outlined group-hover:text-[#58a6ff]" data-icon="memory">memory</span>
+                    <span class="font-['Inter'] text-[0.875rem] font-medium">Memory</span>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-outline-variant/10">
+                <div class="flex justify-between text-[10px] text-outline font-mono mb-2">
+                    <span>PROGRESS</span>
+                    <span>Lvl 12</span>
+                </div>
+                <div class="h-1 bg-surface-container-lowest overflow-hidden">
+                    <div class="h-full bg-tertiary w-3/4"></div>
+                </div>
+            </div>
+        </aside>
+        <main class="pt-14 pb-32 md:pl-[260px] min-h-screen bg-surface">
+            <div class="p-6 max-w-7xl mx-auto grid grid-cols-12 gap-6" id="visualizeContent">
+                <!-- Visualize content will be rendered here -->
+            </div>
+        </main>
+        <footer class="fixed bottom-0 left-0 md:left-[260px] right-0 h-20 bg-[#10141a]/90 backdrop-blur-md border-t border-outline-variant/20 z-50 px-6 flex items-center justify-between" id="debugControls">
+            <!-- Debug controls will be rendered here -->
+        </footer>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game" class="screen">
+        <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-14 backdrop-blur-xl bg-opacity-80 bg-[#10141a] dark:bg-[#10141a]">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-[#58a6ff]" data-icon="terminal">terminal</span>
+                <span class="text-lg font-bold tracking-tighter text-[#58a6ff] dark:text-[#58a6ff]">CodeFlow</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-6 font-['Inter'] text-sm tracking-tight font-semibold">
+                    <a class="text-[#414752] hover:bg-[#262a31] transition-colors px-2 py-1 rounded-sm" href="#">Modules</a>
+                    <a class="text-[#58a6ff] hover:bg-[#262a31] transition-colors px-2 py-1 rounded-sm" href="#">Game Mode</a>
+                    <a class="text-[#414752] hover:bg-[#262a31] transition-colors px-2 py-1 rounded-sm" href="#">Leaderboard</a>
+                </div>
+                <button class="material-symbols-outlined text-[#58a6ff] active:scale-95 duration-150" data-icon="menu">menu</button>
+            </div>
+        </header>
+        <aside class="fixed inset-y-0 left-0 z-[60] flex flex-col h-full w-[260px] rounded-r-sm bg-[#1c2026] dark:bg-[#1c2026] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-200 ease-in-out hidden lg:flex">
+            <div class="p-6 flex flex-col gap-1 border-b border-outline-variant/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden bg-surface-container-high border border-outline-variant/20">
+                        <img class="w-full h-full object-cover" alt="professional male software engineer portrait, clean studio lighting, neutral background, tech worker aesthetic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250'%3E%3Crect width='100%25' height='100%25' fill='%23192029'/%3E%3Ctext x='50%25' y='50%25' fill='%23a2c9ff' font-size='24' font-family='Arial, sans-serif' dominant-baseline='middle' text-anchor='middle'%3EProfile%3C/text%3E%3C/svg%3E"/>
+                    </div>
+                    <div>
+                        <div class="font-['Inter'] text-[0.875rem] font-medium text-[#a2c9ff]">Engineering Student</div>
+                        <div class="text-[0.75rem] text-[#8b949e]">C Programming</div>
+                    </div>
+                </div>
+                <div class="mt-3 flex justify-between items-center bg-surface-container-lowest px-3 py-1.5 rounded-sm">
+                    <span class="text-[0.7rem] font-bold text-tertiary">LVL 12</span>
+                    <span class="text-[0.7rem] font-mono text-outline">12,450 XP</span>
+                </div>
+            </div>
+            <nav class="flex-1 p-4 flex flex-col gap-2">
+                <a class="flex items-center gap-3 px-4 py-3 rounded-sm transition-all text-[#8b949e] hover:bg-[#10141a]" href="#">
+                    <span class="material-symbols-outlined" data-icon="folder">folder</span>
+                    <span class="font-medium text-[0.875rem]">Basics</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-sm transition-all bg-[#262a31] text-[#58a6ff] border-l-2 border-[#58a6ff]" href="#">
+                    <span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+                    <span class="font-medium text-[0.875rem]">Variables</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-sm transition-all text-[#8b949e] hover:bg-[#10141a]" href="#">
+                    <span class="material-symbols-outlined" data-icon="alt_route">alt_route</span>
+                    <span class="font-medium text-[0.875rem]">Control Flow</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-sm transition-all text-[#8b949e] hover:bg-[#10141a]" href="#">
+                    <span class="material-symbols-outlined" data-icon="extension">extension</span>
+                    <span class="font-medium text-[0.875rem]">Functions</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-sm transition-all text-[#8b949e] hover:bg-[#10141a]" href="#">
+                    <span class="material-symbols-outlined" data-icon="memory">memory</span>
+                    <span class="font-medium text-[0.875rem]">Memory</span>
+                </a>
+            </nav>
+        </aside>
+        <main class="pt-20 pb-24 lg:pl-[280px] px-4 max-w-7xl mx-auto" id="gameContent">
+            <!-- Game content will be rendered here -->
+        </main>
+        <nav class="md:hidden fixed bottom-0 left-0 w-full z-[60] flex justify-around items-center h-16 bg-[#10141a] bg-opacity-95 backdrop-blur-md border-t border-[#414752] border-opacity-20">
+            <div class="flex flex-col items-center justify-center text-[#414752] hover:text-[#a2c9ff] transition-all active:scale-90">
+                <span class="material-symbols-outlined" data-icon="school">school</span>
+                <span class="font-['Fira_Code'] text-[10px] uppercase tracking-widest mt-1">Learn</span>
+            </div>
+            <div class="flex flex-col items-center justify-center text-[#58a6ff] relative after:content-[''] after:absolute after:bottom-0 after:w-1/2 after:h-0.5 after:bg-[#58a6ff] active:scale-90 transition-transform">
+                <span class="material-symbols-outlined" data-icon="code_blocks" style="font-variation-settings: 'FILL' 1;">code_blocks</span>
+                <span class="font-['Fira_Code'] text-[10px] uppercase tracking-widest mt-1">Play</span>
+            </div>
+            <div class="flex flex-col items-center justify-center text-[#414752] hover:text-[#a2c9ff] transition-all active:scale-90">
+                <span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+                <span class="font-['Fira_Code'] text-[10px] uppercase tracking-widest mt-1">Focus</span>
+            </div>
+            <div class="flex flex-col items-center justify-center text-[#414752] hover:text-[#a2c9ff] transition-all active:scale-90">
+                <span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+                <span class="font-['Fira_Code'] text-[10px] uppercase tracking-widest mt-1">Ranks</span>
+            </div>
+        </nav>
+        <div class="fixed bottom-20 right-6 md:bottom-8 z-40">
+            <button class="w-14 h-14 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg shadow-lg flex items-center justify-center hover:brightness-110 active:scale-95 transition-all">
+                <span class="material-symbols-outlined text-2xl" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="data/topicsDB.js"></script>
+    <script src="data/quizDB.js"></script>
+    <script src="data/outputPredictionDB.js"></script>
+    <script src="data/gameLevels.js"></script>
+    <script src="data/knowledgeBase.js"></script>
+    <script src="utils/storage.js"></script>
+    <script src="app.js"></script>
+    <script src="data/logicQuestDB.js"></script>
+    <script src="router.js"></script>
+    <script src="topicRenderer.js"></script>
+    <script src="quizEngine.js"></script>
+    <script src="visualizationEngine.js"></script>
+    <script src="outputPredictionEngine.js"></script>
+    <script src="logicAnalyzerEngine.js"></script>
+    <script src="logicQuestEngine.js"></script>
+    <script src="adaptivePracticeEngine.js"></script>
+    <script src="selfTestEngine.js"></script>
+    <script src="gameMode.js"></script>
+    <script src="chatbot.js"></script>
+    <script>
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.log('Service Worker registration failed:', err));
+        });
+      }
+    </script>
+</body>
+</html>

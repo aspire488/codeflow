@@ -1,0 +1,221 @@
+/* styles.css - Custom styles for CodeFlow */
+
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Global responsive safety */
+body {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+pre, code {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Screen visibility - hidden by default */
+/* Using !important to override Tailwind classes */
+.screen {
+  display: none !important;
+}
+
+/* Only active screen is visible - also with !important */
+.screen.active {
+  display: flex !important;
+}
+
+/* Sidebar readability improvements */
+.sidebar-item {
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-item:hover {
+  opacity: 1;
+}
+
+.sidebar-item.active {
+  opacity: 1;
+  background: rgba(88, 166, 255, 0.1);
+  border-left: 2px solid #58a6ff;
+}
+
+/* Topic card improvements */
+.topic-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.topic-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Progress bar styles */
+.progress-bar {
+  height: 6px;
+  background: #31353c;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #58a6ff, #67df70);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+body, button, input, select, textarea {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+code, pre, .code-font {
+  font-family: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.material-symbols-outlined {
+  font-family: ui-sans-serif, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Custom styles */
+.code-line-active {
+  background-color: rgba(56, 178, 172, 0.1);
+  border-left: 3px solid #38b2ac;
+}
+
+.mode-revise .explanation-section,
+.mode-revise .practice-section,
+.mode-revise .quiz-section {
+  display: none;
+}
+
+.mode-study .revise-only {
+  display: none;
+}
+
+/* Code highlighting */
+.hl-keyword { color: #d73a49; }
+.hl-string { color: #032f62; }
+.hl-comment { color: #6a737d; }
+.hl-function { color: #6f42c1; }
+.hl-variable { color: #e36209; }
+.hl-number { color: #005cc5; }
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Loading spinner */
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* AI Chat Panel */
+.ai-chat {
+  width: 320px;
+  max-height: 400px;
+  background: #1c2026;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.ai-header {
+  background: linear-gradient(to right, #58a6ff, #0060aa);
+  color: white;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  min-height: 250px;
+  max-height: 300px;
+}
+
+.ai-input-area {
+  display: flex;
+  padding: 12px;
+  gap: 8px;
+  border-top: 1px solid #31353c;
+}
+
+.ai-input-area input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: 1px solid #31353c;
+  background: #10141a;
+  color: #dfe2eb;
+  font-size: 13px;
+  outline: none;
+}
+
+.ai-input-area input:focus {
+  border-color: #58a6ff;
+}
+
+.ai-input-area button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #58a6ff;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.ai-input-area button:hover {
+  background: #79b8ff;
+  transform: scale(1.05);
+}
