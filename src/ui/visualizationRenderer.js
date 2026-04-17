@@ -9,44 +9,20 @@ function renderVisualization(topicId) {
     // Clear existing content
     content.innerHTML = '';
 
-    // Get visualization data
-    let vizData = null;
-    if (typeof OUTPUT_PREDICTION_DB !== 'undefined' && OUTPUT_PREDICTION_DB.problems) {
-        vizData = OUTPUT_PREDICTION_DB.problems.find(p => p.topicId === topicId);
+    // Get topic data
+    const topic = TOPICS_DB[topicId];
+    if (!topic || !topic.code) {
+        content.innerHTML = '<div class="text-center text-red-400">No code available for visualization</div>';
+        return;
     }
 
-    if (!vizData) {
-        // Fallback visualization
-        vizData = {
-            title: 'Code Visualization',
-            code: `#include <stdio.h>
+    // Visualize the code
+    const steps = visualizeCode(topic.code);
 
-int main() {
-    int x = 5;
-    int y = 10;
-    int sum = x + y;
-
-    printf("Sum: %d\\n", sum);
-    return 0;
-}`,
-            steps: [
-                { line: 4, description: 'Variable x is assigned value 5', variables: { x: 5 } },
-                { line: 5, description: 'Variable y is assigned value 10', variables: { x: 5, y: 10 } },
-                { line: 6, description: 'Sum is calculated: x + y = 15', variables: { x: 5, y: 10, sum: 15 } },
-                { line: 8, description: 'Print statement executed', output: 'Sum: 15' }
-            ]
-        };
-    }
-
-    // Render visualization interface
-    content.innerHTML = `
-        <div class="grid md:grid-cols-2 gap-6">
-            <!-- Code Panel -->
-            <div class="stitch-card p-6">
-                <h3 class="text-xl font-bold mb-4">Code Execution</h3>
-                <div class="bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4" id="code-display">
-                    <pre><code class="language-c">${vizData.code}</code></pre>
-                </div>
+    // Render visualization UI
+    const vizContainer = renderVisualization(steps, topic.code);
+    content.appendChild(vizContainer);
+}
 
                 <div class="flex gap-2 mb-4">
                     <button class="stitch-btn flex-1" id="play-btn">Play</button>

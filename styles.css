@@ -201,6 +201,73 @@ code, pre, .code-font {
   border-color: #58a6ff;
 }
 
+/* Visualization Styles */
+.visualization-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.code-display {
+  background: #1c2026;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: "Fira Code", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.code-line {
+  padding: 2px 0;
+  border-left: 3px solid transparent;
+  transition: background 0.2s;
+}
+
+.code-line.highlight {
+  background: rgba(88, 166, 255, 0.1);
+  border-left-color: #58a6ff;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.variables-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1c2026;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.variables-table th,
+.variables-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(88, 166, 255, 0.1);
+}
+
+.variables-table th {
+  background: rgba(88, 166, 255, 0.1);
+  font-weight: 600;
+}
+
+.output-display {
+  background: #1c2026;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 100px;
+  white-space: pre-wrap;
+  font-family: "Fira Code", monospace;
+}
+
 .ai-input-area button {
   width: 36px;
   height: 36px;

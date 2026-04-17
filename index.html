@@ -409,29 +409,42 @@
     <script src="data/logicQuestDB.js"></script>
     
     <!-- Phase 2: Utilities -->
-    <script src="utils/storage.js"></script>
+    <script src="src/utils/storage.js"></script>
     
-    <!-- Phase 3: Core Engine Modules -->
-    <script src="visualizationEngine.js"></script>
-    <script src="outputPredictionEngine.js"></script>
-    <script src="logicAnalyzerEngine.js"></script>
-    <script src="logicQuestEngine.js"></script>
-    <script src="adaptivePracticeEngine.js"></script>
+    <!-- Phase 3: Core Systems -->
+    <script src="src/core/eventSystem.js"></script>
+    <script src="src/core/screenManager.js"></script>
+    <script src="src/core/syntaxHighlighter.js"></script>
     
-    <!-- Phase 4: UI Engines -->
-    <script src="quizEngine.js"></script>
-    <script src="selfTestEngine.js"></script>
-    <script src="gameMode.js"></script>
-    <script src="chatbot.js"></script>
+    <!-- Phase 4: Engine Modules -->
+    <script src="src/engines/visualizationEngine.js"></script>
+    <script src="src/engines/outputPredictionEngine.js"></script>
+    <script src="src/engines/logicAnalyzerEngine.js"></script>
+    <script src="src/engines/logicQuestEngine.js"></script>
+    <script src="src/engines/adaptivePracticeEngine.js"></script>
+    <script src="src/engines/quizEngine.js"></script>
+    <script src="src/engines/selfTestEngine.js"></script>
     
-    <!-- Phase 5: Core Systems -->
-    <script src="topicRenderer.js"></script>
+    <!-- Phase 5: Modules -->
+    <script src="src/modules/game/gameMode.js"></script>
+    <script src="src/modules/chatbot/chatbot.js"></script>
+    <script src="src/modules/lessons/topicRenderer.js"></script>
     
-    <!-- Phase 6: Router & App Bootstrap -->
-    <script src="router.js"></script>
-    <script src="app.js"></script>
+    <!-- Phase 6: UI Renderers -->
+    <script src="src/ui/dashboardRenderer.js"></script>
+    <script src="src/ui/lessonRenderer.js"></script>
+    <script src="src/ui/quizRenderer.js"></script>
+    <script src="src/ui/gameRenderer.js"></script>
+    <script src="src/ui/chatbotRenderer.js"></script>
+    <script src="src/ui/logicRenderer.js"></script>
+    <script src="src/ui/visualizationRenderer.js"></script>
+    <script src="src/ui/visualizationView.js"></script>
     
-    <!-- Phase 7: Main Application Bootstrap -->
+    <!-- Phase 7: Router & App Bootstrap -->
+    <script src="src/core/router.js"></script>
+    <script src="src/core/app.js"></script>
+    
+    <!-- Phase 8: Main Application Bootstrap -->
     <script>
         // ============================================
         // STITCH UI ROUTER & EVENT SYSTEM
