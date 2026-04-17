@@ -80,8 +80,6 @@ It demonstrates:
 
 🔍 Core System — Visualization Engine
 
----
-
 Example Input
 
 for(int i = 0; i < 3; i++)
@@ -185,18 +183,64 @@ LocalStorage
 
 ---
 
-📂 Structure
+📂 System Structure & Module Breakdown
 
-src/
-  core/
-  engines/
-  modules/
-  ui/
-  utils/
+"src/core/" — Application Core
 
-docs/
-tests/
-.github/
+- routing logic
+- app initialization
+
+"src/engines/" — Logic Layer
+
+- visualization engine
+- quiz engine
+- self-test logic
+
+"src/modules/" — Feature Modules
+
+- lessons
+- chatbot
+- game
+- visualization integration
+
+"src/ui/" — UI Layer
+
+- rendering components
+- visualization display
+- layout control
+
+"src/utils/" — Utilities
+
+- helpers
+- storage abstraction
+
+Other
+
+- "docs/" → internal documentation
+- "tests/" → unit tests
+- ".github/" → CI pipeline
+
+---
+
+Architecture Flow
+
+UI → Modules → Engines → State → UI
+
+---
+
+Data Flow
+
+User Action
+   ↓
+UI Event
+   ↓
+Module Handler
+   ↓
+Engine Processing
+   ↓
+State Update
+   ↓
+UI Re-render
 
 ---
 
@@ -263,7 +307,7 @@ Testing| Basic
 🔮 Future
 
 - AST-based parsing
-- better visualization UI
+- improved visualization UI
 - multi-language support
 
 ---
