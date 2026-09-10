@@ -1,5 +1,5 @@
 <p align="center">
-<img src="docs/codeflow-architecture.svg" alt="CodeFlow architecture" width="100%"/>
+<img src="https://raw.githubusercontent.com/aspire488/codeflow/main/docs/codeflow-architecture.svg" alt="CodeFlow architecture" width="100%"/>
 </p>
 
 <p align="center">
@@ -10,100 +10,31 @@
 
 # CodeFlow
 
-**Execution-first programming learning and visualization prototype.**
+CodeFlow is an interactive programming-learning platform focused on making program execution visible: code visualization, quizzes, output prediction, logic games, and experimental AI assistance.
 
-CodeFlow explores a simple teaching hypothesis: beginners understand code better when they can **see execution evolve step by step** instead of only predicting final output.
+## 🚀 Live
 
-> **Prototype:** the execution engine is intentionally limited and pattern-oriented. CodeFlow is not a general-purpose interpreter.
+**Try the prototype:** https://codeflow-app-sigma.vercel.app
 
-## What it demonstrates
+## 🧪 Status
 
-- **Execution visualization** — variables, loops, and output across discrete steps.
-- **Lessons** — structured programming concepts.
-- **Quiz engine** — MCQs and output prediction.
-- **Logic Quest** — gamified programming challenges.
-- **AI chatbot** — experimental learning assistance.
-- **Modular architecture** — UI, modules, engines, state, and rendering are separated.
+> Prototype — actively being hardened for public development. It is an educational project, not a general-purpose programming language runtime.
 
-## Execution model
+## 🛠️ Engineering focus
 
-```text
-Code input
-   ↓
-Pattern-oriented parser
-   ↓
-Execution simulator
-   ↓
-State tracker
-   ↓
-Step generator
-   ↓
-Visualization renderer
-```
+- Execution-oriented learning
+- Deterministic state transitions
+- Visual program tracing
+- Testable feature modules
+- Bounded AI assistance
 
-Example:
+## 🔭 Roadmap
 
-```c
-for (int i = 0; i < 3; i++)
-    printf("%d", i);
-```
+- AST-backed execution model
+- Browser-level regression tests
+- More language constructs
+- Better execution visualizations
 
-The prototype turns this into observable transitions such as initialization → execution → increment → execution → exit, making state changes explicit.
+## 📄 License
 
-## Engineering status
-
-| Area | Status |
-|---|---|
-| Architecture | Modular prototype |
-| Execution engine | Early / rule-based |
-| Visualization | Functional |
-| Testing | Basic CI validation |
-| Build | GitHub Actions validated |
-| Backend | Not currently required |
-
-## Development
-
-```bash
-npm install
-npm test
-npm run build
-npm run dev
-```
-
-CI runs tests and a production build on pushes and pull requests to `main`.
-
-## Roadmap
-
-- [ ] AST-backed intermediate representation for supported examples
-- [ ] Stronger unit and browser-level tests
-- [ ] More robust nested control-flow visualization
-- [ ] Multi-language execution models
-- [ ] Performance instrumentation for large lesson sets
-
-## Repository structure
-
-```text
-src/
-├── core/       # application core and routing
-├── engines/    # visualization, quiz and self-test logic
-├── modules/    # lessons, chatbot and game features
-├── ui/         # rendering and layout
-└── utils/      # shared helpers and storage
-
-docs/           # architecture and project documentation
-.github/        # CI workflow
-```
-
-## Contributing & security
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md). Keep changes focused and preserve the educational prototype boundary.
-
-## Live demo
-
-**[Open CodeFlow](https://codeflow-app-sigma.vercel.app)**
-
-## Author
-
-Joel Jigo · B.Tech CSE
-
-<p align="center"><sub>Built as an engineering and learning-system prototype.</sub></p>
+MIT
