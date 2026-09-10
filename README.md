@@ -30,6 +30,7 @@ Current engineering baseline:
 - Node 20 CI environment
 - Explicit architecture documentation
 - Bounded experimental AI assistance
+- Automated tagged release workflow
 - AST-backed execution tracked as the next major execution milestone
 
 ## 🏗️ Architecture
@@ -71,6 +72,7 @@ See [`docs/codeflow-architecture.svg`](docs/codeflow-architecture.svg) for the v
 ## 🔭 Roadmap
 
 - [ ] AST-backed intermediate representation
+- [x] Tagged release workflow
 - [ ] Browser-level regression suite
 - [ ] More control-flow constructs
 - [ ] Better execution visualizations
@@ -86,6 +88,12 @@ npm run dev
 ```
 
 CI validates the test suite and production build on Node 20. Dependabot monitors npm and GitHub Actions dependencies weekly.
+
+## 📦 Release process
+
+Releases use `vX.Y.Z` tags. The release workflow validates the tag against `package.json`, checks for the corresponding changelog entry, runs tests and the production build, then publishes a GitHub Release. This keeps releases repeatable without turning the prototype into a fake production claim.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for the current release history.
 
 ## 📌 Related engineering work
 
