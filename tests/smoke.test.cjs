@@ -14,5 +14,5 @@ test('package exposes deterministic test and production build commands', () => {
 })
 
 test('README documents the execution-engine prototype boundary', () => {
-  assert.match(readFileSync('README.md', 'utf8'), /not a general-purpose interpreter/i)
+  assert.match(readFileSync('README.md', 'utf8'), /not a general-purpose programming language runtime/i)
 })
