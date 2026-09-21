@@ -27,43 +27,14 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          const tag = process.env.RELEASE_TAG;
-          const expected = `v${pkg.version}`;
-          if (tag !== expected) {
-            throw new Error(`Release tag ${tag} does not match package version ${pkg.version}`);
-          }
-          console.log(`Validated ${tag}`);
-          NODE
-      - name: Validate changelog entry
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const version = process.env.RELEASE_TAG.slice(1);
-          const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
-          if (!changelog.includes(`## [${version}]`)) {
-            throw new Error(`Missing CHANGELOG.md entry for ${version}`);
-          }
+          const expected = 'v' + pkg.version;
+          if (process.env.RELEASE_TAG !== expected) throw new Error('Release tag does not match package version');
           NODE
       - name: Run tests
         run: npm test
       - name: Production build
         run: npm run build
-      - name: Extract release notes
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const version = process.env.RELEASE_TAG.slice(1);
-          const lines = fs.readFileSync('CHANGELOG.md', 'utf8').split('\n');
-          const start = lines.findIndex(line => line.startsWith(`## [${version}]`));
-          const end = lines.findIndex((line, i) => i > start && line.startsWith('## ['));
-          const notes = lines.slice(start, end === -1 ? lines.length : end).join('\n').trim() + '\n';
-          fs.writeFileSync('release-notes.md', notes);
-          NODE
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --notes-file release-notes.md
+        run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes
