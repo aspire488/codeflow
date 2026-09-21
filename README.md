@@ -1,84 +1,67 @@
-<p align="center">
-<img src="https://raw.githubusercontent.com/aspire488/codeflow/main/docs/codeflow-architecture.svg" alt="CodeFlow architecture" width="100%"/>
-</p>
-
-<p align="center">
-<a href="https://codeflow-app-sigma.vercel.app"><img src="https://img.shields.io/badge/Live%20Preview-Open-green?style=for-the-badge" alt="Live preview"/></a>
-<img src="https://img.shields.io/badge/Status-Prototype-orange?style=for-the-badge" alt="Prototype"/>
-<img src="https://img.shields.io/badge/CI-GitHub%20Actions-success?style=for-the-badge" alt="CI"/>
-<img src="https://img.shields.io/github/license/aspire488/codeflow?style=for-the-badge" alt="MIT License"/>
-</p>
-
 # CodeFlow
 
-**CodeFlow is an execution-first programming-learning prototype.** Instead of treating code as static text, it explores how execution state, output, control flow, and visual feedback can be made observable for learners.
+**CodeFlow is an execution-first programming-learning prototype.** It explores how program state, output, control flow, and visual feedback can become observable learning primitives instead of treating source code as static text.
+
+> **Project status:** CodeFlow is now treated as a completed/frozen prototype. The repository has been hardened for public inspection and reproducibility; new product development is intentionally out of scope.
 
 ## 🚀 Live prototype
 
 **Try it:** https://codeflow-app-sigma.vercel.app
 
-The live build is experimental and intended for learning/demo use.
+The deployment is experimental and intended for learning and demonstration. It is not a general-purpose programming-language runtime.
 
-## 🧪 Engineering status
-
-> **Prototype** — actively being hardened for public development. CodeFlow is an educational execution environment, not a general-purpose programming language runtime.
-
-Current engineering baseline:
-
-- Node-based deterministic test suite
-- Production build validation in GitHub Actions
-- Node 22 CI environment with Vite 8
-- Explicit architecture documentation
-- Bounded experimental AI assistance
-- Automated tagged release workflow
-- AST-backed execution tracked as the next major execution milestone
-
-## 🏗️ Architecture
+## 🧭 Engineering model
 
 ```text
-┌─────────────────────────────────────┐
-│              UI / UX                │
-│ lessons · quizzes · visual tracing  │
-└──────────────────┬──────────────────┘
-                   ↓
-┌─────────────────────────────────────┐
-│          Application Modules         │
-│ state · exercises · learning flows  │
-└──────────────────┬──────────────────┘
-                   ↓
-┌─────────────────────────────────────┐
-│         Execution / Logic Layer     │
-│ deterministic state + output model  │
-└──────────────────┬──────────────────┘
-                   ↓
-┌─────────────────────────────────────┐
-│             Renderer                │
-│ visible execution + feedback        │
-└─────────────────────────────────────┘
-
-Optional AI assistance remains outside the deterministic execution source of truth.
+Learner
+  │
+  ▼
+UI / Lessons / Exercises
+  │
+  ▼
+Application State
+  │
+  ▼
+Execution / Logic Layer
+  │
+  ▼
+Visible State + Feedback
 ```
 
-See [`docs/codeflow-architecture.svg`](docs/codeflow-architecture.svg) for the visual architecture.
+The core principle is **execution visibility**: learning interactions should expose deterministic state rather than hiding execution behind opaque output.
 
-## 🛠️ Engineering focus
+Experimental AI assistance remains outside the deterministic execution source of truth.
 
-- **Execution visibility** — make program state understandable rather than opaque.
-- **Deterministic behavior** — learning interactions should be reproducible.
-- **Testable modules** — isolate execution and UI behavior so features can evolve safely.
-- **Bounded AI** — AI can assist learning, but it should not silently define execution state.
-- **Incremental language support** — expand the supported subset deliberately instead of pretending to implement a full language.
+## 🧪 Final engineering baseline
 
-## 🔭 Roadmap
+- Node 22 CI/runtime baseline
+- Vite 8 build baseline
+- deterministic Node test suite
+- production build validation
+- tagged release workflow with package-version validation
+- automated dependency monitoring through Dependabot
+- CodeQL JavaScript analysis
+- deployment security headers
+- explicit prototype boundary
+- architecture documentation
+- MIT licensing
 
-- [ ] AST-backed intermediate representation
-- [x] Tagged release workflow
-- [ ] Browser-level regression suite
-- [ ] More control-flow constructs
-- [ ] Better execution visualizations
-- [ ] Expanded educational content
+CI validates tests and the production build on Node 22. Security analysis runs through GitHub CodeQL.
 
-## 🤝 Development
+## 🔐 Security posture
+
+The hosted prototype is configured with defensive HTTP headers including:
+- `Strict-Transport-Security`
+- `X-Content-Type-Options`
+- `X-Frame-Options`
+- `Referrer-Policy`
+- restrictive `Permissions-Policy`
+
+No credentials or sensitive runtime state belong in the repository.
+
+See [`SECURITY.md`](SECURITY.md) for reporting and scope.
+
+## 🛠️ Development
 
 ```bash
 npm install
@@ -87,20 +70,22 @@ npm run build
 npm run dev
 ```
 
-CI validates the test suite and production build on Node 22; the build baseline uses Vite 8. Dependabot monitors npm and GitHub Actions dependencies weekly.
+The repository intentionally keeps the development surface small. The prototype is not being expanded into a production interpreter or execution platform.
 
-## 📦 Release process
+## 📦 Release model
 
-Releases use `vX.Y.Z` tags. The release workflow validates the tag against `package.json`, checks for the corresponding changelog entry, runs tests and the production build, then publishes a GitHub Release. This keeps releases repeatable without turning the prototype into a fake production claim.
+Releases use vX.Y.Z tags. The release workflow validates the tag against `package.json`, runs tests and the production build, and publishes the GitHub release.
 
-See [`CHANGELOG.md`](CHANGELOG.md) for the current release history.
+See [`CHANGELOG.md`](CHANGELOG.md) for release history.
 
-## 📌 Related engineering work
+## 🤝 Contributing
 
-- [Issue #18 — AST-backed execution model](https://github.com/aspire488/codeflow/issues/18)
-- [PR #17 — Public-development hardening](https://github.com/aspire488/codeflow/pull/17)
-- [PR #19 — Engineering architecture/testing model](https://github.com/aspire488/codeflow/pull/19)
+Although product development is frozen, maintenance contributions remain welcome when they improve correctness, accessibility, security, reproducibility, documentation, or dependency hygiene.
 
-## 📄 License
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-MIT
+## 📜 License
+
+CodeFlow is released under the **MIT License**. See [`LICENSE`](LICENSE).
+
+The MIT License is the OSI-approved license identified by SPDX as `MIT`. citeturn0search3
