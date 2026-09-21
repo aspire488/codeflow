@@ -27,7 +27,7 @@ Current engineering baseline:
 
 - Node-based deterministic test suite
 - Production build validation in GitHub Actions
-- Node 20 CI environment
+- Node 22 CI environment with Vite 8
 - Explicit architecture documentation
 - Bounded experimental AI assistance
 - Automated tagged release workflow
@@ -87,7 +87,7 @@ npm run build
 npm run dev
 ```
 
-CI validates the test suite and production build on Node 20. Dependabot monitors npm and GitHub Actions dependencies weekly.
+CI validates the test suite and production build on Node 22; the build baseline uses Vite 8. Dependabot monitors npm and GitHub Actions dependencies weekly.
 
 ## 📦 Release process
 
