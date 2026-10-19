@@ -88,4 +88,4 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 CodeFlow is released under the **MIT License**. See [`LICENSE`](LICENSE).
 
-The MIT License is the OSI-approved license identified by SPDX as `MIT`. citeturn0search3
+The MIT License is the OSI-approved license identified by SPDX as `MIT`.
