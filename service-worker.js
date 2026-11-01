@@ -1,5 +1,5 @@
 // service-worker.js - CodeFlow PWA service worker
-const CACHE_VERSION = 'codeflow-v5';
+const CACHE_VERSION = 'codeflow-v6';
 
 const PRECACHE = [
   '/',
@@ -10,7 +10,6 @@ const PRECACHE = [
   '/data/quizDB.js',
   '/data/outputPredictionDB.js',
   '/data/logicQuestDB.js',
-  '/data/gameLevels.js',
   '/data/knowledgeBase.js',
   '/src/core/syntaxHighlighter.js',
   '/src/core/router.js',

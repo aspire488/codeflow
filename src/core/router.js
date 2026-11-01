@@ -4,15 +4,15 @@
 
 const ROUTES = {
   dashboard: { screen: 'dashboard-screen', title: 'Dashboard', render: () => renderDashboard() },
-  topics:    { screen: 'topics-screen',    title: 'Explore Topics', render: (p) => renderTopicExplorer(p) },
+  topics:    { screen: 'topics-screen',    title: 'Explore topics', render: (p) => renderTopicExplorer(p) },
   lesson:    { screen: 'lesson-screen',    title: 'Lessons', render: (p) => renderLesson(p) },
-  quiz:      { screen: 'quiz-screen',      title: 'Quiz Center', render: (p) => renderQuiz(p) },
-  predict:   { screen: 'predict-screen',   title: 'Output Prediction', render: (p) => renderOutputPrediction(p) },
-  visualize: { screen: 'visualize-screen', title: 'Visualization', render: (p) => renderVisualizer(p) },
+  quiz:      { screen: 'quiz-screen',      title: 'Quiz center', render: (p) => renderQuiz(p) },
+  predict:   { screen: 'predict-screen',   title: 'Output prediction', render: (p) => renderOutputPrediction(p) },
+  visualize: { screen: 'visualize-screen', title: 'Visualizer', render: (p) => renderVisualizer(p) },
   game:      { screen: 'game-screen',      title: 'Logic Quest', render: () => renderLogicQuestMap() },
   logic:     { screen: 'logic-screen',     title: 'Logic Analyzer', render: () => renderLogicAnalyzer() },
-  chatbot:   { screen: 'chatbot-screen',   title: 'Study Assistant', render: () => renderChatbot() },
-  practice:  { screen: 'practice-screen',  title: 'Adaptive Practice', render: () => renderAdaptivePractice() },
+  chatbot:   { screen: 'chatbot-screen',   title: 'Study assistant', render: () => renderChatbot() },
+  practice:  { screen: 'practice-screen',  title: 'Adaptive practice', render: () => renderAdaptivePractice() },
   progress:  { screen: 'progress-screen',  title: 'Progress', render: () => renderProgressDashboard() }
 };
 
@@ -98,11 +98,6 @@ function handleRouteChange() {
   }
 
   if (typeof syncChrome === 'function') syncChrome();
-
-  // Visualizer tabs are plain buttons, so expose the active mode with aria-pressed.
-  document.querySelectorAll('.viz-tab').forEach((tab) => {
-    tab.setAttribute('aria-pressed', tab.classList.contains('active') ? 'true' : 'false');
-  });
 
   // Move focus to the screen heading so screen readers announce where they landed.
   const screen = document.getElementById(ROUTES[resolvedRoute].screen);

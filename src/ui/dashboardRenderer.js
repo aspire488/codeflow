@@ -11,6 +11,7 @@ const SUBJECTS = [
 ];
 
 let activeSubject = 'all';
+let topicQuery = '';
 
 function topicsOf(subject) {
   if (typeof TOPICS_DB === 'undefined') return [];
@@ -28,28 +29,47 @@ function languageForSubject(subject) {
   return subject === 'js' ? 'javascript' : (subject || 'c');
 }
 
-function topicCardMarkup(topic) {
+// Course order: the first topic not yet completed (never one just finished).
+function nextUpTopic() {
+  return topicsOf('all').find((t) => !AppState.completedTopics.includes(t.id)) || null;
+}
+
+// "Lesson 3 of 53" counts within the topic's own subject.
+function lessonPosition(topic) {
+  const list = topicsOf(topic.subject);
+  return { number: list.findIndex((t) => t.id === topic.id) + 1, total: list.length };
+}
+
+function topicSummary(topic) {
+  return (topic.concept && topic.concept[0]) || topic.examTip || '';
+}
+
+// One row of the program-counter rail. State comes from real progress only.
+// Topic-explorer rows pass a description and actions; the link stays separate from the buttons.
+function railRowMarkup(topic, nextId, extraClass, description, actions) {
+  const id = escapeHtml(topic.id);
   const done = AppState.completedTopics.includes(topic.id);
-  const summary = (topic.concept && topic.concept[0]) || topic.examTip || 'Open the lesson to begin.';
-  return `
-    <article class="stitch-card topic-card" data-topic="${escapeHtml(topic.id)}">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div class="card-icon-row">
-          <span aria-hidden="true" class="material-symbols-outlined">${escapeHtml(topic.icon || 'code')}</span>
-          <h3>${escapeHtml(topic.title)}</h3>
-        </div>
-        ${done ? '<span class="badge success">Done</span>' : `<span class="badge muted-badge">${escapeHtml(subjectLabel(topic.subject))}</span>`}
-      </div>
-      <p>${escapeHtml(summary)}</p>
-      <div class="button-row" style="margin-top:auto">
-        <button class="stitch-btn secondary" data-action="visualize" data-topic="${escapeHtml(topic.id)}">
-          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">terminal</span> Visualize
-        </button>
-        <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(topic.id)}">
-          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">quiz</span> Quiz
-        </button>
-      </div>
-    </article>`;
+  const current = topic.id === nextId;
+  const state = done ? 'done' : (current ? 'current' : '');
+  const cue = done ? 'Completed: ' : (current ? 'Next: ' : '');
+  const link = `<a class="rail-link${description === undefined ? '' : ' topic-link'}" href="#lesson/${id}"${current ? ' aria-current="step"' : ''}>${cue ? `<span class="sr-only">${cue}</span>` : ''}${escapeHtml(topic.title)}</a>`;
+  const body = description === undefined
+    ? link
+    : `<div class="topic-main">${link}<p class="topic-desc">${escapeHtml(description)}</p></div>${actions}`;
+  return `<li class="rail-row ${done ? 'is-done' : ''} ${current ? 'is-current' : ''} ${extraClass || ''}" data-topic="${id}"><span class="rail-node ${state}" aria-hidden="true"></span>${body}</li>`;
+}
+
+// The rail line starts at the first visible node and ends at the last.
+function markRailEnds(list) {
+  list.querySelectorAll('.rail-row').forEach((row) => row.classList.remove('is-first', 'is-last'));
+  const rows = Array.from(list.querySelectorAll('.rail-row:not([hidden])'));
+  if (!rows.length) return;
+  rows[0].classList.add('is-first');
+  rows[rows.length - 1].classList.add('is-last');
+}
+
+function pluralize(count, word) {
+  return `${count} ${word}${count === 1 ? '' : 's'}`;
 }
 
 function renderDashboard() {
@@ -58,54 +78,105 @@ function renderDashboard() {
 
   const all = topicsOf('all');
   const completed = AppState.completedTopics.length;
-  const percentage = all.length ? Math.round((completed / all.length) * 100) : 0;
-  const subjectsCovered = new Set(all.filter((t) => AppState.completedTopics.includes(t.id)).map((t) => t.subject));
-  // Course order: the first topic not yet completed (never one just finished).
-  const nextTopic = all.find((t) => !AppState.completedTopics.includes(t.id));
-  const allDone = all.length > 0 && !nextTopic;
+  const next = nextUpTopic();
+
+  let nextBlock;
+  let railBlock = '';
+  if (next) {
+    const position = lessonPosition(next);
+    const id = escapeHtml(next.id);
+    nextBlock = `
+      <section>
+        <h2 class="eyebrow">Next up</h2>
+        <h3 class="next-title">${escapeHtml(next.title)}</h3>
+        <p class="next-meta">${escapeHtml(subjectLabel(next.subject))}, lesson ${position.number} of ${position.total}</p>
+        <div class="next-actions">
+          <a class="stitch-btn" href="#lesson/${id}">${completed > 0 ? 'Continue lesson' : 'Start lesson'}</a>
+          <a class="text-btn" href="#quiz/${id}">Take the quiz</a>
+          <a class="text-btn" href="#visualize/code/${id}">Visualize the code</a>
+        </div>
+      </section>`;
+
+    const list = topicsOf(next.subject);
+    const index = list.findIndex((t) => t.id === next.id);
+    const slice = list.slice(Math.max(0, index - 1), index + 4);
+    const doneInSubject = list.filter((t) => AppState.completedTopics.includes(t.id)).length;
+    railBlock = `
+      <section class="course-rail">
+        <h2 class="section-title">${escapeHtml(subjectLabel(next.subject))}</h2>
+        <p class="section-note">${doneInSubject} of ${list.length} completed</p>
+        <ol class="rail">${slice.map((t) => railRowMarkup(t, next.id)).join('')}</ol>
+        <a class="text-btn rail-more" href="#topics">See all ${all.length} topics</a>
+      </section>`;
+  } else {
+    nextBlock = `
+      <section>
+        <h2 class="eyebrow">Course</h2>
+        <h3 class="next-title">All topics completed</h3>
+        <p class="next-meta">You finished all ${all.length} topics. Retake a quiz to improve a score, or review any lesson.</p>
+        <div class="next-actions">
+          <a class="stitch-btn" href="#topics">Review topics</a>
+          <a class="text-btn" href="#practice">Adaptive practice</a>
+          <a class="text-btn" href="#quiz">Quiz center</a>
+        </div>
+      </section>`;
+  }
+
+  const bySubject = SUBJECTS.slice(1).map((s) => {
+    const list = topicsOf(s.id);
+    const done = list.filter((t) => AppState.completedTopics.includes(t.id)).length;
+    return { id: s.id, label: s.label, done, total: list.length, percentage: list.length ? Math.round((done / list.length) * 100) : 0 };
+  }).filter((s) => s.total > 0);
+
+  const quizCount = Object.keys(AppState.quizScores).length;
+  const summary = [
+    completed > 0 ? `${completed} of ${all.length} topics completed.` : 'No topics completed yet.',
+    AppState.xp > 0 ? `${AppState.xp} XP earned.` : '',
+    quizCount > 0 ? `${pluralize(quizCount, 'quiz')} taken.` : ''
+  ].filter(Boolean).join(' ');
+
+  const outputQuestions = typeof outputPredictionDB !== 'undefined' ? outputPredictionDB.length : 0;
 
   host.innerHTML = `
-    <div class="stitch-card hero-card">
-      <h2 class="hero-title">Welcome to CodeFlow</h2>
-      <p class="hero-sub">Execution-first learning for C, HTML, CSS and JavaScript. Read a lesson, watch the program state change, predict the output, then lock it in with a quiz.</p>
-      <div class="button-row" style="margin-top:0">
-        ${nextTopic ? `<button class="stitch-btn" data-nav="lesson/${escapeHtml(nextTopic.id)}">
-          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">play_arrow</span> Continue learning
-        </button>` : ''}
-        ${allDone ? '<span class="badge success">All topics completed</span>' : ''}
-        <button class="stitch-btn secondary" data-nav="topics"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">explore</span> Explore topics</button>
-        <button class="stitch-btn secondary" data-nav="visualize"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">terminal</span> Open visualizer</button>
-      </div>
-      <div class="stat-grid">
-        <div class="stat"><div class="stat-value">${completed}</div><div class="stat-label">Topics completed</div></div>
-        <div class="stat"><div class="stat-value">${percentage}%</div><div class="stat-label">Course progress</div></div>
-        <div class="stat"><div class="stat-value">${AppState.xp}</div><div class="stat-label">XP earned</div></div>
-        <div class="stat"><div class="stat-value">${subjectsCovered.size}/4</div><div class="stat-label">Subjects started</div></div>
-      </div>
+    <div class="dash-top ${railBlock ? '' : 'is-single'}">
+      ${nextBlock}
+      ${railBlock}
     </div>
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px">
-      <h3 class="card-title" style="margin:0">Start with a topic</h3>
-      <button class="stitch-btn secondary" data-nav="topics">See all ${all.length}</button>
-    </div>
-    <div class="topic-grid">${all.slice(0, 6).map(topicCardMarkup).join('')}</div>
-
-    <h3 class="card-title" style="margin-top:32px">Practice and explore</h3>
-    <div class="topic-grid">
-      <article class="stitch-card topic-card" data-nav="predict">
-        <div class="card-icon-row"><span aria-hidden="true" class="material-symbols-outlined">psychology</span><h3>Output prediction</h3></div>
-        <p>${typeof outputPredictionDB !== 'undefined' ? outputPredictionDB.length : 0} KTU-style questions: predict what the program prints.</p>
-      </article>
-      <article class="stitch-card topic-card" data-nav="game">
-        <div class="card-icon-row"><span aria-hidden="true" class="material-symbols-outlined">sports_esports</span><h3>Logic Quest</h3></div>
-        <p>Play from START to the final boss, executing code one action at a time.</p>
-      </article>
-      <article class="stitch-card topic-card" data-nav="practice">
-        <div class="card-icon-row"><span aria-hidden="true" class="material-symbols-outlined">auto_awesome</span><h3>Adaptive practice</h3></div>
-        <p>Practice is generated from the topics you actually get wrong.</p>
-      </article>
+    <div class="dash-bottom">
+      <section>
+        <h2 class="section-title">Your progress</h2>
+        <p class="progress-summary">${escapeHtml(summary)}</p>
+        <ul class="subject-list">
+          ${bySubject.map((s) => `
+            <li class="subject-row">
+              <a class="subject-name" href="#topics/${escapeHtml(s.id)}">${escapeHtml(s.label)}</a>
+              <span class="subject-count">${s.done}/${s.total}</span>
+              <div class="progress-bar" aria-hidden="true"><div class="progress-fill" style="width:${s.percentage}%"></div></div>
+            </li>`).join('')}
+        </ul>
+      </section>
+      <section>
+        <h2 class="section-title">Practice tools</h2>
+        <ul class="tool-list">
+          <li><a class="tool-link" href="#predict"><span class="tool-name">Output prediction</span><span class="tool-desc">${outputQuestions ? `${outputQuestions} questions: ` : ''}predict what the program prints.</span></a></li>
+          <li><a class="tool-link" href="#game"><span class="tool-name">Logic Quest</span><span class="tool-desc">Run code one action at a time, from start to the final boss.</span></a></li>
+          <li><a class="tool-link" href="#practice"><span class="tool-name">Adaptive practice</span><span class="tool-desc">Questions drawn from the topics you get wrong.</span></a></li>
+        </ul>
+      </section>
     </div>
   `;
+  host.querySelectorAll('.rail').forEach(markRailEnds);
+}
+
+function topicRowMarkup(topic, nextId) {
+  const id = escapeHtml(topic.id);
+  const score = AppState.quizScores[topic.id];
+  const meta = `<div class="topic-meta">
+      ${score ? `<span class="topic-score"><span class="sr-only">Quiz score </span>${escapeHtml(score.percentage)}%</span>` : ''}
+      <button class="text-btn" data-action="start-quiz" data-topic="${id}">Quiz<span class="sr-only">: ${escapeHtml(topic.title)}</span></button>
+      <button class="text-btn" data-action="visualize" data-topic="${id}">Visualize<span class="sr-only">: ${escapeHtml(topic.title)}</span></button>
+    </div>`;
+  return railRowMarkup(topic, nextId, 'topic-row', topicSummary(topic), meta);
 }
 
 function renderTopicExplorer(routeParam) {
@@ -114,25 +185,105 @@ function renderTopicExplorer(routeParam) {
   if (routeParam && SUBJECTS.some((s) => s.id === routeParam)) activeSubject = routeParam;
   else if (!routeParam) activeSubject = 'all';
 
-  const topics = topicsOf(activeSubject);
-  const counts = { all: topicsOf('all').length };
+  const all = topicsOf('all');
+  const next = nextUpTopic();
+  const nextId = next ? next.id : null;
+  const groups = SUBJECTS.slice(1)
+    .filter((s) => activeSubject === 'all' || s.id === activeSubject)
+    .map((s) => ({ subject: s, list: topicsOf(s.id) }))
+    .filter((g) => g.list.length);
+  const counts = { all: all.length };
   SUBJECTS.slice(1).forEach((s) => { counts[s.id] = topicsOf(s.id).length; });
+  const completed = AppState.completedTopics.length;
 
   host.innerHTML = `
     <div class="screen-heading">
-      <h2 class="screen-title">Explore topics</h2>
-      <p class="screen-subtitle">${topics.length} topics shown. ${topics.filter((t) => AppState.completedTopics.includes(t.id)).length} completed in this filter.</p>
+      <div>
+        <h2 class="screen-title">Explore topics</h2>
+        <p class="screen-subtitle">${all.length} topics in ${SUBJECTS.length - 1} subjects. ${completed > 0 ? `${completed} completed.` : 'Pick any lesson, or follow the marker to your next one.'}</p>
+      </div>
     </div>
-    <div class="filter-row">
-      ${SUBJECTS.map((s) => `
-        <button class="filter-chip ${activeSubject === s.id ? 'active' : ''}" data-nav="${s.id === 'all' ? 'topics' : 'topics/' + s.id}">
-          ${escapeHtml(s.label)} <span>(${counts[s.id] || 0})</span>
-        </button>`).join('')}
+    <div class="topics-tools">
+      <div class="topic-search">
+        <span aria-hidden="true" class="material-symbols-outlined">search</span>
+        <label class="sr-only" for="topic-search">Search topics</label>
+        <input type="search" id="topic-search" class="input" autocomplete="off" placeholder="Search topics" value="${escapeHtml(topicQuery)}"/>
+      </div>
+      <div class="filter-row" role="group" aria-label="Filter by subject">
+        ${SUBJECTS.map((s) => `
+          <button class="filter-chip ${activeSubject === s.id ? 'active' : ''}" data-nav="${s.id === 'all' ? 'topics' : 'topics/' + s.id}"${activeSubject === s.id ? ' aria-current="true"' : ''}>${escapeHtml(s.label)}<span>${counts[s.id] || 0}</span></button>`).join('')}
+      </div>
     </div>
-    ${topics.length
-      ? `<div class="topic-grid">${topics.map(topicCardMarkup).join('')}</div>`
-      : emptyState('No topics here yet', 'Pick another subject to keep exploring.', 'Back to dashboard', 'dashboard')}
+    <p class="topic-status" id="topic-status" role="status"></p>
+    ${groups.map((g) => {
+      const done = g.list.filter((t) => AppState.completedTopics.includes(t.id)).length;
+      return `
+      <section class="topic-group" data-subject="${escapeHtml(g.subject.id)}">
+        <div class="topic-group-head">
+          <h3>${escapeHtml(g.subject.label)}</h3>
+          <span class="topic-group-count">${done} of ${g.list.length}<span class="sr-only"> completed</span></span>
+        </div>
+        <ol class="rail">${g.list.map((t) => topicRowMarkup(t, nextId)).join('')}</ol>
+      </section>`;
+    }).join('')}
+    <div class="topic-empty" id="topic-empty" hidden>
+      <h3 class="card-title" id="topic-empty-title"></h3>
+      <p class="muted">Try a different word, or clear the search to see every topic.</p>
+      <button class="stitch-btn secondary" id="topic-clear">Clear search</button>
+    </div>
   `;
+
+  // Lowercased title + description per row, computed once per render.
+  const rows = Array.from(host.querySelectorAll('.topic-row')).map((el) => {
+    const topic = TOPICS_DB[el.getAttribute('data-topic')];
+    return { el, hay: `${topic.title} ${topicSummary(topic)}`.toLowerCase() };
+  });
+  const sections = Array.from(host.querySelectorAll('.topic-group'));
+  const input = document.getElementById('topic-search');
+  const status = document.getElementById('topic-status');
+  const empty = document.getElementById('topic-empty');
+  const emptyTitle = document.getElementById('topic-empty-title');
+  const visibleTotal = rows.length;
+
+  function applyTopicFilter() {
+    const query = topicQuery.trim().toLowerCase();
+    const terms = query.split(/\s+/).filter(Boolean);
+    let shown = 0;
+    rows.forEach((row) => {
+      const match = terms.every((term) => row.hay.includes(term));
+      if (row.el.hidden === match) row.el.hidden = !match;
+      if (match) shown += 1;
+    });
+    sections.forEach((section) => {
+      const list = section.querySelector('.rail');
+      markRailEnds(list);
+      section.hidden = !list.querySelector('.rail-row:not([hidden])');
+    });
+    empty.hidden = shown > 0;
+    emptyTitle.textContent = `No topics match “${topicQuery.trim()}”`;
+    status.textContent = terms.length
+      ? `${shown} of ${visibleTotal} topics match`
+      : `${visibleTotal} topics${activeSubject === 'all' ? '' : ` in ${subjectLabel(activeSubject)}`}`;
+  }
+
+  function setTopicQuery(value) {
+    topicQuery = value;
+    if (input.value !== value) input.value = value;
+    applyTopicFilter();
+  }
+
+  input.addEventListener('input', () => setTopicQuery(input.value));
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && input.value) {
+      event.preventDefault();
+      setTopicQuery('');
+    }
+  });
+  document.getElementById('topic-clear').addEventListener('click', () => {
+    setTopicQuery('');
+    input.focus();
+  });
+  applyTopicFilter();
 }
 
 function renderAdaptivePractice() {

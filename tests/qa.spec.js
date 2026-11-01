@@ -101,9 +101,9 @@ test('persona 1 beginner can go from dashboard to a finished quiz on a phone', a
 
   await go(page, 'topics');
   await page.locator('#topics-content .filter-chip', { hasText: 'C Programming' }).click();
-  await expect(page.locator('#topics-content .topic-card').first()).toBeVisible();
+  await expect(page.locator('#topics-content .topic-row').first()).toBeVisible();
 
-  await page.locator('#topics-content .topic-card').first().locator('h3').click();
+  await page.locator('#topics-content .topic-row').first().locator('.topic-link').click();
   await expect(page.locator('#lesson-screen')).toHaveClass(/active/);
   await expect(page.locator('#lesson-content h2')).not.toBeEmpty();
   await expect(page.locator('#lesson-content pre code')).toBeVisible();
@@ -210,7 +210,7 @@ test('persona 4 completes the full workflow through the mobile drawer', async ({
   const topicId = await page.evaluate(() => Object.keys(TOPICS_DB)[0]);
 
   await go(page, 'topics');
-  await page.locator(`#topics-content .topic-card[data-topic="${topicId}"] h3`).click();
+  await page.locator(`#topics-content .topic-row[data-topic="${topicId}"] .topic-link`).click();
   await expect(page.locator('#lesson-screen')).toHaveClass(/active/);
 
   const complete = page.locator('#mark-complete');
@@ -554,7 +554,7 @@ test('corrupted and missing storage both recover without a broken app', async ({
       codeflow_logic_quest: 'null'
     }
   });
-  await expect(corrupted.page.locator('#dashboard-content .topic-card').first()).toBeVisible();
+  await expect(corrupted.page.locator('#dashboard-content .rail-row').first()).toBeVisible();
   expect(await xp(corrupted.page)).toBe(0);
   await corrupted.page.goto(`${BASE}/#practice`, { waitUntil: 'networkidle' });
   await expect(corrupted.page.locator('#practice-content')).not.toBeEmpty();
@@ -569,8 +569,8 @@ test('corrupted and missing storage both recover without a broken app', async ({
   });
   const page = await blocked.newPage();
   await page.goto(`${BASE}/#dashboard`, { waitUntil: 'networkidle' });
-  await expect(page.locator('#dashboard-content .topic-card').first()).toBeVisible();
-  await page.locator('.topic-card').first().locator('h3').click();
+  await expect(page.locator('#dashboard-content .rail-row').first()).toBeVisible();
+  await page.locator('#dashboard-content .rail-row .rail-link').first().click();
   await expect(page.locator('#lesson-screen')).toHaveClass(/active/);
   await blocked.close();
 });

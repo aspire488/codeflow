@@ -149,7 +149,7 @@ function syncChrome() {
   if (value) value.textContent = `${percentage}%`;
   if (text) text.textContent = `${completed} of ${total} topics completed`;
   if (xpChip) xpChip.textContent = `${AppState.xp} XP`;
-  if (levelLabel) levelLabel.textContent = `Level ${Math.floor(AppState.xp / 100) + 1} \u2022 ${completed} topics`;
+  if (levelLabel) levelLabel.textContent = `Level ${Math.floor(AppState.xp / 100) + 1}`;
 }
 
 // ============================================
@@ -339,12 +339,6 @@ function initEventDelegation() {
       event.preventDefault();
       navigateTo(navBtn.getAttribute('data-nav'));
       return;
-    }
-
-    const topicCard = target.closest('.topic-card[data-topic]');
-    if (topicCard) {
-      event.preventDefault();
-      navigateTo(`lesson/${topicCard.getAttribute('data-topic')}`);
     }
   });
 

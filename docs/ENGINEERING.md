@@ -18,7 +18,7 @@ tests/             structural + unit (node:test) and browser (Playwright)
 
 ### Load order
 
-1. `data/*` - defines `TOPICS_DB`, `QUIZ_DB`, `outputPredictionDB`, `GAME_LEVELS`, `KNOWLEDGE_BASE`, `LOGIC_QUEST_LEVELS`/`LOGIC_QUEST_MAP`.
+1. `data/*` - defines `TOPICS_DB`, `QUIZ_DB`, `outputPredictionDB`, `KNOWLEDGE_BASE`, `LOGIC_QUEST_LEVELS`/`LOGIC_QUEST_MAP`.
 2. `src/core/syntaxHighlighter.js` - `highlightCode` is used by every renderer.
 3. `src/engines/*` - expose pure logic and screen renderers (`renderVisualizer`, `renderOutputPrediction`, `renderLogicQuestMap`, `analyzeCodeLogic`, `AdaptiveEngine`).
 4. `src/ui/*` - one renderer per screen; they consume data and engines.

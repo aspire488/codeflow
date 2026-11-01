@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 
 const ROUTES = [
-  ['dashboard', 'Welcome to CodeFlow'],
+  ['dashboard', 'Next up'],
   ['topics', 'Explore topics'],
   ['lesson', 'C'],
   ['quiz', 'Quiz center'],
@@ -42,9 +42,9 @@ test('application boots with no console errors and renders the dashboard', async
 
   await page.goto('/');
   await expect(page.locator('#dashboard-screen')).toHaveClass(/active/);
-  const cards = page.locator('#dashboard-content .topic-card');
-  await expect(cards.first()).toBeVisible();
-  expect(await cards.count()).toBeGreaterThan(5);
+  const rows = page.locator('#dashboard-content .rail-row');
+  await expect(rows.first()).toBeVisible();
+  expect(await rows.count()).toBe(4); // current lesson plus the next three
   expect(errors, `console errors: ${errors.join(' | ')}`).toEqual([]);
 });
 
@@ -67,7 +67,7 @@ test('lesson content, navigation and completion persist across reloads', async (
   await expect(page.locator('#lesson-content h2')).toContainText(/loop/i);
   await expect(page.locator('#lesson-content pre code')).toBeVisible();
 
-  await page.locator('#lesson-content [data-nav^="lesson/"]').last().click();
+  await page.locator('#lesson-content a[href^="#lesson/"]').last().click();
   await expect(page.locator('#lesson-content h2')).not.toBeEmpty();
 
   await page.goto('/#lesson/c-basics');
@@ -257,7 +257,7 @@ test('corrupted local storage does not break startup', async ({ page }) => {
   await page.reload();
 
   await expect(page.locator('#dashboard-screen')).toHaveClass(/active/);
-  await expect(page.locator('#dashboard-content .topic-card').first()).toBeVisible();
+  await expect(page.locator('#dashboard-content .rail-row').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 

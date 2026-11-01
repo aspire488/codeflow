@@ -64,7 +64,7 @@ test('topics/<subject> shows that subject with its chip active', async ({ page }
   const expected = await page.evaluate(() => Object.values(TOPICS_DB).filter((t) => t.subject === 'css').length);
   expect(expected).toBeGreaterThan(0);
   await page.goto('/#topics/css');
-  await expect(page.locator('#topics-content .topic-card')).toHaveCount(expected);
+  await expect(page.locator('#topics-content .topic-row')).toHaveCount(expected);
   await expect(page.locator('#topics-content .filter-chip.active')).toContainText('CSS');
   await page.locator('#topics-content .filter-chip', { hasText: 'HTML' }).click();
   await expect(page.locator('#topics-content .filter-chip.active')).toContainText('HTML');
@@ -136,17 +136,17 @@ test('state: a failed storage write shows a visible warning', async ({ page }) =
   await expect(page.locator('#toast')).toContainText('could not be saved');
 });
 
-test('Continue learning goes to the next incomplete topic in course order, then says all done', async ({ page }) => {
+test('Continue lesson goes to the next incomplete topic in course order, then says all done', async ({ page }) => {
   const ids = await topicIds(page);
   await seedState(page, { xp: 0, completedTopics: [ids[0], ids[1]], quizScores: {}, currentTopic: ids[1] });
   await page.goto('/#dashboard');
-  await page.getByRole('button', { name: /Continue learning/ }).click();
+  await page.getByRole('link', { name: 'Continue lesson' }).click();
   await expect(page).toHaveURL(new RegExp(`#lesson/${ids[2]}$`));
 
   await seedState(page, { xp: 0, completedTopics: ids, quizScores: {} });
   await page.goto('/#dashboard');
   await expect(page.locator('#dashboard-content')).toContainText('All topics completed');
-  await expect(page.getByRole('button', { name: /Continue learning/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Continue lesson|Start lesson/ })).toHaveCount(0);
 });
 
 test('quiz: feedback is a live region, options expose state, focus moves to Next after checking', async ({ page }) => {
@@ -166,7 +166,7 @@ test('chrome: active nav item has aria-current, icons are hidden from names, hea
   await expect(page.locator('.nav-item[data-nav="progress"]')).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('.nav-item[data-nav="dashboard"]')).not.toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('button', { name: 'Dashboard', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Study Assistant', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Study assistant', exact: true })).toBeVisible();
   await expect(page.locator('#progress-content h2')).toBeFocused();
   expect(await page.locator('#viz-tabs [role="tab"]').count()).toBe(0);
 });
@@ -195,4 +195,101 @@ test('CSP is served and no route trips it', async ({ page }) => {
     await page.waitForTimeout(100);
   }
   expect(violations).toEqual([]);
+});
+
+test('Next up: a new user starts at lesson 1 of the first subject', async ({ page }) => {
+  const [first] = await topicIds(page);
+  const info = await page.evaluate((id) => ({ title: TOPICS_DB[id].title, total: Object.values(TOPICS_DB).filter((t) => t.subject === TOPICS_DB[id].subject).length }), first);
+  await page.goto('/#dashboard');
+  await expect(page.locator('#dashboard-content .next-title')).toHaveText(info.title);
+  await expect(page.locator('#dashboard-content .next-meta')).toHaveText(`C Programming, lesson 1 of ${info.total}`);
+  await expect(page.getByRole('link', { name: 'Start lesson' })).toHaveAttribute('href', `#lesson/${first}`);
+  await expect(page.locator('#dashboard-content .rail-node.current')).toHaveCount(1);
+  await expect(page.locator('#dashboard-content .rail-node.done')).toHaveCount(0);
+  await expect(page.locator('#dashboard-content')).not.toContainText(/\b0 XP\b|streak/i); // no zero stats, no invented streak
+});
+
+test('Next up: mid-course shows the first incomplete topic, honest label, last done row and quiet quiz link', async ({ page }) => {
+  const ids = await topicIds(page);
+  await seedState(page, { xp: 30, completedTopics: [ids[0], ids[1]], quizScores: {}, currentTopic: ids[1] });
+  await page.goto('/#dashboard');
+  const nextTitle = await page.evaluate((id) => TOPICS_DB[id].title, ids[2]);
+  await expect(page.locator('#dashboard-content .next-title')).toHaveText(nextTitle);
+  await expect(page.locator('#dashboard-content .next-meta')).toContainText('lesson 3 of');
+  await expect(page.getByRole('link', { name: 'Continue lesson' })).toHaveAttribute('href', `#lesson/${ids[2]}`);
+  await expect(page.getByRole('link', { name: 'Take the quiz' })).toHaveAttribute('href', `#quiz/${ids[2]}`);
+  await expect(page.getByRole('link', { name: 'Visualize the code' })).toHaveAttribute('href', `#visualize/code/${ids[2]}`);
+  await expect(page.locator('#dashboard-content .rail-row.is-current .rail-link')).toHaveAttribute('href', `#lesson/${ids[2]}`);
+  await expect(page.locator('#dashboard-content .rail-node.done')).toHaveCount(1); // only the last completed row
+  await expect(page.locator('#dashboard-content')).toContainText('30 XP');
+});
+
+test('Next up: when every topic is done the dashboard says so and offers no lesson to continue', async ({ page }) => {
+  const ids = await topicIds(page);
+  await seedState(page, { xp: 0, completedTopics: ids, quizScores: {} });
+  await page.goto('/#dashboard');
+  await expect(page.locator('#dashboard-content .next-title')).toHaveText('All topics completed');
+  await expect(page.locator('#dashboard-content .rail-node.current')).toHaveCount(0);
+});
+
+test('Lessons nav item opens the next incomplete lesson and puts it in the URL', async ({ page }) => {
+  const ids = await topicIds(page);
+  await seedState(page, { xp: 0, completedTopics: [ids[0]], quizScores: {}, currentTopic: ids[0] });
+  await page.goto('/#dashboard');
+  await page.locator('.nav-item[data-nav="lesson"]').click();
+  await expect(page).toHaveURL(new RegExp(`#lesson/${ids[1]}$`));
+  await expect(page.locator('#lesson-content .lesson-meta')).toContainText('lesson 2 of');
+});
+
+test('topic search filters title and description live, Escape clears, no-match state has a working Clear', async ({ page }) => {
+  await page.goto('/#topics');
+  const total = await page.locator('#topics-content .topic-row').count();
+  expect(total).toBeGreaterThan(50);
+  const search = page.locator('#topic-search');
+
+  await search.fill('pointer');
+  const matches = await page.evaluate(() => Object.values(TOPICS_DB).filter((t) => (t.title + ' ' + (t.concept[0] || '')).toLowerCase().includes('pointer')).length);
+  await expect(page.locator('#topics-content .topic-row:visible')).toHaveCount(matches);
+  await expect(page.locator('#topic-status')).toContainText(`${matches} of ${total} topics match`);
+
+  await search.press('Escape');
+  await expect(search).toHaveValue('');
+  await expect(page.locator('#topics-content .topic-row:visible')).toHaveCount(total);
+
+  await search.fill('zzzqqq');
+  await expect(page.locator('#topics-content .topic-row:visible')).toHaveCount(0);
+  await expect(page.locator('#topic-empty')).toContainText('No topics match');
+  await page.locator('#topic-clear').click();
+  await expect(page.locator('#topics-content .topic-row:visible')).toHaveCount(total);
+  await expect(page.locator('#topic-empty')).toBeHidden();
+  await expect(search).toBeFocused();
+});
+
+test('topic rows: link and buttons are separate, quiz score shows, rows are semantic list items', async ({ page }) => {
+  const ids = await topicIds(page);
+  await seedState(page, { xp: 0, completedTopics: [ids[0]], quizScores: { [ids[0]]: { score: 2, total: 3, percentage: 67 } } });
+  await page.goto('/#topics');
+  const row = page.locator(`#topics-content li.topic-row[data-topic="${ids[0]}"]`);
+  await expect(row.locator('a.topic-link')).toHaveAttribute('href', `#lesson/${ids[0]}`);
+  await expect(row.locator('.topic-score')).toContainText('67%');
+  await expect(row.locator('button[data-action="start-quiz"]')).toBeVisible();
+  await expect(row.locator('button[data-action="visualize"]')).toBeVisible();
+  expect(await row.locator('a button, button a').count()).toBe(0);
+  await row.locator('button[data-action="start-quiz"]').click();
+  await expect(page).toHaveURL(new RegExp(`#quiz/${ids[0]}$`));
+});
+
+test('lesson: reading width, labelled scrollable code region, end-of-lesson next steps with titled neighbours', async ({ page }) => {
+  const ids = await topicIds(page);
+  await page.goto(`/#lesson/${ids[1]}`);
+  const region = page.locator('#lesson-content .code-scroll');
+  await expect(region).toHaveAttribute('tabindex', '0');
+  await expect(region).toHaveAttribute('aria-label', /Example code for/);
+  const prose = await page.locator('#lesson-content .lesson-sec.lesson-prose').first().evaluate((el) => el.getBoundingClientRect().width);
+  expect(prose).toBeLessThanOrEqual(760);
+  await expect(page.getByRole('link', { name: 'Take the quiz' })).toHaveAttribute('href', `#quiz/${ids[1]}`);
+  await expect(page.getByRole('link', { name: 'Visualize this code' })).toHaveAttribute('href', `#visualize/code/${ids[1]}`);
+  const [prevTitle, nextTitle] = await page.evaluate((i) => [TOPICS_DB[i[0]].title, TOPICS_DB[i[2]].title], ids.slice(0, 3));
+  await expect(page.locator('.pager-link.prev .pager-title')).toHaveText(prevTitle);
+  await expect(page.locator('.pager-link.next .pager-title')).toHaveText(nextTitle);
 });

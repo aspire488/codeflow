@@ -22,23 +22,17 @@
     <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
     <div id="app-root" class="app-shell">
         <aside id="sidebar" class="stitch-sidebar app-sidebar" aria-label="Primary navigation">
-            <div class="sidebar-profile">
-                <div class="sidebar-avatar"><span aria-hidden="true" class="material-symbols-outlined">person</span></div>
-                <div style="min-width:0">
-                    <h3 class="sidebar-name">Engineering Student</h3>
-                    <p class="sidebar-sub" id="sidebar-level">Level 1 &bull; 0 topics</p>
-                </div>
-            </div>
+            <div class="sidebar-brand"><span aria-hidden="true" class="material-symbols-outlined">terminal</span><span>CodeFlow</span></div>
             <nav class="sidebar-nav">
                 <p class="nav-label">Learn</p>
                 <button class="nav-item" data-nav="dashboard"><span aria-hidden="true" class="material-symbols-outlined">home</span><span>Dashboard</span></button>
-                <button class="nav-item" data-nav="topics"><span aria-hidden="true" class="material-symbols-outlined">explore</span><span>Explore Topics</span></button>
-                <button class="nav-item" data-nav="lesson"><span aria-hidden="true" class="material-symbols-outlined">menu_book</span><span>Lessons</span></button>
+                <button class="nav-item" data-nav="topics"><span aria-hidden="true" class="material-symbols-outlined">explore</span><span>Explore topics</span></button>
+                <button class="nav-item" data-nav="lesson" title="Opens your next incomplete lesson"><span aria-hidden="true" class="material-symbols-outlined">menu_book</span><span>Lessons</span></button>
 
                 <p class="nav-label">Practice</p>
-                <button class="nav-item" data-nav="quiz"><span aria-hidden="true" class="material-symbols-outlined">quiz</span><span>Quiz Center</span></button>
-                <button class="nav-item" data-nav="predict"><span aria-hidden="true" class="material-symbols-outlined">psychology</span><span>Output Prediction</span></button>
-                <button class="nav-item" data-nav="practice"><span aria-hidden="true" class="material-symbols-outlined">auto_awesome</span><span>Adaptive Practice</span></button>
+                <button class="nav-item" data-nav="quiz"><span aria-hidden="true" class="material-symbols-outlined">quiz</span><span>Quiz center</span></button>
+                <button class="nav-item" data-nav="predict"><span aria-hidden="true" class="material-symbols-outlined">psychology</span><span>Output prediction</span></button>
+                <button class="nav-item" data-nav="practice"><span aria-hidden="true" class="material-symbols-outlined">auto_awesome</span><span>Adaptive practice</span></button>
 
                 <p class="nav-label">Studio</p>
                 <button class="nav-item" data-nav="visualize"><span aria-hidden="true" class="material-symbols-outlined">terminal</span><span>Visualizer</span></button>
@@ -46,29 +40,28 @@
                 <button class="nav-item" data-nav="logic"><span aria-hidden="true" class="material-symbols-outlined">analytics</span><span>Logic Analyzer</span></button>
 
                 <p class="nav-label">Support</p>
-                <button class="nav-item" data-nav="chatbot"><span aria-hidden="true" class="material-symbols-outlined">forum</span><span>Study Assistant</span></button>
+                <button class="nav-item" data-nav="chatbot"><span aria-hidden="true" class="material-symbols-outlined">forum</span><span>Study assistant</span></button>
                 <button class="nav-item" data-nav="progress"><span aria-hidden="true" class="material-symbols-outlined">insights</span><span>Progress</span></button>
             </nav>
             <div class="sidebar-progress">
                 <div class="row-between">
-                    <span class="sidebar-label">PROGRESS</span>
+                    <span class="sidebar-label">Course progress</span>
                     <span class="sidebar-value" id="sidebar-progress-value">0%</span>
                 </div>
-                <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" id="sidebar-progress-fill" style="width:0%"></div></div>
-                <div class="sidebar-sub" style="margin-top:4px" id="sidebar-progress-text">0 topics completed</div>
+                <div class="progress-bar"><div class="progress-fill" id="sidebar-progress-fill" style="width:0%"></div></div>
+                <div class="sidebar-sub" id="sidebar-progress-text">0 topics completed</div>
+                <div class="sidebar-sub" id="sidebar-level">Level 1</div>
             </div>
         </aside>
 
         <div class="app-main">
             <header id="topbar" class="stitch-header app-topbar">
-                <div class="row" style="min-width:0">
+                <div class="row">
                     <button class="icon-button mobile-only" id="mobile-menu-btn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
                         <span aria-hidden="true" class="material-symbols-outlined">menu</span>
                     </button>
-                    <span aria-hidden="true" class="material-symbols-outlined" style="color:#58a6ff;font-size:21px">terminal</span>
-                    <h1 class="brand">CodeFlow</h1>
-                    <span class="topbar-divider" aria-hidden="true"></span>
-                    <span class="page-title" id="page-title">Dashboard</span>
+                    <span class="brand"><span aria-hidden="true" class="material-symbols-outlined">terminal</span>CodeFlow</span>
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
                 </div>
                 <div class="row">
                     <span class="xp-chip" id="xp-chip">0 XP</span>
@@ -196,7 +189,6 @@
     <script src="data/topicsDB.js"></script>
     <script src="data/quizDB.js"></script>
     <script src="data/outputPredictionDB.js"></script>
-    <script src="data/gameLevels.js"></script>
     <script src="data/knowledgeBase.js"></script>
     <script src="data/logicQuestDB.js"></script>
     <!-- Phase 2: utilities -->
