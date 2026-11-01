@@ -91,7 +91,7 @@ const TOPICS_DB = {
       "Size varies by platform (use sizeof())",
       "Type determines memory allocation and operations"
     ],
-    code: `#include <stdio.h>\n\nint main() {\n    printf("Size of int: %lu bytes\\n", sizeof(int));\n    printf("Size of float: %lu bytes\\n", sizeof(float));\n    printf("Size of char: %lu bytes\\n", sizeof(char));\n    printf("Size of double: %lu bytes\\n", sizeof(double));\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\nint main() {\n    printf("Size of int: %zu bytes\\n", sizeof(int));\n    printf("Size of float: %zu bytes\\n", sizeof(float));\n    printf("Size of char: %zu bytes\\n", sizeof(char));\n    printf("Size of double: %zu bytes\\n", sizeof(double));\n    \n    return 0;\n}`,
     explanation: [
       "sizeof() operator returns size in bytes",
       "int typically 4 bytes, float 4 bytes, char 1 byte, double 8 bytes",
@@ -134,7 +134,7 @@ const TOPICS_DB = {
       {
         question: "What is the output of 7 % 3?",
         options: ["2", "2.33", "21", "1"],
-        correct: 0,
+        correct: 3,
         explanation: "7 divided by 3 is 2 with remainder 1, so 7 % 3 = 1."
       }
     ],
@@ -484,14 +484,14 @@ const TOPICS_DB = {
       "Library functions in <string.h>",
       "No built-in string type in C"
     ],
-    code: `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char name[20] = "John";\n    char greeting[] = "Hello";\n    \n    printf("Name: %s\\n", name);\n    printf("Length: %lu\\n", strlen(name));\n    \n    // Copy string\n    char copy[20];\n    strcpy(copy, name);\n    printf("Copy: %s\\n", copy);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char name[20] = "John";\n    char greeting[] = "Hello";\n    \n    printf("Name: %s\\n", name);\n    printf("Length: %zu\\n", strlen(name));\n    \n    // Copy string\n    char copy[20];\n    strcpy(copy, name);\n    printf("Copy: %s\\n", copy);\n    \n    return 0;\n}`,
     explanation: [
       "char name[20] - character array for string",
       "Strings end with '\\0' automatically",
       "strlen() returns length excluding null terminator",
-      "strcpy() copies strings safely"
+      "strcpy() copies strings but does no bounds checking, so the destination must be large enough"
     ],
-    examTip: "Always allocate space for null terminator. Use strcpy/strncpy safely.",
+    examTip: "Always allocate space for null terminator. strcpy does no bounds checking; strncpy limits the copy but may not add the null terminator.",
     practiceQ: "Write a program to concatenate two strings without using strcat()",
     quiz: [
       {
@@ -554,7 +554,7 @@ const TOPICS_DB = {
       "&variable - address of operator",
       "*pointer - dereference operator"
     ],
-    code: `#include <stdio.h>\n\nint main() {\n    int x = 10;\n    int *ptr = &x;  // ptr points to x\n    \n    printf("x = %d\\n", x);\n    printf("Address of x = %p\\n", &x);\n    printf("ptr = %p\\n", ptr);\n    printf("*ptr = %d\\n", *ptr);\n    \n    *ptr = 20;  // Change value through pointer\n    printf("After change: x = %d\\n", x);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\nint main() {\n    int x = 10;\n    int *ptr = &x;  // ptr points to x\n    \n    printf("x = %d\\n", x);\n    printf("Address of x = %p\\n", (void*)&x);\n    printf("ptr = %p\\n", (void*)ptr);\n    printf("*ptr = %d\\n", *ptr);\n    \n    *ptr = 20;  // Change value through pointer\n    printf("After change: x = %d\\n", x);\n    \n    return 0;\n}`,
     explanation: [
       "int *ptr - pointer to integer",
       "&x - address of x",
@@ -572,8 +572,8 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { x: "10" }, output: "Variable x allocated at address 0x1000" },
-      { variables: { x: "10", ptr: "0x1000" }, output: "Pointer ptr assigned address of x" },
+      { variables: { x: "10" }, output: "Variable x is stored in memory (illustrative address 0x1000; real addresses differ on every run)" },
+      { variables: { x: "10", ptr: "0x1000" }, output: "Pointer ptr assigned address of x (0x1000 is illustrative)" },
       { variables: { x: "10", ptr: "0x1000" }, output: "*ptr accesses value 10" },
       { variables: { x: "20", ptr: "0x1000" }, output: "*ptr = 20 changes x through pointer" }
     ]
@@ -588,7 +588,7 @@ const TOPICS_DB = {
       "Pointer arithmetic follows data type size",
       "Common in array traversal"
     ],
-    code: `#include <stdio.h>\n\nint main() {\n    int arr[] = {10, 20, 30, 40, 50};\n    int *ptr = arr;  // Points to arr[0]\n    \n    printf("Using pointer arithmetic:\\n");\n    for (int i = 0; i < 5; i++) {\n        printf("arr[%d] = %d (address: %p)\\n", i, *(ptr + i), (ptr + i));\n    }\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\nint main() {\n    int arr[] = {10, 20, 30, 40, 50};\n    int *ptr = arr;  // Points to arr[0]\n    \n    printf("Using pointer arithmetic:\\n");\n    for (int i = 0; i < 5; i++) {\n        printf("arr[%d] = %d (address: %p)\\n", i, *(ptr + i), (void*)(ptr + i));\n    }\n    \n    return 0;\n}`,
     explanation: [
       "int *ptr = arr - ptr points to first element",
       "*(ptr + i) equivalent to arr[i]",
@@ -631,7 +631,7 @@ const TOPICS_DB = {
       "numbers in main() decays to &numbers[0]",
       "Function receives pointer, not copy of array"
     ],
-    examTip: "Arrays are passed by reference (as pointers). Changes affect original array.",
+    examTip: "C passes a pointer to the first element (by value), so changes made through it affect the original array.",
     practiceQ: "Write a function to find sum of array elements using pointers",
     quiz: [
       {
@@ -731,7 +731,7 @@ const TOPICS_DB = {
       "Useful for complex data relationships",
       "Memory layout is contiguous"
     ],
-    code: `#include <stdio.h>\n\nstruct Address {\n    char street[50];\n    char city[30];\n    int pincode;\n};\n\nstruct Employee {\n    char name[50];\n    int id;\n    struct Address addr;\n};\n\nint main() {\n    struct Employee emp;\n    \n    strcpy(emp.name, "Alice");\n    emp.id = 1001;\n    strcpy(emp.addr.street, "Main St");\n    strcpy(emp.addr.city, "NYC");\n    emp.addr.pincode = 10001;\n    \n    printf("Employee: %s (ID: %d)\\n", emp.name, emp.id);\n    printf("Address: %s, %s - %d\\n", emp.addr.street, emp.addr.city, emp.addr.pincode);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\n#include <string.h>\n\nstruct Address {\n    char street[50];\n    char city[30];\n    int pincode;\n};\n\nstruct Employee {\n    char name[50];\n    int id;\n    struct Address addr;\n};\n\nint main() {\n    struct Employee emp;\n    \n    strcpy(emp.name, "Alice");\n    emp.id = 1001;\n    strcpy(emp.addr.street, "Main St");\n    strcpy(emp.addr.city, "NYC");\n    emp.addr.pincode = 10001;\n    \n    printf("Employee: %s (ID: %d)\\n", emp.name, emp.id);\n    printf("Address: %s, %s - %d\\n", emp.addr.street, emp.addr.city, emp.addr.pincode);\n    \n    return 0;\n}`,
     explanation: [
       "struct Address nested inside struct Employee",
       "emp.addr.street - access nested member",
@@ -800,7 +800,7 @@ const TOPICS_DB = {
       "Only one member active at a time",
       "Memory efficient for mutually exclusive data"
     ],
-    code: `#include <stdio.h>\n\nunion Data {\n    int i;\n    float f;\n    char str[20];\n};\n\nint main() {\n    union Data data;\n    \n    data.i = 10;\n    printf("data.i = %d\\n", data.i);\n    \n    data.f = 3.14;\n    printf("data.f = %.2f\\n", data.f);\n    // data.i is now garbage\n    \n    strcpy(data.str, "Hello");\n    printf("data.str = %s\\n", data.str);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\n#include <string.h>\n\nunion Data {\n    int i;\n    float f;\n    char str[20];\n};\n\nint main() {\n    union Data data;\n    \n    data.i = 10;\n    printf("data.i = %d\\n", data.i);\n    \n    data.f = 3.14;\n    printf("data.f = %.2f\\n", data.f);\n    // data.i is now garbage\n    \n    strcpy(data.str, "Hello");\n    printf("data.str = %s\\n", data.str);\n    \n    return 0;\n}`,
     explanation: [
       "union Data - all members share same memory",
       "sizeof(union) = size of largest member",
@@ -854,10 +854,10 @@ const TOPICS_DB = {
     ],
     visualizationSteps: [
       { variables: { file: "NULL" }, output: "FILE pointer declared" },
-      { variables: { file: "0x2000" }, output: "fopen() succeeds, returns valid file pointer" },
+      { variables: { file: "0x2000" }, output: "fopen() succeeds, returns a valid file pointer (0x2000 is an illustrative value)" },
       { variables: { file: "0x2000" }, output: "fprintf() writes 'Hello, File!' to file" },
       { variables: { file: "0x2000" }, output: "fprintf() writes 'This is line 2.' to file" },
-      { variables: { file: "NULL" }, output: "fclose() closes file and sets pointer to NULL" }
+      { variables: { file: "0x2000 (dangling)" }, output: "fclose() closes the file (the pointer is not set to NULL automatically; it is dangling and must not be used)" }
     ]
   },
 
@@ -974,9 +974,9 @@ const TOPICS_DB = {
     visualizationSteps: [
       { variables: { n: "5" }, output: "n = 5 elements needed" },
       { variables: { arr: "NULL" }, output: "arr pointer declared" },
-      { variables: { arr: "0x3000" }, output: "malloc(5 * 4) = 20 bytes allocated at 0x3000" },
+      { variables: { arr: "0x3000" }, output: "malloc(5 * 4) = 20 bytes allocated (illustrative address 0x3000; real addresses vary per run)" },
       { variables: { "arr[0]": "1", "arr[1]": "2", "arr[2]": "3", "arr[3]": "4", "arr[4]": "5" }, output: "Array filled with values 1-5" },
-      { variables: { arr: "0x3000" }, output: "free(arr) deallocates memory at 0x3000" },
+      { variables: { arr: "0x3000" }, output: "free(arr) deallocates the memory (illustrative address 0x3000)" },
       { variables: { arr: "NULL" }, output: "arr set to NULL to prevent dangling pointer" }
     ]
   },
@@ -1275,7 +1275,7 @@ const TOPICS_DB = {
       { variables: { str: "'radar'", length: "5" }, output: "String 'radar', length=5" },
       { variables: { i: "0" }, output: "Compare str[0]='r' with str[4]='r' - match" },
       { variables: { i: "1" }, output: "Compare str[1]='a' with str[3]='a' - match" },
-      { variables: { i: "2" }, output: "i=2 >= 5/2=2.5, loop ends" },
+      { variables: { i: "2" }, output: "i=2 >= 5/2=2 (integer division), loop ends" },
       { variables: { isPalindrome: "1" }, output: "All comparisons matched, string is palindrome" }
     ]
   },
@@ -2059,7 +2059,7 @@ const TOPICS_DB = {
       "colspan and rowspan for cell spanning",
       "Semantic table structure with <thead>, <tbody>, <tfoot>"
     ],
-    code: `<table border="1">\n    <thead>\n        <tr>\n            <th>Name</th>\n            <th>Age</th>\n            <th>City</th>\n        </tr>\n    </thead>\n    <tbody>\n        <tr>\n            <td>John</td>\n            <td>25</td>\n            <td>NYC</td>\n        </tr>\n        <tr>\n            <td>Alice</td>\n            <td>30</td>\n            <td>LA</td>\n        </tr>\n    </tbody>\n    <tfoot>\n        <tr>\n            <th colspan="3">Total: 2 people</th>\n        </tr>\n    </tfoot>\n</table>`,
+    code: `<style>\n    table, th, td {\n        border: 1px solid #333;\n        border-collapse: collapse;\n    }\n</style>\n\n<table>\n    <thead>\n        <tr>\n            <th>Name</th>\n            <th>Age</th>\n            <th>City</th>\n        </tr>\n    </thead>\n    <tbody>\n        <tr>\n            <td>John</td>\n            <td>25</td>\n            <td>NYC</td>\n        </tr>\n        <tr>\n            <td>Alice</td>\n            <td>30</td>\n            <td>LA</td>\n        </tr>\n    </tbody>\n    <tfoot>\n        <tr>\n            <th colspan="3">Total: 2 people</th>\n        </tr>\n    </tfoot>\n</table>`,
     explanation: [
       "<thead> table header section",
       "<tbody> table body with data",
@@ -2159,13 +2159,13 @@ const TOPICS_DB = {
       "Margin: space outside border",
       "Width/height apply to content area"
     ],
-    code: `.box {\n    width: 200px;\n    height: 100px;\n    padding: 20px;\n    border: 2px solid #000;\n    margin: 10px;\n    \n    /* Total width: 200 + 40 + 4 + 20 = 264px */\n    /* Content: 200px */\n    /* Padding: 20px × 2 = 40px */\n    /* Border: 2px × 2 = 4px */\n    /* Margin: 10px × 2 = 20px */\n}`,
+    code: `.box {\n    width: 200px;\n    height: 100px;\n    padding: 20px;\n    border: 2px solid #000;\n    margin: 10px;\n    \n    /* Element width (content + padding + border): 200 + 40 + 4 = 244px */\n    /* Total space occupied incl. margin: 244 + 20 = 264px */\n    /* Content: 200px */\n    /* Padding: 20px × 2 = 40px */\n    /* Border: 2px × 2 = 4px */\n    /* Margin: 10px × 2 = 20px */\n}`,
     explanation: [
       "width: 200px sets content width",
       "padding: 20px adds 20px on all sides",
       "border: 2px solid #000 adds 2px border",
       "margin: 10px adds 10px space outside",
-      "Total element width: content + padding + border + margin"
+      "Element width = content + padding + border; space occupied also includes the margin"
     ],
     examTip: "Box model: Content → Padding → Border → Margin. Width/height = content only.",
     practiceQ: "Create card component with proper spacing using box model properties",
@@ -2224,7 +2224,7 @@ const TOPICS_DB = {
       "Gradients: linear-gradient(), radial-gradient()",
       "Transparency with rgba(), opacity"
     ],
-    code: `.color-examples {\n    /* Named colors */\n    color: red;\n    background-color: blue;\n    \n    /* Hex colors */\n    color: #ff0000;\n    background-color: #0000ff;\n    \n    /* RGB colors */\n    color: rgb(255, 0, 0);\n    background-color: rgb(0, 0, 255);\n}\n\n.background-examples {\n    /* Background image */\n    background-image: url('image.jpg');\n    background-repeat: no-repeat;\n    background-position: center;\n    background-size: cover;\n    \n    /* Linear gradient */\n    background: linear-gradient(to right, #ff0000, #0000ff);\n    \n    /* Transparency */\n    background-color: rgba(255, 0, 0, 0.5);\n}`,
+    code: `.color-examples {\n    /* Named colors */\n    color: red;\n    background-color: blue;\n    \n    /* Hex colors */\n    color: #ff0000;\n    background-color: #0000ff;\n    \n    /* RGB colors */\n    color: rgb(255, 0, 0);\n    background-color: rgb(0, 0, 255);\n}\n\n.background-examples {\n    /* Background image */\n    background-image: url('image.jpg');\n    background-repeat: no-repeat;\n    background-position: center;\n    background-size: cover;\n    \n}\n\n.gradient-example {\n    /* background shorthand resets other background-* properties, so keep it in its own rule */\n    background: linear-gradient(to right, #ff0000, #0000ff);\n}\n\n.transparent-example {\n    /* Transparency */\n    background-color: rgba(255, 0, 0, 0.5);\n}`,
     explanation: [
       "Named colors: red, blue, green, etc.",
       "Hex: #RRGGBB format",
@@ -2330,7 +2330,7 @@ const TOPICS_DB = {
       "align-items: cross axis alignment",
       "flex-wrap: prevent overflow",
       "gap: spacing between items",
-      "flex: 1 1 200px means grow, shrink, min-width 200px"
+      "flex: 1 1 200px means grow factor 1, shrink factor 1, flex-basis 200px (the starting size, not a min-width)"
     ],
     examTip: "Main axis: justify-content. Cross axis: align-items. Flex: grow shrink basis.",
     practiceQ: "Create responsive card layout using flexbox",
@@ -2369,10 +2369,10 @@ const TOPICS_DB = {
     practiceQ: "Create variables for student object with name, grades array, and isEnrolled boolean",
     quiz: [
       {
-        question: "Which can be reassigned?",
+        question: "Which CANNOT be reassigned?",
         options: ["var", "let", "const", "None"],
-        correct: 1,
-        explanation: "let variables can be reassigned, const cannot, var can but shouldn't be used"
+        correct: 2,
+        explanation: "const bindings cannot be reassigned. let and var can be (var is best avoided in modern code)"
       }
     ],
     visualizationSteps: []

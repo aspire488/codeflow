@@ -67,10 +67,10 @@ const QUIZ_DB = {
 
   "input-output": [
     {
-      question: "What must be included before & in scanf()?",
-      options: ["Nothing", "Variable name", "Data type", "Address operator is not needed"],
-      correct: 3,
-      explanation: "& is the address-of operator required for scanf() with variables (except arrays)."
+      question: "What must precede a variable name in scanf() for an int?",
+      options: ["Nothing", "* (dereference operator)", "& (address-of operator)", "# (hash symbol)"],
+      correct: 2,
+      explanation: "scanf() needs the variable's address, so use & (e.g. scanf(\"%d\", &x)). Arrays and strings are the exception because the array name already acts as an address."
     },
     {
       question: "Which function is used for formatted output in C?",
@@ -96,8 +96,8 @@ const QUIZ_DB = {
     {
       question: "How many else statements can follow an if?",
       options: ["0", "1", "Multiple with else if", "Unlimited"],
-      correct: 2,
-      explanation: "You can have one else, but multiple else if statements."
+      correct: 1,
+      explanation: "Only one else may follow an if, and it must come last. You can chain many else if clauses before it, but they are not else statements."
     },
     {
       question: "What executes when all if conditions are false?",
@@ -241,10 +241,10 @@ const QUIZ_DB = {
       explanation: "C strings are null-terminated, ending with '\\0' character."
     },
     {
-      question: "How to declare a string variable?",
-      options: ["string str;", "char str[];", "char* str;", "All of above"],
-      correct: 3,
-      explanation: "Strings can be declared as char array, char pointer, or with string literal."
+      question: "Which is a valid way to declare a string variable in C?",
+      options: ["string str;", "char str[20];", "str = \"text\";", "String str;"],
+      correct: 1,
+      explanation: "C has no built-in string type. A string is a char array (e.g. char str[20];) or a char pointer to a string literal."
     },
     {
       question: "What is string literal?",
@@ -262,10 +262,10 @@ const QUIZ_DB = {
       explanation: "strcmp() returns 0 when strings are identical."
     },
     {
-      question: "Which function copies strings safely?",
+      question: "Which function limits how many characters are copied?",
       options: ["strcpy()", "strncpy()", "Both", "Neither"],
       correct: 1,
-      explanation: "strncpy() is safer as it prevents buffer overflow by limiting copy length."
+      explanation: "strncpy() copies at most n characters, but it does not add a '\0' if the source is n or longer, so you must terminate the result yourself. strcpy() has no length limit at all."
     },
     {
       question: "What does strlen() return?",
@@ -332,9 +332,9 @@ const QUIZ_DB = {
     },
     {
       question: "How are arrays passed to functions?",
-      options: ["By value", "By reference", "By address", "All of above"],
-      correct: 1,
-      explanation: "Arrays are passed by reference (as pointers) to functions."
+      options: ["By value", "By reference", "As a pointer to the first element", "As a full copy of the array"],
+      correct: 2,
+      explanation: "C passes a pointer to the first element, and that pointer is passed by value. The function can change the array's elements through it, but C has no true pass-by-reference."
     }
   ],
 
@@ -713,8 +713,8 @@ const QUIZ_DB = {
     {
       question: "Transparent color syntax?",
       options: ["rgb(255,0,0,0.5)", "rgba(255,0,0,0.5)", "Both", "Neither"],
-      correct: 1,
-      explanation: "rgba() includes alpha channel for transparency."
+      correct: 2,
+      explanation: "Modern CSS accepts an alpha value in both rgb() and rgba(); rgba() is the older, widely supported spelling."
     }
   ],
 
@@ -777,23 +777,23 @@ const QUIZ_DB = {
       question: "Flex: 1 1 200px means?",
       options: ["Grow only", "Shrink only", "Grow, shrink, base 200px", "Fixed 200px"],
       correct: 2,
-      explanation: "flex: grow shrink basis - can grow, shrink, minimum 200px."
+      explanation: "flex is grow, shrink, basis. The item can grow, can shrink, and starts from a flex-basis of 200px (the basis is not a minimum width)."
     }
   ],
 
   // JAVASCRIPT QUIZZES
   "js-variables": [
     {
-      question: "Which can be reassigned?",
+      question: "Which CANNOT be reassigned?",
       options: ["var", "let", "const", "None"],
-      correct: 1,
-      explanation: "let variables can be reassigned, const cannot, var can but shouldn't be used."
+      correct: 2,
+      explanation: "const bindings cannot be reassigned. let and var can be (var is best avoided in modern code)."
     },
     {
       question: "Variable hoisting occurs with?",
       options: ["var", "let", "const", "All"],
       correct: 0,
-      explanation: "var variables are hoisted to function top, let/const are not."
+      explanation: "var is hoisted and initialised to undefined. let and const are also hoisted, but stay in the temporal dead zone until their declaration runs, so using them earlier throws a ReferenceError."
     },
     {
       question: "Primitive types include?",
@@ -833,9 +833,9 @@ const QUIZ_DB = {
     },
     {
       question: "Truthy values include?",
-      options: ["0", "\"\"", "null", "All except false"],
+      options: ["0", "\"\"", "null", "Non-empty strings and non-zero numbers"],
       correct: 3,
-      explanation: "All values except false, 0, \"\", null, undefined, NaN are truthy."
+      explanation: "Falsy values are false, 0, \"\", null, undefined and NaN. Non-empty strings and non-zero numbers are truthy."
     },
     {
       question: "Ternary operator syntax?",

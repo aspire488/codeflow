@@ -2,7 +2,26 @@
 // OUTPUT PREDICTION ENGINE
 // ============================================
 
-let predictionState = { question: null, answered: false, topicFilter: null, index: 0 };
+let predictionState = { question: null, answered: false, revealed: false, topicFilter: null, index: 0 };
+
+// Questions that already paid XP. Kept under its own storage key so it does not
+// depend on AppState's sanitiser, which only keeps known fields.
+const PREDICTION_XP_KEY = 'codeflow_prediction_xp_awarded';
+
+function predictionXpAwardedIds() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(PREDICTION_XP_KEY) || '[]');
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : [];
+  } catch (_) { return []; }
+}
+
+// Decides whether a check earns XP: only a correct, unrevealed first answer per question id.
+function predictionXpDecision(questionId, correct, revealed, awardedIds) {
+  if (!correct) return { award: false, reason: '' };
+  if (revealed) return { award: false, reason: 'No XP: you revealed the answer first.' };
+  if (awardedIds.includes(questionId)) return { award: false, reason: 'No XP: this question already earned XP.' };
+  return { award: true, reason: '+5 XP' };
+}
 
 function normalizeOutput(str) {
   if (!str) return '';
@@ -49,7 +68,7 @@ function renderOutputPrediction(param) {
   }
 
   const question = pool[Math.floor(Math.random() * pool.length)];
-  predictionState = { question, answered: false, topicFilter: filter, index: 0 };
+  predictionState = { question, answered: false, revealed: false, topicFilter: filter, index: 0 };
 
   host.innerHTML = `
     <div class="screen-heading">
@@ -112,7 +131,13 @@ function checkPredictionAnswer() {
   if (typeof AdaptiveEngine !== 'undefined' && AdaptiveEngine.recordAnswer) {
     AdaptiveEngine.recordAnswer(question.topic, result.correct);
   }
-  if (result.correct) addXP(5);
+  const xp = predictionXpDecision(question.id, result.correct, predictionState.revealed, predictionXpAwardedIds());
+  if (xp.award) {
+    addXP(5);
+    try {
+      localStorage.setItem(PREDICTION_XP_KEY, JSON.stringify(predictionXpAwardedIds().concat(question.id)));
+    } catch (_) { /* storage unavailable: XP still granted once this session */ }
+  }
 
   feedback.innerHTML = `
     <div class="feedback ${result.correct ? 'ok' : 'bad'}">
@@ -120,6 +145,7 @@ function checkPredictionAnswer() {
       ${result.correct
         ? escapeHtml(question.explanation || '')
         : 'Expected output is hidden - use Reveal answer to check the explanation.'}
+      ${xp.reason ? `<div class="muted" style="margin-top:6px">${escapeHtml(xp.reason)}</div>` : ''}
     </div>`;
 }
 
@@ -127,12 +153,14 @@ function revealPredictionAnswer() {
   const feedback = document.getElementById('prediction-feedback');
   const question = predictionState.question;
   if (!feedback || !question) return;
+  predictionState.revealed = true;
 
   feedback.innerHTML = `
     <div class="feedback ok">
       <strong>Expected output</strong>
       <pre style="margin:8px 0;font-family:ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(question.answer)}</pre>
       <p style="margin:0">${escapeHtml(question.explanation || '')}</p>
+      <p class="muted" style="margin:8px 0 0">No XP is awarded for this question after revealing the answer.</p>
       ${question.hint ? `<p class="muted" style="margin:8px 0 0"><strong>Hint:</strong> ${escapeHtml(question.hint)}</p>` : ''}
     </div>`;
 }

@@ -19,6 +19,7 @@ const KNOWLEDGE_BASE = {
   // Subject-specific knowledge
   subjects: {
     c: {
+      names: ["c", "c programming", "c language"],
       keywords: ["c programming", "c language", "c code", "pointer", "memory", "struct", "array", "function", "loop", "variable"],
       responses: {
         basics: [
@@ -38,13 +39,14 @@ const KNOWLEDGE_BASE = {
         ],
         functions: [
           "Functions in C should have a clear purpose and return type. Use void for functions that don't return values.",
-          "Pass by value copies data, pass by reference (using pointers) modifies original data.",
+          "C always passes arguments by value. To modify the caller's data, pass a pointer (the pointer is copied, but it still points at the original). Arrays are passed as a pointer to their first element.",
           "Function prototypes help the compiler know about functions before they're defined."
         ]
       }
     },
 
     html: {
+      names: ["html"],
       keywords: ["html", "web page", "markup", "tag", "element", "attribute", "semantic", "form", "table", "link"],
       responses: {
         basics: [
@@ -66,6 +68,7 @@ const KNOWLEDGE_BASE = {
     },
 
     css: {
+      names: ["css"],
       keywords: ["css", "style", "layout", "flexbox", "grid", "selector", "property", "responsive", "media query"],
       responses: {
         basics: [
@@ -87,6 +90,7 @@ const KNOWLEDGE_BASE = {
     },
 
     javascript: {
+      names: ["javascript", "js"],
       keywords: ["javascript", "js", "script", "function", "variable", "object", "array", "dom", "event", "async"],
       responses: {
         basics: [
@@ -111,7 +115,7 @@ const KNOWLEDGE_BASE = {
   // Common programming concepts
   concepts: {
     variables: [
-      "Variables store data values. In C: int x = 5; In JS: let x = 5; In HTML/CSS: use for dynamic content.",
+      "Variables store data values. In C: int x = 5; In JS: let x = 5; In CSS: custom properties like --main-color: blue; are variables.",
       "Choose meaningful variable names. Use camelCase in JS, snake_case in C.",
       "Variables have scope: global (everywhere) vs local (inside functions/classes)."
     ],
@@ -138,6 +142,21 @@ const KNOWLEDGE_BASE = {
       "Functions organize code into reusable blocks with inputs (parameters) and outputs (return values).",
       "Pure functions give same output for same inputs, have no side effects.",
       "Recursion: functions calling themselves, needs a base case to stop."
+    ],
+
+    recursion: [
+      "Recursion is when a function calls itself on a smaller version of the problem. It needs a base case that stops the calls, e.g. fact(n) returns 1 when n <= 1, otherwise n * fact(n - 1).",
+      "Each recursive call gets its own stack frame; when the base case returns, the frames unwind one by one. Without a base case you get a stack overflow."
+    ],
+
+    stack: [
+      "Stack vs heap: the stack holds local variables and function call frames; it is automatic, fast and freed when the function returns, but small. The heap is memory you request with malloc() in C; it lasts until you free() it and is larger, but you must manage it yourself.",
+      "Rule of thumb: local variables live on the stack; malloc()'d memory lives on the heap. Forgetting to free() heap memory causes a leak."
+    ],
+
+    var: [
+      "let vs var in JavaScript: var is function-scoped and hoisted (initialised to undefined); let is block-scoped and cannot be used before its declaration (temporal dead zone). Prefer let, or const when the value never changes.",
+      "Also, a var declared in a loop leaks out of the loop block, while a block-scoped let stays inside it."
     ]
   },
 
@@ -151,8 +170,13 @@ const KNOWLEDGE_BASE = {
 
     "runtime error": [
       "Runtime errors occur while code runs. Examples: division by zero, null pointer access.",
-      "In C: segmentation faults often mean invalid memory access.",
+      "In C: a segmentation fault means the program touched memory it isn't allowed to, e.g. dereferencing a NULL or uninitialised pointer, indexing past the end of an array, or using freed memory.",
       "In JS: ReferenceError means using undefined variables."
+    ],
+
+    "segmentation fault": [
+      "A segmentation fault (segfault) happens when a C program accesses memory it doesn't own: dereferencing a NULL or uninitialised pointer, reading past an array's end, or using memory after free(). Check pointers are valid before using them and compile with -g and run under a debugger or valgrind.",
+      "Common segfault causes: scanf(\"%d\", x) without &, writing to a string literal, and unbounded recursion that overflows the stack."
     ],
 
     "logic error": [
@@ -204,58 +228,62 @@ const KNOWLEDGE_BASE = {
       return this.getRandomResponse(this.farewells);
     }
 
-    // Check for subject-specific questions
+    // Check for subject-specific questions: the subject the user names wins,
+    // otherwise the one matching the most keywords (ties go to the first listed).
+    let best = null, bestScore = 0;
     for (const [subject, data] of Object.entries(this.subjects)) {
-      if (data.keywords.some(keyword => input.includes(keyword))) {
-        return this.getSubjectResponse(subject, input);
-      }
+      const score = data.keywords.filter(k => this.has(input, k)).length +
+        10 * data.names.filter(n => this.has(input, n)).length;
+      if (score > bestScore) { best = subject; bestScore = score; }
     }
+    if (best) return this.getSubjectResponse(best, input);
 
     // Check for general concepts
     for (const [concept, responses] of Object.entries(this.concepts)) {
-      if (input.includes(concept)) {
+      if (this.has(input, concept)) {
         return this.getRandomResponse(responses);
       }
     }
 
     // Check for error-related questions
     for (const [errorType, responses] of Object.entries(this.errors)) {
-      if (input.includes(errorType)) {
+      if (this.has(input, errorType)) {
         return this.getRandomResponse(responses);
       }
     }
 
     // Check for help/tips requests
-    if (input.includes('help') || input.includes('tip') || input.includes('advice')) {
+    if (this.has(input, 'help') || this.has(input, 'tip') || this.has(input, 'advice')) {
       return this.getRandomResponse(this.tips);
     }
 
     // Motivational responses for various inputs
-    if (input.includes('hard') || input.includes('difficult') || input.includes('stuck') ||
-        input.includes('confused') || input.includes('frustrated')) {
+    if (['hard', 'difficult', 'stuck', 'confused', 'frustrated'].some(w => this.has(input, w))) {
       return this.getRandomResponse(this.motivation);
     }
 
     // Default responses
     const defaultResponses = [
-      "That's an interesting question! Could you be more specific about what you'd like to know?",
-      "I'm here to help with C programming, HTML, CSS, and JavaScript. What specific topic interests you?",
-      "Let me know what programming concept you're working on, and I'll do my best to assist!",
-      "Feel free to ask about variables, functions, loops, or any other programming concepts!"
+      "I don't have an answer for that. I can help with C (pointers, memory, arrays, functions, loops, recursion), HTML, CSS and JavaScript, plus common errors such as syntax errors and segmentation faults. Try asking, for example, \"What is a pointer?\""
     ];
 
     return this.getRandomResponse(defaultResponses);
   },
 
   // Helper methods
+  // Whole-word match of a plain-text term (optional plural s/es) so "hi" does not hit "this".
+  has: function(input, term) {
+    return new RegExp('(^|[^a-z0-9])' + term + '(e?s)?($|[^a-z0-9])').test(input);
+  },
+
   isGreeting: function(input) {
     const greetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'howdy'];
-    return greetings.some(greeting => input.includes(greeting));
+    return greetings.some(greeting => this.has(input, greeting));
   },
 
   isFarewell: function(input) {
     const farewells = ['bye', 'goodbye', 'see you', 'later', 'thanks', 'thank you'];
-    return farewells.some(farewell => input.includes(farewell));
+    return farewells.some(farewell => this.has(input, farewell));
   },
 
   getSubjectResponse: function(subject, input) {
@@ -263,8 +291,16 @@ const KNOWLEDGE_BASE = {
 
     // Check for specific topics within the subject
     for (const [topic, responses] of Object.entries(data.responses)) {
-      if (input.includes(topic)) {
+      if (this.has(input, topic) || this.has(input, topic.replace(/s$/, ''))) {
         return this.getRandomResponse(responses);
+      }
+    }
+
+    // Otherwise prefer a topic whose text actually mentions a keyword the user used
+    for (const keyword of data.keywords.filter(k => this.has(input, k)).sort((x, y) => y.length - x.length)) {
+      for (const responses of Object.values(data.responses)) {
+        const hit = responses.find(text => text.toLowerCase().includes(keyword));
+        if (hit) return hit;
       }
     }
 

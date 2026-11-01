@@ -20,8 +20,13 @@ const VizState = {
   keyboardBound: false
 };
 
+// Own-property check so route params like __proto__ are never treated as topics.
+function vizHasTopic(key) {
+  return typeof key === 'string' && Object.prototype.hasOwnProperty.call(TOPICS_DB, key);
+}
+
 function defaultVizTopic() {
-  if (AppState.currentTopic && TOPICS_DB[AppState.currentTopic]) return AppState.currentTopic;
+  if (AppState.currentTopic && vizHasTopic(AppState.currentTopic)) return AppState.currentTopic;
   const keys = Object.keys(TOPICS_DB || {});
   return keys[0] || null;
 }
@@ -52,7 +57,27 @@ function comparisonHolds(left, operator, right) {
   }
 }
 
-// Executes a single `for` loop with an optional printf body.
+// Returns the text of the statement or {...} block that follows index `from`.
+function loopBody(text, from) {
+  const rest = text.slice(from);
+  const open = rest.search(/\S/);
+  if (open < 0) return '';
+  if (rest[open] !== '{') {
+    const end = rest.indexOf(';', open);
+    return end < 0 ? rest.slice(open) : rest.slice(open, end + 1);
+  }
+  let depth = 0;
+  for (let i = open; i < rest.length; i += 1) {
+    if (rest[i] === '{') depth += 1;
+    else if (rest[i] === '}' && --depth === 0) return rest.slice(open + 1, i);
+  }
+  return rest.slice(open + 1);
+}
+
+// Executes a single simple `for` loop whose body is exactly one printf that
+// prints only the loop variable or numeric literals. Anything else (nested
+// loops, other printf arguments, no printf) returns null so the UI can say
+// "can't be traced" instead of printing guessed text.
 function traceLoop(source) {
   const text = String(source || '');
   const loopMatch = text.match(/for\s*\(\s*(?:int\s+|let\s+|var\s+)?(\w+)\s*=\s*(-?\d+)\s*;\s*(\w+)\s*(<=|>=|<|>|==|!=)\s*(-?\d+)\s*;\s*(\w+)\s*(\+\+|--|\+=\s*\d+|-=\s*\d+)\s*\)/);
@@ -64,17 +89,24 @@ function traceLoop(source) {
   const operator = loopMatch[4];
   const update = loopMatch[7].replace(/\s+/g, '');
 
-  const printfMatch = text.match(/printf\s*\(\s*"((?:[^"\\]|\\.)*)"\s*(?:,\s*([^)]*))?\)/);
-  const format = printfMatch ? printfMatch[1] : '';
-  const printArgs = printfMatch && printfMatch[2] ? printfMatch[2].split(',').map((s) => s.trim()) : [];
+  const body = loopBody(text, loopMatch.index + loopMatch[0].length);
+  if (/\b(for|while|do)\b/.test(body)) return null;
+  if ((body.match(/printf\s*\(/g) || []).length !== 1) return null;
+  const printfMatch = body.match(/printf\s*\(\s*"((?:[^"\\]|\\.)*)"\s*(?:,\s*([^)]*))?\)/);
+  if (!printfMatch) return null;
+  const format = printfMatch[1];
+  const printArgs = printfMatch[2] ? printfMatch[2].split(',').map((s) => s.trim()) : [];
+  const placeholders = format.match(/%[^%]/g) || [];
+  if (placeholders.some((p) => !/%[dicsf]/.test(p)) || placeholders.length !== printArgs.length) return null;
+  if (printArgs.some((arg) => arg !== variable && !/^-?\d+$/.test(arg))) return null;
 
   const rows = [];
   let output = '';
   let guard = 0;
 
   while (comparisonHolds(current, operator, bound) && guard < 50) {
-    const values = printArgs.map((arg) => (arg === variable ? current : (/^-?\d+$/.test(arg) ? Number(arg) : arg)));
-    if (printfMatch) output += formatPrintf(format, values);
+    const values = printArgs.map((arg) => (arg === variable ? current : Number(arg)));
+    output += formatPrintf(format, values);
     rows.push({
       iteration: guard + 1,
       [variable]: current,
@@ -144,8 +176,9 @@ function buildFlowchart(source) {
   const nodes = [];
 
   lines.forEach((raw) => {
-    const line = raw.trim();
-    if (!line || line.startsWith('#') || line === '}' || line === '{') return;
+    // Drop a leading `}` (so `} else {` is still seen), then comments.
+    const line = raw.trim().replace(/^\}\s*/, '').replace(/\s*\/\/.*$/, '').trim();
+    if (!line || line.startsWith('#') || line === '{' || line.startsWith('/*') || /^\*(\s|\/)/.test(line)) return;
 
     if (/^(int|float|char|double)\s+main\s*\(/.test(line)) {
       nodes.push({ type: 'terminator', text: 'main()' });
@@ -160,6 +193,10 @@ function buildFlowchart(source) {
       return;
     }
     if (/^if\s*\(/.test(line)) {
+      nodes.push({ type: 'decision', text: line.replace(/\s*\{\s*$/, '') });
+      return;
+    }
+    if (/^else\s+if\s*\(/.test(line)) {
       nodes.push({ type: 'decision', text: line.replace(/\s*\{\s*$/, '') });
       return;
     }
@@ -181,6 +218,16 @@ function buildFlowchart(source) {
   });
 
   return nodes;
+}
+
+// Call frames still open after step `index` (a frame pops when its return step has run).
+function callStackAt(steps, index) {
+  const stack = [];
+  steps.slice(0, index + 1).forEach((step) => {
+    if (step.returnValue === null) stack.push(step);
+    else stack.pop();
+  });
+  return stack;
 }
 
 function pointerDemo() {
@@ -252,20 +299,21 @@ function renderVisualizer(param) {
     if (VIZ_MODES.includes(parts[0])) {
       mode = parts[0];
       if (parts[1]) topicKey = parts[1];
-    } else if (TOPICS_DB[parts[0]]) {
+    } else if (vizHasTopic(parts[0])) {
       topicKey = parts[0];
     }
   }
 
   VizState.mode = mode;
-  VizState.topicKey = topicKey && TOPICS_DB[topicKey] ? topicKey : defaultVizTopic();
+  VizState.topicKey = vizHasTopic(topicKey) ? topicKey : defaultVizTopic();
   VizState.index = 0;
   stopAutoPlay();
 
   document.querySelectorAll('.viz-tab').forEach((tab) => {
     const isActive = tab.getAttribute('data-viz-mode') === mode;
     tab.classList.toggle('active', isActive);
-    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    if (isActive) tab.setAttribute('aria-current', 'page');
+    else tab.removeAttribute('aria-current');
   });
 
   if (!VizState.topicKey) {
@@ -306,9 +354,22 @@ function bindVizKeyboard() {
     const tag = (event.target && event.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-    if (event.key === 'ArrowRight') { event.preventDefault(); stepVisualization(1); }
-    else if (event.key === 'ArrowLeft') { event.preventDefault(); stepVisualization(-1); }
-    else if (event.key === 'r' || event.key === 'R') { event.preventDefault(); resetVizSteps(); }
+    if (event.target && event.target.isContentEditable) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const steppers = {
+      code: [stepVisualization, resetVizSteps],
+      pointers: [pointerStep, () => { VizState.index = 0; paintPointerStep(); }],
+      recursion: [recursionStep, () => { VizState.index = 0; paintRecursionStep(); }]
+    }[VizState.mode];
+    if (!steppers) return;
+
+    if (event.key === 'ArrowRight') { event.preventDefault(); steppers[0](1); }
+    else if (event.key === 'ArrowLeft') { event.preventDefault(); steppers[0](-1); }
+    else if (event.key === 'r' || event.key === 'R') { event.preventDefault(); steppers[1](); }
+  });
+  // Stop autoplay when the user navigates away from the visualizer.
+  window.addEventListener('hashchange', () => {
+    if (!/^#\/?visualize/.test(window.location.hash)) stopAutoPlay();
   });
 }
 
@@ -351,15 +412,15 @@ function renderCodeMode() {
     <div class="viz-code" id="viz-code"></div>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="viz-panel">
-        <h4>Current step</h4>
+        <h3>Current step</h3>
         <p id="viz-description" class="muted" style="margin:0"></p>
       </div>
       <div class="viz-panel">
-        <h4>Variables</h4>
+        <h3>Variables</h3>
         <table class="viz-table"><tbody id="viz-variables"></tbody></table>
       </div>
       <div class="viz-panel">
-        <h4>${topic.visualizationSteps ? 'Output (authored walkthrough)' : 'Output'}</h4>
+        <h3>${topic.visualizationSteps ? 'Output (authored walkthrough)' : 'Output'}</h3>
         <div class="console" id="viz-console"></div>
       </div>
     </div>
@@ -373,15 +434,15 @@ function renderVizControls(options) {
   const controls = document.getElementById('viz-controls');
   const total = options.total || 1;
   const stepControls = options.stepped
-    ? `<button class="stitch-btn secondary" id="viz-prev"><span class="material-symbols-outlined" style="font-size:18px">skip_previous</span> Back</button>
+    ? `<button class="stitch-btn secondary" id="viz-prev"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">skip_previous</span> Back</button>
        <span class="viz-step-label" id="viz-step-label">Step 1 / ${total}</span>
-       <button class="stitch-btn" id="viz-next"><span class="material-symbols-outlined" style="font-size:18px">skip_next</span> Next</button>`
+       <button class="stitch-btn" id="viz-next"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">skip_next</span> Next</button>`
     : `<span class="viz-step-label">${escapeHtml(options.note || '')}</span>`;
 
   controls.innerHTML = `
-    <button class="stitch-btn secondary" id="viz-reset"><span class="material-symbols-outlined" style="font-size:18px">restart_alt</span> Reset</button>
+    <button class="stitch-btn secondary" id="viz-reset"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">restart_alt</span> Reset</button>
     ${stepControls}
-    ${options.stepped ? '<button class="stitch-btn secondary" id="viz-play"><span class="material-symbols-outlined" style="font-size:18px">play_arrow</span> Play</button>' : ''}
+    ${options.stepped ? '<button class="stitch-btn secondary" id="viz-play"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">play_arrow</span> Play</button>' : ''}
   `;
 
   if (!options.stepped) return;
@@ -453,7 +514,7 @@ function toggleAutoPlay() {
   if (!VizState.steps.length) return;
   VizState.playing = true;
   const button = document.getElementById('viz-play');
-  if (button) button.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px">pause</span> Pause';
+  if (button) button.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">pause</span> Pause';
 
   VizState.timer = setInterval(() => {
     if (VizState.index >= VizState.steps.length - 1) {
@@ -472,7 +533,7 @@ function stopAutoPlay() {
     VizState.timer = null;
   }
   const button = document.getElementById('viz-play');
-  if (button) button.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px">play_arrow</span> Play';
+  if (button) button.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">play_arrow</span> Play';
 }
 
 function renderFlowMode() {
@@ -484,7 +545,7 @@ function renderFlowMode() {
     ${topicSelectorMarkup()}
     <div>
       <div class="viz-panel">
-        <h4>Flow control graph</h4>
+        <h3>Flow control graph</h3>
         <div class="flow-chart">
           ${nodes.length ? nodes.map((node, index) => `
             <div class="flow-node ${node.type}">${escapeHtml(node.text)}</div>
@@ -495,11 +556,11 @@ function renderFlowMode() {
     </div>
     <div>
       <div class="viz-panel">
-        <h4>How to read this</h4>
-        <p class="muted">Nodes are produced by parsing the statements in this lesson's code. Rounded nodes are conditions, green nodes are entry and exit points, and square nodes are executed statements. This is a structural view of control flow, not a runtime trace.</p>
+        <h3>How to read this</h3>
+        <p class="muted">Nodes are produced by parsing the statements in this lesson's code. Rounded nodes are conditions, green nodes are entry and exit points, and square nodes are executed statements. This is a structural view in source order: decision points are marked, but branches and loop-backs are not drawn and the arrows are not the execution path. It is not a runtime trace.</p>
       </div>
       <div class="viz-panel" style="margin-top:16px">
-        <h4>Source</h4>
+        <h3>Source</h3>
         <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode(topic.code || '', languageForSubject(topic.subject))}</pre>
       </div>
     </div>
@@ -516,17 +577,17 @@ function renderPointerMode() {
 
   content.innerHTML = `
     <div class="viz-panel">
-      <h4>Pointer program</h4>
+      <h3>Pointer program</h3>
       <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode(demo.code, 'c')}</pre>
-      <p class="muted" style="margin-top:10px">Walking through real C semantics for this snippet: taking an address, then writing through the pointer.</p>
+      <p class="muted" style="margin-top:10px">Authored walkthrough of this snippet: taking an address, then writing through the pointer. No real memory addresses are shown; &amp;x stands for "the address of x".</p>
     </div>
     <div>
       <div class="viz-panel">
-        <h4>Memory and references</h4>
+        <h3>Memory and references</h3>
         <div id="pointer-memory"></div>
       </div>
       <div class="viz-panel" style="margin-top:16px">
-        <h4>Step</h4>
+        <h3>Step</h3>
         <p id="pointer-description" class="muted" style="margin:0"></p>
         <div class="console" id="pointer-output" style="margin-top:10px"></div>
       </div>
@@ -619,17 +680,17 @@ function renderRecursionMode() {
 
   content.innerHTML = `
     <div class="viz-panel">
-      <h4>Recursive function</h4>
+      <h3>Recursive function</h3>
       <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode('int fact(int n) {\n    if (n <= 1) return 1;\n    return n * fact(n - 1);\n}\n\nprintf("%d", fact(' + demoN + '));', 'c')}</pre>
       <p class="muted" style="margin-top:10px">Calls are produced by actually evaluating <code>fact(${demoN})</code>, not by playing back a scripted animation.</p>
     </div>
     <div>
       <div class="viz-panel">
-        <h4>Call stack</h4>
+        <h3>Call stack</h3>
         <div id="recursion-stack"></div>
       </div>
       <div class="viz-panel" style="margin-top:16px">
-        <h4>Result</h4>
+        <h3>Result</h3>
         <div class="console" id="recursion-output"></div>
       </div>
     </div>
@@ -655,7 +716,7 @@ function paintRecursionStep() {
 
   const stack = document.getElementById('recursion-stack');
   if (stack) {
-    const active = trace.steps.slice(0, VizState.index + 1).filter((s) => s.returnValue === null).slice(-5);
+    const active = callStackAt(trace.steps, VizState.index).slice(-5);
     stack.innerHTML = active.length
       ? active.map((entry, index) => `
         <div class="stack-item ${index === active.length - 1 ? 'active' : ''}">
@@ -716,9 +777,9 @@ function renderLoopMode() {
     content.innerHTML = `
       ${topicSelectorMarkup()}
       <div class="viz-panel">
-        <h4>Loop trace</h4>
-        <p class="muted">This lesson does not contain a <code>for</code> loop the trace evaluator supports.</p>
-        <p class="muted">Supported shape: <code>for (int i = 0; i &lt; 3; i++) { ... }</code> with a <code>printf</code> body.</p>
+        <h3>Loop trace</h3>
+        <p class="muted">This example can't be traced: the evaluator only handles a single <code>for</code> loop whose body is one <code>printf</code> printing the loop variable or numbers, with no nested loops.</p>
+        <p class="muted">Supported shape: <code>for (int i = 0; i &lt; 3; i++) { printf("%d ", i); }</code></p>
         <button class="stitch-btn" data-nav="visualize/loops/loops">Open a loop example</button>
       </div>`;
     renderVizControls({ stepped: false, note: 'No supported loop found' });
@@ -730,12 +791,12 @@ function renderLoopMode() {
   content.innerHTML = `
     ${topicSelectorMarkup()}
     <div class="viz-panel">
-      <h4>Source</h4>
+      <h3>Source</h3>
       <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode(topic.code, languageForSubject(topic.subject))}</pre>
     </div>
     <div>
       <div class="viz-panel" style="overflow-x:auto">
-        <h4>Iteration trace (${trace.iterations} iterations)</h4>
+        <h3>Iteration trace (${trace.iterations} iterations)</h3>
         <table class="viz-table">
           <thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
           <tbody>
@@ -747,7 +808,7 @@ function renderLoopMode() {
         </table>
       </div>
       <div class="viz-panel" style="margin-top:16px">
-        <h4>Final output</h4>
+        <h3>Final output</h3>
         <div class="console">${escapeHtml(trace.output || '(no output)')}</div>
         <p class="muted" style="margin-top:8px">Computed by executing the loop with the parsed start, condition and update values.</p>
       </div>
