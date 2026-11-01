@@ -2,7 +2,6 @@ const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
-  testMatch: 'e2e.spec.js',
   timeout: 30000,
   expect: { timeout: 7000 },
   fullyParallel: false,
@@ -14,8 +13,9 @@ module.exports = defineConfig({
     trace: 'retain-on-failure'
   },
   projects: [
-    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
-    { name: 'mobile-chromium', use: { ...devices['Pixel 5'] } }
+    { name: 'desktop-chromium', testMatch: 'e2e.spec.js', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
+    { name: 'mobile-chromium', testMatch: 'e2e.spec.js', use: { ...devices['Pixel 5'] } },
+    { name: 'qa', testMatch: 'qa.spec.js', use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } } }
   ],
   webServer: {
     command: 'node tests/static-server.cjs 4173',

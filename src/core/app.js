@@ -191,6 +191,38 @@ function closeModal() {
 // ============================================
 // Mobile sidebar
 // ============================================
+// Keep Tab inside an open dialog. Without this, focus walks into the page
+// behind the overlay even though the page is visually blocked.
+function trapModalFocus(event) {
+  const overlay = document.getElementById('app-modal');
+  if (!overlay || !overlay.classList.contains('active')) return;
+
+  const panel = document.getElementById('app-modal-panel');
+  if (!panel) return;
+
+  const focusable = Array.from(panel.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+)).filter((element) => !element.disabled && element.offsetParent !== null);
+
+  if (!focusable.length) {
+    event.preventDefault();
+    panel.focus({ preventScroll: true });
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+
+  if (event.shiftKey && (active === first || !panel.contains(active))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || !panel.contains(active))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 function openMobileSidebar() {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
@@ -221,6 +253,10 @@ function toggleMobileSidebar() {
 // Event delegation - registered exactly once
 // ============================================
 function initEventDelegation() {
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab') trapModalFocus(event);
+  });
+
   const root = document.getElementById('app-root');
   if (!root) return;
 

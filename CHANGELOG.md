@@ -68,3 +68,16 @@ All notable changes to CodeFlow are documented here.
   the stylesheet rewrite. Service worker cache bumped to `codeflow-v4`.
 - The study assistant replies synchronously; the 350ms artificial delay is gone and the screen states
   in its header that it is rule-based, not a language model.
+
+### QA pass - defects found by simulated personas
+
+- The off-canvas drawer stayed in the tab order while closed, so keyboard users could focus
+  invisible navigation buttons. It is now `visibility: hidden` until opened.
+- Dialogs had no focus trap: Tab walked out of the modal into the blocked page behind it.
+  Tab and Shift+Tab now cycle inside the open dialog.
+- The chat input accepted arbitrarily long pastes and would scan them against the whole
+  knowledge base. Messages over 500 characters now get an explicit reply instead.
+- Corrupt practice history was reported with `console.error` and left in storage, so it failed
+  again on every load. It is now a warning, the key is cleared, and the app continues.
+- The topic explorer kept the last subject filter when opened from the sidebar. It resets to
+  "All subjects".

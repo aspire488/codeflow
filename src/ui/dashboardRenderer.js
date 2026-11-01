@@ -111,6 +111,7 @@ function renderTopicExplorer(routeParam) {
   const host = document.getElementById('topics-content');
   if (!host) return;
   if (routeParam && SUBJECTS.some((s) => s.id === routeParam)) activeSubject = routeParam;
+  else if (!routeParam) activeSubject = 'all';
 
   const topics = topicsOf(activeSubject);
   const counts = { all: topicsOf('all').length };

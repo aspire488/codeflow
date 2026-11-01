@@ -100,6 +100,12 @@ function sendChatMessage() {
   const text = input.value.trim();
   if (!text) return;
 
+  if (text.length > 500) {
+    input.value = '';
+    appendChatMessage('That message is ' + text.length + ' characters. Please keep questions under 500 so the knowledge base can match an entry.', 'bot');
+    return;
+  }
+
   input.value = '';
   appendChatMessage(text, 'user');
   chatHistory.push({ role: 'user', text });

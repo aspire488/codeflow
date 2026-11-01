@@ -17,7 +17,8 @@ const AdaptiveEngine = {
         }
       }
     } catch (e) {
-      console.error('Error loading adaptive state:', e);
+      console.warn('[practice] Stored practice history was unreadable and has been reset.', e);
+      try { localStorage.removeItem('codeflow_adaptive_state'); } catch (_) { /* storage unavailable */ }
       this.learningState = {};
     }
   },

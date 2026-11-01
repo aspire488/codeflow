@@ -80,3 +80,16 @@ example. It never pretends to interpret arbitrary C.
 tokens in `<span class="tok-*">`. The earlier implementation chained `.replace()` calls over the
 already-generated HTML, which matched inside its own attributes and corrupted the output. Any future
 language support must extend the tokeniser, not add another regex pass over emitted markup.
+
+## Test suites
+
+| Command | What it proves |
+| --- | --- |
+| `npm test` | Pure logic in a vm context, asset/route integrity, highlighter regressions |
+| `npm run test:e2e` | 34 browser journeys on desktop and mobile viewports |
+| `npm run test:qa` | 16 persona-level workflows, adversarial input, storage recovery and a nine-viewport matrix |
+| `node scripts/screenshots.cjs [dir]` | 36 screenshots plus a console-error log for visual review |
+
+The QA suite builds a fresh browser context per persona, so one persona's localStorage can
+never contaminate another. Clipping is measured from `scrollWidth` rather than inferred from
+`overflow-x: hidden`, so hidden overflow still fails the check.

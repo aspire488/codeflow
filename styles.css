@@ -846,11 +846,14 @@ a:hover { text-decoration: underline; }
     position: fixed; top: 0; bottom: 0; left: 0;
     width: min(86vw, 300px); flex-basis: auto;
     transform: translateX(-100%);
-    transition: transform 180ms ease;
+    /* Hidden, not just translated: an off-screen drawer must not keep its
+       buttons in the tab order or intercept clicks. */
+    visibility: hidden;
+    transition: transform 180ms ease, visibility 0s linear 180ms;
     border-right: 1px solid var(--line-strong);
     box-shadow: var(--shadow-3);
   }
-  .app-sidebar.open { transform: translateX(0); }
+  .app-sidebar.open { transform: translateX(0); visibility: visible; transition: transform 180ms ease; }
   .screen-inner { padding: var(--s-4); }
   .screen-title { font-size: var(--fs-20); }
   .hero-card { padding: var(--s-5); }
