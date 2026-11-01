@@ -1,6 +1,6 @@
 # CodeFlow - Product Requirements Document
 
-**Version:** 1.2.0
+**Version:** 1.1.0
 **Status:** Shipped, with documented limits
 
 ## 1. Product overview
@@ -40,7 +40,7 @@ A learner can, without developer intervention:
 | F10 | Loop trace table from a real loop execution | Implemented |
 | F11 | Logic Quest: chapter map, XP, unlocks, persistence, execution-order challenge | Implemented (vertical slice) |
 | F12 | Logic Analyzer for C, JS, HTML, CSS | Implemented (heuristic) |
-| F13 | Assistant screen with history, loading state, error handling | Implemented (rule-based) |
+| F13 | Study assistant screen with history, suggestion chips, error handling | Implemented (rule-based) |
 | F14 | Adaptive practice driven by recorded answers | Implemented |
 | F15 | Progress dashboard with per-subject progress and reset | Implemented |
 | F16 | PWA: manifest, real icons, offline shell | Implemented |

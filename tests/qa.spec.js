@@ -101,9 +101,9 @@ test('persona 1 beginner can go from dashboard to a finished quiz on a phone', a
 
   await go(page, 'topics');
   await page.locator('#topics-content .filter-chip', { hasText: 'C Programming' }).click();
-  await expect(page.locator('#topics-content .topic-card').first()).toBeVisible();
+  await expect(page.locator('#topics-content .topic-row').first()).toBeVisible();
 
-  await page.locator('#topics-content .topic-card').first().locator('h3').click();
+  await page.locator('#topics-content .topic-row').first().locator('.topic-link').click();
   await expect(page.locator('#lesson-screen')).toHaveClass(/active/);
   await expect(page.locator('#lesson-content h2')).not.toBeEmpty();
   await expect(page.locator('#lesson-content pre code')).toBeVisible();
@@ -120,7 +120,8 @@ test('persona 1 beginner can go from dashboard to a finished quiz on a phone', a
 
   const saved = await state(page);
   expect(saved.quizScores[topicId]).toBeTruthy();
-  expect(await xp(page)).toBeGreaterThan(0);
+  // Wrong first answer on a short quiz fails it; a failed attempt no longer pays XP (that was farmable).
+  expect(await xp(page)).toBe(0);
 
   const metrics = await clipping(page);
   expect(metrics.viewportOverflow, 'no horizontal scroll on 375px').toBeLessThanOrEqual(0);
@@ -160,9 +161,9 @@ test('persona 3 verifies every visualization against the engine data', async ({ 
 
   await page.goto(`${BASE}/#visualize/code/loops`, { waitUntil: 'networkidle' });
   const authored = await page.evaluate(() => TOPICS_DB.loops.visualizationSteps.length);
-  await expect(page.locator('#viz-step-label')).toContainText(`1 / ${authored}`);
+  await expect(page.locator('#viz-step-label')).toContainText(`Step 1 of ${authored}`);
   await expect(page.locator('#viz-console')).toContainText('(no output yet)');
-  await expect(page.locator('#visualize-content')).toContainText('authored walkthrough');
+  await expect(page.locator('#visualize-content')).toContainText('Authored walkthrough');
 
   // Every step must expose a different variable state from the data.
   const firstVars = await page.locator('#viz-variables').innerText();
@@ -178,6 +179,8 @@ test('persona 3 verifies every visualization against the engine data', async ({ 
     return { rows: result.rows.length, output: result.output, iterations: result.iterations };
   });
   await expect(page.locator('.viz-table tbody tr')).toHaveCount(trace.rows);
+  // The trace is stepped now: walk to the last iteration, where the output is complete.
+  for (let step = 1; step < trace.rows; step += 1) await page.locator('#viz-next').click();
   await expect(page.locator('.console').last()).toContainText(trace.output);
 
   // Recursion: base case must return before the outer call.
@@ -209,7 +212,7 @@ test('persona 4 completes the full workflow through the mobile drawer', async ({
   const topicId = await page.evaluate(() => Object.keys(TOPICS_DB)[0]);
 
   await go(page, 'topics');
-  await page.locator(`#topics-content .topic-card[data-topic="${topicId}"] h3`).click();
+  await page.locator(`#topics-content .topic-row[data-topic="${topicId}"] .topic-link`).click();
   await expect(page.locator('#lesson-screen')).toHaveClass(/active/);
 
   const complete = page.locator('#mark-complete');
@@ -246,7 +249,7 @@ test('persona 5 cannot double-score, double-advance or land on a stale screen', 
   const correct = await page.evaluate(() => quizSession.questions[0].correct);
   await page.locator(`.quiz-option[data-option="${correct}"]`).click();
   await page.locator('#quiz-check').click();
-  await page.locator('#quiz-check').click({ force: true });
+  await expect(page.locator('#quiz-check')).toBeHidden(); // no second Check once answered
   const scoreAfterDouble = await page.evaluate(() => quizSession.score);
   expect(scoreAfterDouble).toBe(1);
   await expect(page.locator('#quiz-feedback .feedback')).toHaveCount(1);
@@ -496,7 +499,7 @@ test('persona 12 checks that displayed scores, XP and claims are real', async ({
   await expect(page.locator('#progress-content')).toContainText('100%');
 
   await page.goto(`${BASE}/#chatbot`, { waitUntil: 'networkidle' });
-  await expect(page.locator('.chat-head')).toContainText('Not an LLM');
+  await expect(page.locator('.chat-head')).toContainText(/not an LLM/i);
   await page.locator('#chat-input').fill('explain pointers');
   await page.locator('#chat-send').click();
   await expect(page.locator('#chat-messages')).toContainText(/pointer/i);
@@ -505,7 +508,7 @@ test('persona 12 checks that displayed scores, XP and claims are real', async ({
   await expect(page.locator('#logic-screen')).toContainText('not a compiler');
 
   await page.goto(`${BASE}/#visualize/code/pointers`, { waitUntil: 'networkidle' });
-  await expect(page.locator('#visualize-content')).toContainText('authored walkthrough');
+  await expect(page.locator('#visualize-content')).toContainText('Authored walkthrough');
 
   expect(errors).toEqual([]);
   await closeUser(user);
@@ -553,7 +556,7 @@ test('corrupted and missing storage both recover without a broken app', async ({
       codeflow_logic_quest: 'null'
     }
   });
-  await expect(corrupted.page.locator('#dashboard-content .topic-card').first()).toBeVisible();
+  await expect(corrupted.page.locator('#dashboard-content .rail-row').first()).toBeVisible();
   expect(await xp(corrupted.page)).toBe(0);
   await corrupted.page.goto(`${BASE}/#practice`, { waitUntil: 'networkidle' });
   await expect(corrupted.page.locator('#practice-content')).not.toBeEmpty();
@@ -568,8 +571,8 @@ test('corrupted and missing storage both recover without a broken app', async ({
   });
   const page = await blocked.newPage();
   await page.goto(`${BASE}/#dashboard`, { waitUntil: 'networkidle' });
-  await expect(page.locator('#dashboard-content .topic-card').first()).toBeVisible();
-  await page.locator('.topic-card').first().locator('h3').click();
+  await expect(page.locator('#dashboard-content .rail-row').first()).toBeVisible();
+  await page.locator('#dashboard-content .rail-row .rail-link').first().click();
   await expect(page.locator('#lesson-screen')).toHaveClass(/active/);
   await blocked.close();
 });

@@ -2,7 +2,9 @@
 
 All notable changes to CodeFlow are documented here.
 
-## [1.2.0] - 2026-11-01
+## [1.1.0] - 2026-11-01
+
+Rebuilt and refined; deployment verification is separate.
 
 ### Fixed
 
@@ -25,17 +27,67 @@ All notable changes to CodeFlow are documented here.
 - Static build script that fails if a referenced script is missing from the artifact.
 - Real PNG app icons for PWA install.
 
+### Content
+
+- Fixed wrong quiz answer keys and output-prediction answers, examples that did not compile, and undefined behaviour in format specifiers.
+- Output-prediction snippets and C lessons are verified by compiling with gcc.
+
+### Visualizer
+
+- Each view is labelled as an authored walkthrough or a computed trace.
+- The loop trace refuses programs it cannot model instead of guessing.
+- The call stack pops frames as they return.
+- Arrow keys and R work in all stepped modes. Autoplay stops when you leave the view. The transport stays reachable on phones.
+- Authored walkthroughs gain line highlighting and step-by-step output.
+
+### Behaviour
+
+- The Logic Analyzer no longer shows always-empty complexity and findings cards, and says it does not check for bugs.
+- Subject filters work.
+- XP is awarded only for the first quiz pass and the first unrevealed correct prediction. The best quiz score is kept.
+- State syncs across tabs. Failed saves warn the user.
+- Malformed routes are handled. Continue goes to the next incomplete topic.
+- The assistant is renamed Study assistant, and its suggestion chips send their message.
+
+### Security
+
+- Fixed a regular-expression hang in the CSS analyzer; input is capped at 10,000 characters. Analyzer output is escaped.
+- Added a Content-Security-Policy.
+- The service worker no longer caches failed navigation responses.
+- Backend secrets are required from the environment, and Electron's open-external is limited to https. Neither is part of the hosted app.
+
+### Accessibility
+
+- Modal and drawer focus management. Quiz feedback is announced. Text contrast is raised. Icon text is hidden from accessible names. The active navigation item is exposed. Type is rem-based, so browser text zoom works.
+- Checked with automated tests only. This is not a WCAG conformance claim.
+
+### Design
+
+- Refreshed shell, Dashboard (Next up from real progress), searchable Topic Explorer, lesson reading column, quiz states, visualizer workspace, Logic Quest rail map with a reachable Loops chapter, and a two-pane Logic Analyzer view.
+- Progress now presents persisted course completion, quiz results, and next steps in a responsive overview; reset is behind a confirmation and separated settings disclosure.
+- Added a persisted dark/light appearance toggle. Inter and Material Symbols are self-hosted and precached so the interface retains its type and icon system offline.
+
 ### Removed
 
 - Dead or duplicated modules: `screenManager.js`, `eventSystem.js`, `selfTestEngine.js`, `modules/lessons/topicRenderer.js`, `modules/game/gameMode.js`, `modules/chatbot/chatbot.js`, `ui/gameRenderer.js`, `ui/visualizationRenderer.js`, `ui/visualizationView.js`, `modules/visualization/visualizationEngine.js`, `utils/storage.js`.
 - Two placeholder Vitest files that called a `visualizeCode` function that never existed.
 - `docs/INTEGRATION_TEST.md` and `docs/DEPLOYMENT_SUMMARY.md`, which claimed a verified, fully functional deployment that did not exist.
+- The invented "Engineering Student" chip, dead CSS, and the unused `data/gameLevels.js`.
 
 ### Known limitations
 
-- The visualizer evaluates a documented subset of C, not arbitrary programs.
-- One Logic Quest level is a full execution challenge; the rest are prediction challenges.
-- The assistant is a curated knowledge base, not a language model.
+- The visualizer evaluates a documented subset of C: authored walkthroughs, plus computed traces for simple loops and factorial recursion. It does not run arbitrary programs.
+- Only the first Logic Quest level is an interactive execution challenge; the other 11 are prediction challenges.
+- The assistant is rule-based: a curated knowledge base, not a language model.
+- There is no general-purpose code execution.
+- The analyzer explains structure and finds no bugs.
+- Progress lives in one browser's localStorage.
+- Flow diagrams show source order, not execution paths.
+- Persona testing is AI-simulated, not real users.
+
+## Earlier untagged work
+
+These version numbers were used during development but never tagged or released; only v1.0.0 was.
 
 ## [1.1.0] - 2026-09-10
 
@@ -70,7 +122,6 @@ All notable changes to CodeFlow are documented here.
   in its header that it is rule-based, not a language model.
 
 ### QA pass - defects found by simulated personas
-
 - The off-canvas drawer stayed in the tab order while closed, so keyboard users could focus
   invisible navigation buttons. It is now `visibility: hidden` until opened.
 - Dialogs had no focus trap: Tab walked out of the modal into the blocked page behind it.

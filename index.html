@@ -12,67 +12,58 @@
     <link rel="manifest" href="manifest.json"/>
     <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png"/>
     <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet"/>
+    <script src="src/core/theme.js"></script>
     <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
     <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
     <div id="app-root" class="app-shell">
         <aside id="sidebar" class="stitch-sidebar app-sidebar" aria-label="Primary navigation">
-            <div class="sidebar-profile">
-                <div class="sidebar-avatar"><span class="material-symbols-outlined">person</span></div>
-                <div style="min-width:0">
-                    <h3 class="sidebar-name">Engineering Student</h3>
-                    <p class="sidebar-sub" id="sidebar-level">Level 1 &bull; 0 topics</p>
-                </div>
-            </div>
+            <div class="sidebar-brand"><span aria-hidden="true" class="material-symbols-outlined">terminal</span><span>CodeFlow</span></div>
             <nav class="sidebar-nav">
                 <p class="nav-label">Learn</p>
-                <button class="nav-item" data-nav="dashboard"><span class="material-symbols-outlined">home</span><span>Dashboard</span></button>
-                <button class="nav-item" data-nav="topics"><span class="material-symbols-outlined">explore</span><span>Explore Topics</span></button>
-                <button class="nav-item" data-nav="lesson"><span class="material-symbols-outlined">menu_book</span><span>Lessons</span></button>
+                <button class="nav-item" data-nav="dashboard"><span aria-hidden="true" class="material-symbols-outlined">home</span><span>Dashboard</span></button>
+                <button class="nav-item" data-nav="topics"><span aria-hidden="true" class="material-symbols-outlined">explore</span><span>Explore topics</span></button>
+                <button class="nav-item" data-nav="lesson" title="Opens your next incomplete lesson"><span aria-hidden="true" class="material-symbols-outlined">menu_book</span><span>Lessons</span></button>
 
                 <p class="nav-label">Practice</p>
-                <button class="nav-item" data-nav="quiz"><span class="material-symbols-outlined">quiz</span><span>Quiz Center</span></button>
-                <button class="nav-item" data-nav="predict"><span class="material-symbols-outlined">psychology</span><span>Output Prediction</span></button>
-                <button class="nav-item" data-nav="practice"><span class="material-symbols-outlined">auto_awesome</span><span>Adaptive Practice</span></button>
+                <button class="nav-item" data-nav="quiz"><span aria-hidden="true" class="material-symbols-outlined">quiz</span><span>Quiz center</span></button>
+                <button class="nav-item" data-nav="predict"><span aria-hidden="true" class="material-symbols-outlined">psychology</span><span>Output prediction</span></button>
+                <button class="nav-item" data-nav="practice"><span aria-hidden="true" class="material-symbols-outlined">auto_awesome</span><span>Adaptive practice</span></button>
 
                 <p class="nav-label">Studio</p>
-                <button class="nav-item" data-nav="visualize"><span class="material-symbols-outlined">terminal</span><span>Visualizer</span></button>
-                <button class="nav-item" data-nav="game"><span class="material-symbols-outlined">sports_esports</span><span>Logic Quest</span></button>
-                <button class="nav-item" data-nav="logic"><span class="material-symbols-outlined">analytics</span><span>Logic Analyzer</span></button>
+                <button class="nav-item" data-nav="visualize"><span aria-hidden="true" class="material-symbols-outlined">terminal</span><span>Visualizer</span></button>
+                <button class="nav-item" data-nav="game"><span aria-hidden="true" class="material-symbols-outlined">sports_esports</span><span>Logic Quest</span></button>
+                <button class="nav-item" data-nav="logic"><span aria-hidden="true" class="material-symbols-outlined">analytics</span><span>Logic Analyzer</span></button>
 
                 <p class="nav-label">Support</p>
-                <button class="nav-item" data-nav="chatbot"><span class="material-symbols-outlined">forum</span><span>AI Assistant</span></button>
-                <button class="nav-item" data-nav="progress"><span class="material-symbols-outlined">insights</span><span>Progress</span></button>
+                <button class="nav-item" data-nav="chatbot"><span aria-hidden="true" class="material-symbols-outlined">forum</span><span>Study assistant</span></button>
+                <button class="nav-item" data-nav="progress"><span aria-hidden="true" class="material-symbols-outlined">insights</span><span>Progress</span></button>
             </nav>
             <div class="sidebar-progress">
                 <div class="row-between">
-                    <span class="sidebar-label">PROGRESS</span>
+                    <span class="sidebar-label">Course progress</span>
                     <span class="sidebar-value" id="sidebar-progress-value">0%</span>
                 </div>
-                <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" id="sidebar-progress-fill" style="width:0%"></div></div>
-                <div class="sidebar-sub" style="margin-top:4px" id="sidebar-progress-text">0 topics completed</div>
+                <div class="progress-bar"><div class="progress-fill" id="sidebar-progress-fill" style="width:0%"></div></div>
+                <div class="sidebar-sub" id="sidebar-progress-text">0 topics completed</div>
+                <div class="sidebar-sub" id="sidebar-level">Level 1</div>
             </div>
         </aside>
 
         <div class="app-main">
             <header id="topbar" class="stitch-header app-topbar">
-                <div class="row" style="min-width:0">
+                <div class="row">
                     <button class="icon-button mobile-only" id="mobile-menu-btn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
-                        <span class="material-symbols-outlined">menu</span>
+                        <span aria-hidden="true" class="material-symbols-outlined">menu</span>
                     </button>
-                    <span class="material-symbols-outlined" style="color:#58a6ff;font-size:21px">terminal</span>
-                    <h1 class="brand">CodeFlow</h1>
-                    <span class="topbar-divider" aria-hidden="true"></span>
-                    <span class="page-title" id="page-title">Dashboard</span>
+                    <span class="brand"><span aria-hidden="true" class="material-symbols-outlined">terminal</span>CodeFlow</span>
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
                 </div>
                 <div class="row">
+                    <button class="icon-button" id="theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"><span aria-hidden="true" class="material-symbols-outlined">light_mode</span></button>
                     <span class="xp-chip" id="xp-chip">0 XP</span>
-                    <button class="icon-button" id="help-btn" aria-label="Keyboard help"><span class="material-symbols-outlined">help</span></button>
+                    <button class="icon-button" id="help-btn" aria-label="Keyboard help"><span aria-hidden="true" class="material-symbols-outlined">help</span></button>
                 </div>
             </header>
 
@@ -86,24 +77,23 @@
                 <section id="visualize-screen" class="screen">
                     <div class="screen-scroll">
                         <div class="screen-inner">
-                            <div class="screen-heading">
+                            <div class="screen-heading viz-heading">
                                 <div>
-                                    <p class="eyebrow">Studio</p>
                                     <h2 class="screen-title">Execution Visualizer</h2>
-                                    <p class="screen-subtitle">Step through real program state: variables, output, control flow, memory addresses, the call stack and loop iterations.</p>
+                                    <p class="screen-subtitle">Step through authored walkthroughs of each example, plus computed traces for simple loops and factorial recursion.</p>
                                 </div>
                             </div>
                             <div class="viz-toolbar">
-                                <div class="viz-tabs" id="viz-tabs" role="tablist" aria-label="Visualization modes">
-                                    <button class="viz-tab" data-viz-mode="code" role="tab">Step-by-step</button>
-                                    <button class="viz-tab" data-viz-mode="flow" role="tab">Flow diagram</button>
-                                    <button class="viz-tab" data-viz-mode="pointers" role="tab">Pointers</button>
-                                    <button class="viz-tab" data-viz-mode="recursion" role="tab">Recursion</button>
-                                    <button class="viz-tab" data-viz-mode="loops" role="tab">Loop trace</button>
+                                <div class="viz-tabs" id="viz-tabs" aria-label="Visualization modes">
+                                    <button class="viz-tab" data-viz-mode="code">Step-by-step</button>
+                                    <button class="viz-tab" data-viz-mode="flow">Flow diagram</button>
+                                    <button class="viz-tab" data-viz-mode="pointers">Pointers</button>
+                                    <button class="viz-tab" data-viz-mode="recursion">Recursion</button>
+                                    <button class="viz-tab" data-viz-mode="loops">Loop trace</button>
                                 </div>
+                                <div class="viz-topic" id="viz-example"></div>
                             </div>
-                            <div id="visualize-content" class="viz-body"></div>
-                            <div id="viz-controls" class="viz-controls"></div>
+                            <div id="visualize-content"></div>
                         </div>
                     </div>
                 </section>
@@ -115,35 +105,39 @@
                         <div class="screen-inner">
                             <div class="screen-heading">
                                 <div>
-                                    <p class="eyebrow">Studio</p>
                                     <h2 class="screen-title">Logic Analyzer</h2>
-                                    <p class="screen-subtitle">Structural inspection for C, JavaScript, HTML and CSS. This is static analysis, not a compiler or an interpreter.</p>
+                                    <p class="screen-subtitle">See how C, JavaScript, HTML or CSS code is structured.</p>
                                 </div>
                             </div>
+                            <p class="notice"><span aria-hidden="true" class="material-symbols-outlined">info</span><span><strong>Static analysis, not a compiler.</strong> It explains structure and does not check for bugs, so a result here is not a sign that your code is correct.</span></p>
                             <div class="analyzer-grid">
-                                <div class="stitch-card pad-lg">
-                                    <div class="row-between" style="margin-bottom:12px">
-                                        <h3 class="card-title" style="margin:0">Code input</h3>
-                                        <span class="badge muted-badge">Ctrl / Cmd + Enter to run</span>
+                                <section class="analyzer-pane" aria-labelledby="analyzer-input-title">
+                                    <div class="pane-head">
+                                        <h3 id="analyzer-input-title" class="pane-title">Code</h3>
+                                        <div class="field-inline">
+                                            <label class="field-label" for="analyzer-language">Language</label>
+                                            <select id="analyzer-language" class="select">
+                                                <option value="c">C</option>
+                                                <option value="javascript">JavaScript</option>
+                                                <option value="html">HTML</option>
+                                                <option value="css">CSS</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <textarea id="analyzer-code" class="code-textarea" spellcheck="false" placeholder="Paste your code here..."></textarea>
-                                    <div class="field" style="margin-top:16px">
-                                        <label class="field-label" for="analyzer-language">Language</label>
-                                        <select id="analyzer-language" class="select">
-                                            <option value="c">C Programming</option>
-                                            <option value="javascript">JavaScript</option>
-                                            <option value="html">HTML</option>
-                                            <option value="css">CSS</option>
-                                        </select>
+                                    <label class="sr-only" for="analyzer-code">Code to analyze</label>
+                                    <textarea id="analyzer-code" class="code-textarea" spellcheck="false" maxlength="10000" aria-describedby="analyzer-limit" placeholder="Paste your code here..."></textarea>
+                                    <div class="pane-foot">
+                                        <p class="faint" id="analyzer-limit"><span id="analyzer-count">0</span> of 10,000 characters</p>
+                                        <div class="button-row">
+                                            <span class="faint analyzer-hint">Ctrl / Cmd + Enter</span>
+                                            <button class="stitch-btn" id="analyze-btn">Analyze code</button>
+                                        </div>
                                     </div>
-                                    <button class="stitch-btn full-width" id="analyze-btn">
-                                        <span class="material-symbols-outlined">troubleshoot</span> Analyze code
-                                    </button>
-                                </div>
-                                <div class="stitch-card pad-lg">
-                                    <h3 class="card-title">Analysis results</h3>
-                                    <div id="analyzer-results"><p class="muted">Results will appear here.</p></div>
-                                </div>
+                                </section>
+                                <section class="analyzer-pane" aria-labelledby="analyzer-output-title">
+                                    <div class="pane-head"><h3 id="analyzer-output-title" class="pane-title">Structure</h3></div>
+                                    <div id="analyzer-results" aria-live="polite"></div>
+                                </section>
                             </div>
                         </div>
                     </div>
@@ -152,22 +146,17 @@
                 <section id="chatbot-screen" class="screen">
                     <div class="chat-shell">
                         <div class="chat-head">
-                            <div class="row-between">
-                                <div class="row">
-                                    <span class="material-symbols-outlined" style="color:#58a6ff">forum</span>
-                                    <div>
-                                        <h2 class="card-title" style="margin:0">Study assistant</h2>
-                                        <p class="faint" style="margin:0">Rule-based knowledge base &middot; C, HTML, CSS, JavaScript</p>
-                                    </div>
-                                </div>
-                                <span class="badge muted-badge">Not an LLM</span>
-                            </div>
+                            <h2 class="screen-title chat-title">Study assistant</h2>
+                            <p class="chat-sub"><strong>Rule-based, not an LLM.</strong> It answers from a fixed C, HTML, CSS and JavaScript knowledge base, so it can be wrong or have no answer.</p>
                         </div>
                         <div class="chat-log" id="chat-messages" role="log" aria-live="polite" aria-label="Conversation"></div>
-                        <div class="suggestions" id="chat-suggestions"></div>
+                        <div class="suggestions" id="chat-suggestions" aria-label="Suggested questions"></div>
                         <div class="chat-composer">
-                            <input type="text" id="chat-input" class="input" autocomplete="off" maxlength="500" placeholder="Ask about pointers, flexbox, let vs var..." aria-label="Chat message"/>
-                            <button class="stitch-btn chat-send" id="chat-send" aria-label="Send message"><span class="material-symbols-outlined">send</span></button>
+                            <div class="chat-field">
+                                <input type="text" id="chat-input" class="input" autocomplete="off" maxlength="500" placeholder="Ask about pointers, flexbox, let vs var..." aria-label="Chat message" aria-describedby="chat-count"/>
+                                <span class="chat-count faint" id="chat-count">0 / 500</span>
+                            </div>
+                            <button class="stitch-btn chat-send" id="chat-send" aria-label="Send message"><span aria-hidden="true" class="material-symbols-outlined">send</span></button>
                         </div>
                     </div>
                 </section>
@@ -181,8 +170,8 @@
     <div class="modal-overlay" id="app-modal" role="dialog" aria-modal="true" aria-labelledby="app-modal-title" aria-hidden="true">
         <div class="modal-content" id="app-modal-panel" tabindex="-1">
             <div class="modal-head">
-                <h3 id="app-modal-title" class="card-title" style="margin:0">CodeFlow</h3>
-                <button class="icon-button" id="app-modal-close" aria-label="Close dialog"><span class="material-symbols-outlined">close</span></button>
+                <h3 id="app-modal-title" class="modal-title">CodeFlow</h3>
+                <button class="icon-button" id="app-modal-close" aria-label="Close dialog"><span aria-hidden="true" class="material-symbols-outlined">close</span></button>
             </div>
             <div id="app-modal-body" class="modal-body"></div>
             <div id="app-modal-actions" class="modal-actions"></div>
@@ -195,7 +184,6 @@
     <script src="data/topicsDB.js"></script>
     <script src="data/quizDB.js"></script>
     <script src="data/outputPredictionDB.js"></script>
-    <script src="data/gameLevels.js"></script>
     <script src="data/knowledgeBase.js"></script>
     <script src="data/logicQuestDB.js"></script>
     <!-- Phase 2: utilities -->

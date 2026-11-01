@@ -139,3 +139,251 @@ test('state sanitiser rejects corrupted persisted progress', () => {
   assert.deepEqual([...missing.completedTopics], []);
   assert.equal(missing.xp, 0);
 });
+
+// ---- regression tests for audited content/engine errors ----
+const quizDB = require('../data/quizDB.js');
+const topicsDB = require('../data/topicsDB.js');
+const { outputPredictionDB } = require('../data/outputPredictionDB.js');
+const knowledgeBase = require('../data/knowledgeBase.js');
+
+const keyed = (q) => q.options[q.correct];
+const allQuizQuestions = () => [
+  ...Object.values(quizDB).flat(),
+  ...Object.values(topicsDB).flatMap((topic) => topic.quiz || [])
+];
+const findQuestions = (re) => allQuizQuestions().filter((q) => re.test(q.question));
+
+test('quiz keys: 7 % 3, else count, scanf, const, truthy, rgb alpha', () => {
+  const mod = findQuestions(/7 % 3/);
+  assert.equal(mod.length, 2);
+  mod.forEach((q) => assert.equal(keyed(q), '1'));
+
+  const elseQ = findQuestions(/How many else statements/);
+  assert.equal(elseQ.length, 1);
+  assert.equal(keyed(elseQ[0]), '1');
+
+  const scanfQ = findQuestions(/precede a variable name in scanf/);
+  assert.equal(scanfQ.length, 1);
+  assert.match(keyed(scanfQ[0]), /^&/);
+
+  const reassign = findQuestions(/reassigned/);
+  assert.equal(reassign.length, 2, 'quizDB and topicsDB copies');
+  reassign.forEach((q) => {
+    assert.match(q.question, /CANNOT/);
+    assert.equal(keyed(q), 'const');
+  });
+
+  const truthy = findQuestions(/Truthy values include/);
+  assert.equal(truthy.length, 1);
+  assert.notEqual(keyed(truthy[0]), 'All except false');
+  assert.match(keyed(truthy[0]), /Non-empty strings/);
+
+  const rgb = findQuestions(/Transparent color syntax/);
+  assert.equal(keyed(rgb[0]), 'Both');
+});
+
+test('every quiz question has a valid key and no duplicate options', () => {
+  allQuizQuestions().forEach((q) => {
+    assert.ok(Number.isInteger(q.correct) && q.correct >= 0 && q.correct < q.options.length, q.question);
+    assert.equal(new Set(q.options).size, q.options.length, q.question);
+  });
+});
+
+test('output prediction answers verified with gcc stay fixed', () => {
+  const byId = (id) => outputPredictionDB.find((q) => q.id === id);
+  assert.equal(byId('cond-if-2').answer, 'Y', 'else binds to the second if');
+  assert.equal(byId('pointer-basic-4').answer, '102012');
+  assert.match(byId('pointer-basic-3').code, /\*p = 30;/);
+  assert.doesNotMatch(byId('pointer-basic-3').code, /\*x = 30/);
+  assert.doesNotMatch(byId('string-basic-3').code, /printf\("%d", strcmp\(s1, s2\)\);/, 'strcmp magnitude is unspecified');
+});
+
+test('chatbot matches whole words and prefers the named subject', () => {
+  const greeted = (text) => knowledgeBase.greetings.includes(knowledgeBase.getResponse(text));
+  assert.equal(greeted('what is this loop'), false);
+  assert.equal(greeted('explain this'), false);
+  assert.equal(greeted('hi'), true);
+
+  const subjectOf = (text) => {
+    const reply = knowledgeBase.getResponse(text);
+    return Object.keys(knowledgeBase.subjects).filter((s) =>
+      Object.values(knowledgeBase.subjects[s].responses).flat().includes(reply));
+  };
+  assert.deepEqual(subjectOf('javascript functions'), ['javascript']);
+  assert.deepEqual(subjectOf('css layout tips please'), ['css']);
+});
+
+test('traceLoop declines nested loops and non-numeric printf arguments but traces simple loops', () => {
+  const engine = loadEngine('src/engines/visualizationEngine.js');
+  assert.equal(engine.traceLoop(topicsDB['nested-loops'].code), null);
+  assert.equal(engine.traceLoop(topicsDB.arrays.code), null);
+  assert.equal(engine.traceLoop(topicsDB['array-of-structures'].code), null);
+  assert.equal(engine.traceLoop('for (int i = 0; i < 3; i++) { printf("x %d", i * 2); }'), null);
+  const ok = engine.traceLoop(topicsDB.loops.code);
+  assert.ok(ok);
+  assert.equal(ok.output, '1 2 3 4 5 ');
+});
+
+test('call stack pops frames as they return and ends empty', () => {
+  const engine = loadEngine('src/engines/visualizationEngine.js');
+  const { steps } = engine.traceRecursion(3);
+  const depth = (i) => engine.callStackAt(steps, i).length;
+  assert.equal(depth(0), 1);
+  assert.equal(depth(2), 3, 'fact(3), fact(2), fact(1) open');
+  assert.equal(depth(3), 2, 'fact(1) has returned');
+  assert.equal(depth(steps.length - 1), 0, 'stack is empty after the outermost return');
+});
+
+test('buildFlowchart skips comments and keeps else / else if branches', () => {
+  const engine = loadEngine('src/engines/visualizationEngine.js');
+  const nodes = engine.buildFlowchart('int main() {\n  // set up x = 1\n  int x = 1;\n  if (x > 1) {\n    x = 2;\n  } else if (x == 1) {\n    x = 3;\n  } else {\n    x = 4;\n  }\n}');
+  assert.ok(!nodes.some((n) => /set up/.test(n.text)), 'comments are not nodes');
+  assert.ok(nodes.some((n) => n.type === 'decision' && /else if \(x == 1\)/.test(n.text)));
+  assert.ok(nodes.some((n) => n.type === 'branch' && n.text === 'else'));
+});
+
+test('chatbot answers pointer, recursion, stack/heap, let/var and segfault specifically', () => {
+  const reply = (q) => knowledgeBase.getResponse(q);
+  assert.match(reply('what is a pointer'), /pointer/i);
+  assert.match(reply('pointer'), /pointer/i);
+  assert.match(reply('What is recursion?'), /base case/i);
+  assert.match(reply('stack vs heap'), /heap/i);
+  assert.match(reply('Difference between let and var'), /block-scoped/i);
+  assert.match(reply('What is a segmentation fault'), /segfault|segmentation/i);
+  assert.match(reply('qwerty zzz'), /HTML, CSS and JavaScript/, 'no-match lists topics');
+});
+
+test('prediction XP: only a correct, unrevealed, first answer per question earns XP', () => {
+  const engine = loadEngine('src/engines/outputPredictionEngine.js');
+  const d = (...a) => engine.predictionXpDecision(...a);
+  assert.equal(d('q1', true, false, []).award, true);
+  assert.equal(d('q1', true, true, []).award, false, 'revealed');
+  assert.match(d('q1', true, true, []).reason, /revealed/);
+  assert.equal(d('q1', true, false, ['q1']).award, false, 'already awarded');
+  assert.equal(d('q1', false, false, []).award, false);
+});
+
+test('visualizer ignores prototype-key route params and keyboard works outside code mode', () => {
+  const src = readFileSync(path.resolve(__dirname, '..', 'src/engines/visualizationEngine.js'), 'utf8');
+  const engine = loadEngine('src/engines/visualizationEngine.js', { TOPICS_DB: { loops: {} } });
+  assert.equal(engine.vizHasTopic('loops'), true);
+  assert.equal(engine.vizHasTopic('__proto__'), false);
+  assert.equal(engine.vizHasTopic('constructor'), false);
+  assert.match(src, /VIZ_STEPPED = \['code', 'pointers', 'recursion', 'loops'\]/);
+  assert.match(src, /addEventListener\('hashchange'/);
+  assert.doesNotMatch(src, /<h4>|role="tab"|aria-selected/);
+});
+
+test('quest map: every level has a chapter, loops levels reach Loops, chapters are contiguous on the unlock path', () => {
+  const { LOGIC_QUEST_LEVELS, LOGIC_QUEST_MAP } = require('../data/logicQuestDB.js');
+  const engine = loadEngine('src/engines/logicQuestEngine.js', { LOGIC_QUEST_LEVELS, LOGIC_QUEST_MAP });
+  const questPath = engine.questPath();
+  assert.equal(questPath.length, LOGIC_QUEST_LEVELS.length, 'the requires chain reaches every level');
+
+  const chapterIds = vm.runInContext('QUEST_CHAPTERS.map((c) => c.id)', engine);
+  const chapterOf = (id) => engine.chapterForLevel(LOGIC_QUEST_LEVELS.find((l) => l.id === id));
+  assert.equal(chapterOf('loops-1'), 'start');
+  assert.equal(chapterOf('loops-2'), 'loops', 'was unreachable: loops levels used to land in START');
+  assert.equal(chapterOf('nested-loops-1'), 'loops');
+  assert.equal(chapterOf('boss-pointer'), 'boss');
+
+  const runs = questPath.map((level) => engine.chapterForLevel(level)).filter((c, i, all) => i === 0 || c !== all[i - 1]);
+  assert.equal(new Set(runs).size, runs.length, 'each chapter is one unbroken run of the path');
+  assert.deepEqual(runs, chapterIds.filter((id) => runs.includes(id)), 'chapters appear in declared order');
+  chapterIds.forEach((id) => assert.ok(runs.includes(id), `chapter ${id} has levels`));
+});
+
+test('traceLoop reports the source line of the loop header and of its printf', () => {
+  const engine = loadEngine('src/engines/visualizationEngine.js');
+  const trace = engine.traceLoop(topicsDB.loops.code);
+  const lines = topicsDB.loops.code.split('\n');
+  assert.match(lines[trace.headerLine - 1], /for \(int i = 1/);
+  assert.match(lines[trace.bodyLine - 1], /printf/);
+});
+
+test('authored walkthroughs: every step line points at real code and stdout only grows', () => {
+  const walkthroughs = Object.entries(topicsDB).filter(([, t]) => t.visualizationSteps && t.visualizationSteps.length);
+  assert.ok(walkthroughs.length >= 52);
+  for (const [key, topic] of walkthroughs) {
+    const code = topic.code.split('\n');
+    let previous = '';
+    topic.visualizationSteps.forEach((step, i) => {
+      const where = key + ' step ' + (i + 1);
+      assert.ok(Number.isInteger(step.line) && step.line >= 1 && step.line <= code.length, where + ': line in range');
+      assert.match(code[step.line - 1], /\S/, where + ': line is not blank');
+      assert.doesNotMatch(code[step.line - 1], /^\s*(\/\/|\/\*|\*(\s|\/))/, where + ': line is not a comment');
+      assert.equal(typeof step.stdout, 'string', where + ': stdout is a string');
+      assert.ok(step.stdout.startsWith(previous), where + ': stdout extends the previous step');
+      previous = step.stdout;
+    });
+  }
+});
+
+test('pinned walkthrough line sequences (checked by hand against the code)', () => {
+  const lines = (key) => topicsDB[key].visualizationSteps.map((step) => step.line);
+  assert.deepEqual(lines('loops'), [5, 6, 6, 6, 6, 6, 5, 8, 11, 13, 14, 13, 14, 13, 14, 13, 14, 13, 14, 12, 17]);
+  assert.deepEqual(lines('functions'), [6, 7, 13, 14, 7, 8]);
+  assert.deepEqual(lines('recursion'), [11, 7, 7, 7, 5, 7, 7, 7, 7, 11]);
+  // the loops walkthrough used to narrate "print 3" while showing no output
+  assert.equal(topicsDB.loops.visualizationSteps[3].stdout, '1 2 3 ');
+  assert.equal(topicsDB.loops.visualizationSteps.at(-1).stdout, '1 2 3 4 5 \n1 2 3 4 5 ');
+});
+
+test('chatbot: definitional queries return the definition first, every time', () => {
+  const kb = knowledgeBase;
+  const cases = [
+    ['Explain pointers', /^Pointers in C store memory addresses/],
+    ['What is a pointer', /^Pointers in C store memory addresses/],
+    ['pointer', /^Pointers in C store memory addresses/],
+    ['What is recursion', /^Recursion is when a function calls itself/],
+    ['recursion', /^Recursion is when a function calls itself/],
+    ['array', /^Arrays store multiple values/],
+    ['Explain arrays', /^Arrays store multiple values/],
+    ['function', /^Functions organize code/],
+    ['What is a function?', /^Functions organize code/],
+    ['loop', /^Loops repeat code/],
+    ['Difference between let and var', /^let vs var in JavaScript/],
+    ['What is a segmentation fault', /^A segmentation fault/],
+    ['CSS flexbox', /Flexbox/]
+  ];
+  for (let i = 0; i < 20; i += 1) {
+    for (const [question, expected] of cases) assert.match(kb.getResponse(question), expected, question);
+  }
+  assert.doesNotMatch(JSON.stringify(kb.subjects.c.responses.pointers), /forgetting to allocate memory with malloc/);
+});
+
+test('lesson inline code: numeric returns and bare directives only, prose is untouched', () => {
+  const src = readFileSync(path.resolve(__dirname, '..', 'src/ui/lessonRenderer.js'), 'utf8');
+  const sandbox = { escapeHtml: (t) => t };
+  vm.createContext(sandbox);
+  vm.runInContext(src.slice(0, src.indexOf('function lessonPoint')), sandbox);
+  const render = (text) => sandbox.lessonInlineCode(text);
+  assert.equal(render('return 0 from main()'), '<code>return 0</code> from <code>main()</code>');
+  assert.equal(render('#include brings headers'), '<code>#include</code> brings headers');
+  assert.equal(render('return value in real programs'), 'return value in real programs');
+  assert.equal(render('returns 0 if strings equal'), 'returns 0 if strings equal');
+});
+
+test('logic analyzer nests JavaScript and C blocks and marks clipped details with an ellipsis', () => {
+  const { analyzeCodeLogic } = require('../src/engines/logicAnalyzerEngine.js');
+  const js = analyzeCodeLogic([
+    'function total(items) {',
+    '  for (const it of items) {',
+    '    if (it.price > 2) {',
+    '      console.log(total([{ price: 3 }, { price: 4 }, { price: 5 }]));',
+    '    }',
+    '  }',
+    '  return 1;',
+    '}'
+  ].join('\n'), 'js');
+  const depthOf = (result, label) => result.nodes.find((n) => n.label === label).depth;
+  assert.deepEqual(['Function: total', 'Loop', 'If Statement', 'console.log', 'Return'].map((l) => depthOf(js, l)), [0, 1, 2, 3, 1]);
+  assert.equal(js.nodes.at(-1).depth, 0);
+  const log = js.nodes.find((n) => n.label === 'console.log');
+  assert.ok(log.detail.endsWith('…'), 'long detail is cut with an ellipsis');
+  assert.ok(log.detail.length <= 25);
+
+  const c = analyzeCodeLogic('int main() {\n  if (1) {\n    printf("a");\n  } else {\n    printf("b");\n  }\n}', 'c');
+  assert.deepEqual(c.nodes.map((n) => n.depth), [0, 0, 1, 2, 1, 2, 0]);
+  assert.equal(analyzeCodeLogic('let x = 1;', 'js').nodes.find((n) => n.label === 'x').detail, 'Variable declaration', 'short details are untouched');
+});

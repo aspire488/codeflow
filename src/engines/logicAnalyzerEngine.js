@@ -1,12 +1,15 @@
 // logicAnalyzerEngine.js - Multi-Language Logic Analyzer
 
+// Several scanners below are quadratic in input length; keep the cap low enough to stay under ~1s.
+const ANALYZER_MAX_CHARS = 10000;
+
 function analyzeCodeLogic(code, language) {
   if (!code || typeof code !== 'string') {
     return { error: 'No code provided', nodes: [] };
   }
   
-  if (code.length > 50000) {
-    return { error: 'Code too long for analysis', nodes: [] };
+  if (code.length > ANALYZER_MAX_CHARS) {
+    return { error: `Code is too long to analyze (${code.length.toLocaleString()} characters). The limit is ${ANALYZER_MAX_CHARS.toLocaleString()}; paste a smaller excerpt.`, nodes: [] };
   }
   
   language = (language || 'c').toLowerCase();
@@ -31,13 +34,60 @@ function analyzeCodeLogic(code, language) {
   }
 }
 
+// Blank out comments and string/char contents (same length, newlines kept) so
+// keyword matching cannot fire on text that is not code.
+function maskCSource(code) {
+  let out = '';
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i];
+    const next = code[i + 1];
+    if (ch === '/' && next === '/') {
+      while (i < code.length && code[i] !== '\n') { out += ' '; i++; }
+      i--;
+    } else if (ch === '/' && next === '*') {
+      out += '  '; i += 2;
+      while (i < code.length && !(code[i] === '*' && code[i + 1] === '/')) { out += code[i] === '\n' ? '\n' : ' '; i++; }
+      if (i < code.length) { out += '  '; i++; }
+    } else if (ch === '"' || ch === "'") {
+      out += ch; i++;
+      while (i < code.length && code[i] !== ch && code[i] !== '\n') {
+        if (code[i] === '\\' && i + 1 < code.length && code[i + 1] !== '\n') { out += '  '; i += 2; } else { out += ' '; i++; }
+      }
+      if (i < code.length && code[i] === ch) out += ch; else if (i < code.length) out += '\n';
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+// Cut long detail text with an ellipsis so a clipped value never looks complete.
+function clip(text, max) {
+  return text.length > max ? text.substring(0, max - 1).trimEnd() + '\u2026' : text;
+}
+
+// Nesting depth of every line from the braces of the masked source. A line that opens with }
+// (such as "} else {") sits at the depth of the block it closes.
+function braceDepths(masked) {
+  let depth = 0;
+  return masked.map((line) => {
+    const lead = (line.trim().match(/^\}+/) || [''])[0].length;
+    const at = Math.max(0, depth - lead);
+    depth = Math.max(0, depth + (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length);
+    return at;
+  });
+}
+
 function analyzeCLike(code) {
   const lines = code.split('\n');
+  const masked = maskCSource(code).split('\n');
+  const depths = braceDepths(masked);
   const nodes = [];
   let nodeId = 0;
+  let depth = 0;
   
   const addNode = (type, label, detail = '') => {
-    nodes.push({ id: nodeId++, type, label, detail });
+    nodes.push({ id: nodeId++, type, label, detail, depth });
   };
   
   addNode('start', 'Program Start', 'Entry point');
@@ -51,8 +101,10 @@ function analyzeCLike(code) {
   let conditionType = '';
   
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line || line.startsWith('//')) continue;
+    const original = lines[i].trim();
+    const line = (masked[i] || '').trim();
+    if (!line) continue;
+    depth = depths[i];
     
     if (line.match(/^(int|void|char|float|double|long|short)\s+\w+\s*\(/)) {
       const match = line.match(/^(int|void|char|float|double|long|short)\s+(\w+)/);
@@ -62,60 +114,60 @@ function analyzeCLike(code) {
       continue;
     }
     
-    if (line.includes('for(') || line.startsWith('for')) {
+    if (/^(\}\s*)?for\s*\(/.test(line)) {
       inLoop = true;
       loopType = 'for';
       addNode('loop-start', 'For Loop', 'Iteration start');
       continue;
     }
     
-    if (line.includes('while(') || line.startsWith('while')) {
+    if (/^(\}\s*)?while\s*\(/.test(line)) {
       inLoop = true;
       loopType = 'while';
       addNode('loop-start', 'While Loop', 'Condition check');
       continue;
     }
     
-    if (line.includes('if(') || line.startsWith('if')) {
+    if (/^(\}\s*)?else\s+if\b/.test(line)) {
+      addNode('condition', 'Else If', 'Alternative branch');
+      continue;
+    }
+    
+    if (/^(\}\s*)?if\s*\(/.test(line)) {
       inCondition = true;
       conditionType = 'if';
       addNode('condition', 'If Statement', 'Branch check');
       continue;
     }
     
-    if (line.includes('else if') || line.startsWith('else if')) {
-      addNode('condition', 'Else If', 'Alternative branch');
-      continue;
-    }
-    
-    if (line.startsWith('else')) {
+    if (/^(\}\s*)?else\b/.test(line)) {
       addNode('condition', 'Else', 'Default branch');
       continue;
     }
     
-    if (line.includes('printf(')) {
-      const match = line.match(/printf\s*\(\s*"([^"]*)"/);
+    if (/\bprintf\s*\(/.test(line)) {
+      const match = original.match(/printf\s*\(\s*"([^"]*)"/);
       const content = match ? match[1] : 'output';
-      addNode('output', 'printf', content.substring(0, 30));
+      addNode('output', 'printf', clip(content, 30));
       continue;
     }
     
-    if (line.includes('scanf(')) {
+    if (/\bscanf\s*\(/.test(line)) {
       addNode('input', 'scanf', 'User input');
       continue;
     }
     
-    if (line.includes('return') && !line.includes('//')) {
-      const match = line.match(/return\s*([^;]+)/);
+    if (/\breturn\b/.test(line)) {
+      const match = original.match(/return\s*([^;]+)/);
       const value = match ? match[1].trim() : '';
       addNode('return', 'Return', value || 'value');
       continue;
     }
     
     if (line.includes('=') && !line.includes('==') && !line.includes('!=') && !line.includes('<=') && !line.includes('>=')) {
-      const match = line.match(/(\w+)\s*=\s*([^;]+)/);
-      if (match && !line.includes('==')) {
-        addNode('assignment', `${match[1]} =`, match[2].trim().substring(0, 20));
+      const match = original.match(/(\w+)\s*=\s*([^;]+)/);
+      if (match) {
+        addNode('assignment', `${match[1]} =`, clip(match[2].trim(), 20));
       }
       continue;
     }
@@ -134,6 +186,7 @@ function analyzeCLike(code) {
     addNode('operation', 'Operations', 'Code operations');
   }
   
+  depth = 0;
   addNode('end', 'Program End', 'Termination');
   
   return {
@@ -145,11 +198,13 @@ function analyzeCLike(code) {
 
 function analyzeJavaScript(code) {
   const lines = code.split('\n');
+  const depths = braceDepths(maskCSource(code).split('\n'));
   const nodes = [];
   let nodeId = 0;
+  let depth = 0;
   
   const addNode = (type, label, detail = '') => {
-    nodes.push({ id: nodeId++, type, label, detail });
+    nodes.push({ id: nodeId++, type, label, detail, depth });
   };
   
   addNode('start', 'Script Start', 'Entry point');
@@ -162,6 +217,7 @@ function analyzeJavaScript(code) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line || line.startsWith('//') || line.startsWith('/*')) continue;
+    depth = depths[i];
     
     if (line.match(/^function\s+\w+/) || line.match(/^\w+\s*=\s*function/) || line.match(/^const\s+\w+\s*=\s*\(/)) {
       const match = line.match(/function\s+(\w+)/) || line.match(/^(\w+)\s*=/);
@@ -199,7 +255,7 @@ function analyzeJavaScript(code) {
     if (line.includes('console.log')) {
       const match = line.match(/console\.log\s*\(\s*(.+?)\s*\)/);
       const content = match ? match[1].trim() : 'output';
-      addNode('output', 'console.log', content.substring(0, 25));
+      addNode('output', 'console.log', clip(content, 25));
       continue;
     }
     
@@ -243,6 +299,7 @@ function analyzeJavaScript(code) {
     addNode('operation', 'Operations', 'JavaScript operations');
   }
   
+  depth = 0;
   addNode('end', 'Script End', 'Completion');
   
   return {
@@ -317,7 +374,7 @@ function analyzeCSS(code) {
   
   addNode('start', 'CSS Rules', 'Stylesheet');
   
-  const ruleRegex = /([^{}]+)\s*\{([^}]*)\}/g;
+  const ruleRegex = /([^{}]+)\{([^}]*)\}/g;
   let match;
   
   while ((match = ruleRegex.exec(code)) !== null) {
@@ -332,7 +389,7 @@ function analyzeCSS(code) {
     propLines.forEach(prop => {
       const [key, ...valueParts] = prop.split(':');
       if (key && valueParts.length > 0) {
-        addNode('property', key.trim(), valueParts.join(':').trim().substring(0, 30), '   ');
+        addNode('property', key.trim(), clip(valueParts.join(':').trim(), 30), 1);
       }
     });
   }
@@ -345,7 +402,7 @@ function analyzeCSS(code) {
         const key = line.substring(0, colonIndex).trim();
         const value = line.substring(colonIndex + 1).trim();
         if (key) {
-          addNode('property', key, value.substring(0, 40));
+          addNode('property', key, clip(value, 40));
         }
       }
     });
@@ -393,94 +450,38 @@ function generateTreeConnections(nodes) {
   return connections;
 }
 
+// Node kinds map to a Material Symbol and a short plain-language kind label.
+const ANALYZER_KINDS = {
+  start: ['play_arrow', 'start'], end: ['stop', 'end'], function: ['functions', 'function'],
+  'loop-start': ['loop', 'repeats'], condition: ['call_split', 'decision'], output: ['output', 'output'],
+  input: ['input', 'input'], return: ['reply', 'return'], assignment: ['arrow_forward', 'assignment'],
+  operation: ['settings', 'operation'], element: ['code', 'element'], rule: ['style', 'rule'],
+  property: ['tune', 'property'], dom: ['web', 'DOM'], event: ['touch_app', 'event'], root: ['account_tree', 'root']
+};
+
+// Indented structure tree. Indentation uses the depth the engine reports (block nesting for C and
+// JavaScript, element nesting for HTML, properties under CSS rules).
 function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
   const container = document.getElementById(containerId);
-  if (!container) return '<div class="text-error">Container not found</div>';
-  
+  if (!container) return '<div class="feedback bad">Container not found</div>';
+
   if (result.error) {
-    return `<div class="p-4 bg-error/20 rounded-lg text-error">${result.error}</div>`;
+    const html = `<div class="feedback bad"><strong>Could not analyze</strong>${escapeHtml(result.error)}</div>`;
+    container.innerHTML = html;
+    return html;
   }
-  
-  const langColors = {
-    c: { bg: 'bg-primary-container', text: 'text-on-primary-container' },
-    javascript: { bg: 'bg-tertiary-container', text: 'text-on-tertiary-container' },
-    html: { bg: 'bg-secondary-container', text: 'text-on-secondary-container' },
-    css: { bg: 'bg-error-container', text: 'text-on-error-container' }
-  };
-  
-  const nodeColors = {
-    start: { bg: 'bg-tertiary/30', border: 'border-tertiary', icon: 'play_arrow' },
-    end: { bg: 'bg-error/30', border: 'border-error', icon: 'stop' },
-    function: { bg: 'bg-primary/30', border: 'border-primary', icon: 'functions' },
-    'loop-start': { bg: 'bg-secondary/30', border: 'border-secondary', icon: 'loop' },
-    condition: { bg: 'bg-tertiary/30', border: 'border-tertiary', icon: 'call_split' },
-    output: { bg: 'bg-tertiary-container/30', border: 'border-tertiary-container', icon: 'output' },
-    input: { bg: 'bg-surface-container-high/30', border: 'border-surface-container-high', icon: 'input' },
-    return: { bg: 'bg-primary-container/30', border: 'border-primary-container', icon: 'reply' },
-    assignment: { bg: 'bg-surface-container/30', border: 'border-surface-container', icon: 'arrow_forward' },
-    operation: { bg: 'bg-surface-container-high/30', border: 'border-surface-container-high', icon: 'settings' },
-    element: { bg: 'bg-secondary/30', border: 'border-secondary', icon: 'code' },
-    rule: { bg: 'bg-error/30', border: 'border-error', icon: 'style' },
-    property: { bg: 'bg-surface-container-low/30', border: 'border-surface-container-low', icon: 'tune' },
-    dom: { bg: 'bg-primary/30', border: 'border-primary', icon: 'web' },
-    event: { bg: 'bg-tertiary/30', border: 'border-tertiary', icon: 'touch_app' }
-  };
-  
-  const lang = result.language || 'c';
-  const colors = langColors[lang] || langColors.c;
-  const isTree = result.tree;
-  
-  let html = `
-    <div class="bg-surface-container rounded-xl border border-outline-variant/20 overflow-hidden">
-      <div class="px-4 py-3 bg-surface-container-high border-b border-outline-variant/20 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary">psychology</span>
-          <span class="font-semibold text-on-surface">Logic Analysis</span>
-        </div>
-        <span class="px-2 py-1 rounded ${colors.bg} ${colors.text} text-xs font-bold uppercase">${lang}</span>
-      </div>
-      <div class="p-4 max-h-[500px] overflow-y-auto">
-  `;
-  
-  if (isTree) {
-    result.nodes.forEach(node => {
-      const nodeColor = nodeColors[node.type] || nodeColors.operation;
-      const indent = node.depth * 24;
-      html += `
-        <div class="flex items-center gap-2 py-1" style="padding-left: ${indent}px">
-          <span class="material-symbols-outlined text-sm text-outline">chevron_right</span>
-          <span class="px-2 py-1 rounded ${nodeColor.bg} border ${nodeColor.border} text-xs font-mono">${node.label}</span>
-          ${node.detail ? `<span class="text-xs text-outline ml-2">${node.detail}</span>` : ''}
-        </div>
-      `;
-    });
-  } else {
-    const cols = result.nodes.length > 6 ? Math.ceil(result.nodes.length / 3) : 3;
-    html += `<div class="grid grid-cols-1 md:grid-cols-${Math.min(cols, 3)} gap-2">`;
-    
-    result.nodes.forEach(node => {
-      const nodeColor = nodeColors[node.type] || nodeColors.operation;
-      html += `
-        <div class="flex items-center gap-2 p-2 rounded ${nodeColor.bg} border ${nodeColor.border}">
-          <span class="material-symbols-outlined text-sm">${nodeColor.icon}</span>
-          <div class="flex-1 min-w-0">
-            <span class="text-xs font-bold block truncate">${node.label}</span>
-            ${node.detail ? `<span class="text-[10px] text-outline block truncate">${node.detail}</span>` : ''}
-          </div>
-        </div>
-      `;
-    });
-    html += '</div>';
-  }
-  
-  html += `
-      </div>
-      <div class="px-4 py-2 bg-surface-container-low border-t border-outline-variant/20 text-xs text-outline">
-        ${result.nodes.length} nodes detected
-      </div>
-    </div>
-  `;
-  
+
+  const items = result.nodes.map((node) => {
+    const [icon, kind] = ANALYZER_KINDS[node.type] || ANALYZER_KINDS.operation;
+    const depth = Number.isFinite(node.depth) ? Math.max(0, Math.min(node.depth, 8)) : 0;
+    return `<li class="atree-node" style="--d:${depth}">
+      <span aria-hidden="true" class="material-symbols-outlined atree-icon" title="${escapeHtml(kind)}">${icon}</span>
+      <span class="atree-label">${escapeHtml(node.label)}</span>
+      ${node.detail ? `<span class="atree-detail">${escapeHtml(node.detail)}</span>` : ''}
+    </li>`;
+  }).join('');
+
+  const html = `<ul class="atree" aria-label="Code structure">${items}</ul>`;
   container.innerHTML = html;
   return html;
 }
@@ -489,7 +490,7 @@ function analyzeAndRender(code, language, containerId) {
   if (!code) {
     const container = document.getElementById(containerId);
     if (container) {
-      container.innerHTML = '<div class="p-4 bg-error/20 rounded-lg text-error">No code provided to analyze</div>';
+      container.innerHTML = '<div class="feedback bad"><strong>Nothing to analyze</strong>Paste some code first.</div>';
     }
     return;
   }

@@ -11,14 +11,14 @@ project, and it makes load order and unique names part of correctness.
 data/*.js          content only (topics, quizzes, predictions, quest, knowledge base)
 src/core/          syntaxHighlighter, router, app (state, delegation, modal, boot)
 src/engines/       visualization, output prediction, analyzer, logic quest, adaptive practice, quiz helpers
-src/ui/            one renderer per screen
+src/ui/            screen renderers (dashboard, lesson, quiz, analyzer, assistant)
 scripts/           static build (copies the tree, verifies script paths)
 tests/             structural + unit (node:test) and browser (Playwright)
 ```
 
 ### Load order
 
-1. `data/*` - defines `TOPICS_DB`, `QUIZ_DB`, `outputPredictionDB`, `GAME_LEVELS`, `KNOWLEDGE_BASE`, `LOGIC_QUEST_LEVELS`/`LOGIC_QUEST_MAP`.
+1. `data/*` - defines `TOPICS_DB`, `QUIZ_DB`, `outputPredictionDB`, `KNOWLEDGE_BASE`, `LOGIC_QUEST_LEVELS`/`LOGIC_QUEST_MAP`.
 2. `src/core/syntaxHighlighter.js` - `highlightCode` is used by every renderer.
 3. `src/engines/*` - expose pure logic and screen renderers (`renderVisualizer`, `renderOutputPrediction`, `renderLogicQuestMap`, `analyzeCodeLogic`, `AdaptiveEngine`).
 4. `src/ui/*` - one renderer per screen; they consume data and engines.
@@ -59,7 +59,7 @@ example. It never pretends to interpret arbitrary C.
 
 ## Scroll and modal lifecycle
 
-- `html, body { overflow: hidden }`; each `.screen` owns a `.screen-scroll`.
+- `body { overflow: hidden }`; each `.screen` owns a `.screen-scroll`.
 - `openModal` sets `aria-hidden="false"`, locks scroll, focuses the panel and
   remembers the trigger. `closeModal` reverses all three and restores focus.
 - Escape and backdrop clicks close the dialog; the overlay uses
@@ -86,9 +86,9 @@ language support must extend the tokeniser, not add another regex pass over emit
 | Command | What it proves |
 | --- | --- |
 | `npm test` | Pure logic in a vm context, asset/route integrity, highlighter regressions |
-| `npm run test:e2e` | 34 browser journeys on desktop and mobile viewports |
-| `npm run test:qa` | 16 persona-level workflows, adversarial input, storage recovery and a nine-viewport matrix |
-| `node scripts/screenshots.cjs [dir]` | 36 screenshots plus a console-error log for visual review |
+| `npm run test:e2e` | Browser journeys on desktop and mobile viewports |
+| `npm run test:qa` | Persona-level workflows, adversarial input, storage recovery and viewport overflow checks |
+| `node scripts/screenshots.cjs [dir]` | Screenshots for visual review plus a console-error log |
 
 The QA suite builds a fresh browser context per persona, so one persona's localStorage can
 never contaminate another. Clipping is measured from `scrollWidth` rather than inferred from

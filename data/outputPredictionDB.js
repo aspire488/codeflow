@@ -120,9 +120,9 @@ if(a < b)
     printf("Y");
 else
     printf("Z");`,
-    answer: "YZ",
-    explanation: "First if: 10 > 20 false, nothing prints. Second if: 10 < 20 true prints Y, else prints Z.",
-    hint: "The else belongs to the SECOND if, not the first."
+    answer: "Y",
+    explanation: "First if: 10 > 20 is false, nothing prints. Second if: 10 < 20 is true, so it prints Y. The else belongs to the second if, so it is skipped.",
+    hint: "The else belongs to the SECOND if, not the first. It only runs when that if is false."
   },
   {
     id: "cond-if-3",
@@ -201,7 +201,7 @@ printf("%d", *ptr);`,
     code: `int x = 25;
 int *p = &x;
 printf("%d", x);
-*x = 30;
+*p = 30;
 printf("%d", x);`,
     answer: "2530",
     explanation: "Initially x=25 prints 25. Then *p=30 modifies x through pointer. x becomes 30.",
@@ -216,7 +216,7 @@ int *p = arr;
 printf("%d", *p);
 printf("%d", *(p+1));
 printf("%d", *p+2);`,
-    answer: "102030",
+    answer: "102012",
     explanation: "arr decays to pointer to first element. *p = 10, *(p+1) = 20, *p+2 = 10+2 = 12.",
     hint: "arr points to first element. *(p+1) is second element. *p+2 adds 2 to value."
   },
@@ -258,8 +258,8 @@ while(*p) {
 printf("%d", arr[0]);
 printf("%d", arr[4]);`,
     answer: "10",
-    explanation: "arr[0] = 1, arr[4] = 0 (uninitialized elements default to 0).",
-    hint: "Uninitialized array elements are initialized to 0 in C."
+    explanation: "arr[0] = 1, arr[4] = 0 (elements missing from a partial initializer are set to 0).",
+    hint: "When an initializer lists fewer values than the array size, the remaining elements are set to 0."
   },
   {
     id: "array-basic-2",
@@ -475,7 +475,7 @@ printf("%c", s[1]);`,
     topic: "strings",
     difficulty: "easy",
     code: `char s[] = "CODE";
-printf("%lu", strlen(s));`,
+printf("%zu", strlen(s));`,
     answer: "4",
     explanation: "strlen returns number of characters before null terminator.",
     hint: "Null terminator '\\0' is not counted."
@@ -486,10 +486,10 @@ printf("%lu", strlen(s));`,
     difficulty: "medium",
     code: `char s1[] = "Hello";
 char s2[] = "World";
-printf("%d", strcmp(s1, s2));`,
-    answer: "-1",
-    explanation: "strcmp returns negative when first string < second (H < W in ASCII).",
-    hint: "Compares character by character using ASCII values."
+printf("%d", strcmp(s1, s2) < 0);`,
+    answer: "1",
+    explanation: "strcmp returns a negative value when the first string is less than the second (H < W in ASCII), so the comparison < 0 is true and prints 1. The exact negative number is not specified by C.",
+    hint: "Compares character by character using ASCII values. Only the sign of the result is guaranteed."
   },
 
   // STRUCTURES

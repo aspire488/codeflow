@@ -14,10 +14,33 @@ const TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
   '.ico': 'image/x-icon'
 };
 
+// Send the production CSP so the e2e suite exercises it.
+const csp = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8')).headers
+  .flatMap((entry) => entry.headers)
+  .find((header) => header.key === 'Content-Security-Policy').value;
+
+const testServerToken = process.env.CODEFLOW_TEST_SERVER_TOKEN;
+
+function closeServer() {
+  server.close(() => {
+    if (process.connected) process.disconnect();
+  });
+  server.closeAllConnections?.();
+}
+
+process.on('message', (message) => {
+  if (message?.type === 'shutdown') closeServer();
+});
+
 const server = http.createServer((req, res) => {
+  if (req.url === '/__codeflow_test_health') {
+    res.writeHead(200, { 'Content-Type': 'text/plain', 'X-CodeFlow-Test-Server': testServerToken || '' }).end('ready');
+    return;
+  }
   const requestPath = decodeURIComponent((req.url || '/').split('?')[0]);
   const relative = requestPath === '/' ? 'index.html' : requestPath.replace(/^\/+/, '');
   const filePath = path.join(root, relative);
@@ -32,11 +55,11 @@ const server = http.createServer((req, res) => {
       // SPA fallback so direct routes still load the shell.
       fs.readFile(path.join(root, 'index.html'), (fallbackError, html) => {
         if (fallbackError) res.writeHead(404).end('Not found');
-        else res.writeHead(200, { 'Content-Type': TYPES['.html'] }).end(html);
+        else res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Content-Security-Policy': csp }).end(html);
       });
       return;
     }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(filePath)] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(filePath)] || 'application/octet-stream', 'Content-Security-Policy': csp });
     res.end(content);
   });
 });

@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 
 const ROUTES = [
-  ['dashboard', 'Welcome to CodeFlow'],
+  ['dashboard', 'Next up'],
   ['topics', 'Explore topics'],
   ['lesson', 'C'],
   ['quiz', 'Quiz center'],
@@ -42,10 +42,26 @@ test('application boots with no console errors and renders the dashboard', async
 
   await page.goto('/');
   await expect(page.locator('#dashboard-screen')).toHaveClass(/active/);
-  const cards = page.locator('#dashboard-content .topic-card');
-  await expect(cards.first()).toBeVisible();
-  expect(await cards.count()).toBeGreaterThan(5);
+  const rows = page.locator('#dashboard-content .rail-row');
+  await expect(rows.first()).toBeVisible();
+  expect(await rows.count()).toBe(4); // current lesson plus the next three
   expect(errors, `console errors: ${errors.join(' | ')}`).toEqual([]);
+});
+
+test('appearance: theme toggle updates the page and persists the selection', async ({ page }) => {
+  const root = page.locator('html');
+  const toggle = page.locator('#theme-toggle');
+  await expect(root).toHaveAttribute('data-theme', 'dark');
+  await expect(toggle).toHaveAttribute('aria-label', 'Switch to light mode');
+  await toggle.click();
+  await expect(root).toHaveAttribute('data-theme', 'light');
+  await expect(toggle).toHaveAttribute('aria-label', 'Switch to dark mode');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f8fafc');
+  await page.reload();
+  await expect(root).toHaveAttribute('data-theme', 'light');
+  await toggle.click();
+  await expect(root).toHaveAttribute('data-theme', 'dark');
+  expect(await page.evaluate(() => localStorage.getItem('codeflow_theme'))).toBe('dark');
 });
 
 test('every screen is reachable from the sidebar with a matching active state', async ({ page }) => {
@@ -67,7 +83,7 @@ test('lesson content, navigation and completion persist across reloads', async (
   await expect(page.locator('#lesson-content h2')).toContainText(/loop/i);
   await expect(page.locator('#lesson-content pre code')).toBeVisible();
 
-  await page.locator('#lesson-content [data-nav^="lesson/"]').last().click();
+  await page.locator('#lesson-content a[href^="#lesson/"]').last().click();
   await expect(page.locator('#lesson-content h2')).not.toBeEmpty();
 
   await page.goto('/#lesson/c-basics');
@@ -119,15 +135,15 @@ test('output prediction reveals the answer and explains it', async ({ page }) =>
 test('visualizer steps forward, backward and resets', async ({ page }) => {
   await page.goto('/#visualize/code/loops');
   const label = page.locator('#viz-step-label');
-  await expect(label).toContainText('Step 1 /');
+  await expect(label).toContainText('Step 1 of');
 
   await page.locator('#viz-next').click();
-  await expect(label).toContainText('Step 2 /');
+  await expect(label).toContainText('Step 2 of');
   await page.locator('#viz-prev').click();
-  await expect(label).toContainText('Step 1 /');
+  await expect(label).toContainText('Step 1 of');
   await page.locator('#viz-next').click();
   await page.locator('#viz-reset').click();
-  await expect(label).toContainText('Step 1 /');
+  await expect(label).toContainText('Step 1 of');
 });
 
 test('flow, pointer, recursion and loop visualizations all render', async ({ page }) => {
@@ -142,7 +158,7 @@ test('flow, pointer, recursion and loop visualizations all render', async ({ pag
   await page.goto('/#visualize/recursion/recursion');
   await expect(page.locator('#recursion-stack')).toContainText('fact');
   await page.locator('#viz-next').click();
-  await expect(page.locator('#viz-step-label')).toContainText('Call 2');
+  await expect(page.locator('#viz-step-label')).toContainText('Step 2 of');
 
   await page.goto('/#visualize/loops/loops');
   await expect(page.locator('.viz-table')).toContainText('iteration');
@@ -193,7 +209,9 @@ test('logic analyzer produces structural results for C and JavaScript', async ({
   await page.goto('/#logic');
   await page.locator('#analyze-btn').click();
   await expect(page.locator('#analyzer-results')).not.toContainText('Results will appear here');
-  await expect(page.locator('#analyzer-results')).toContainText('Complexity');
+  await expect(page.locator('#analyzer-results')).toContainText('Logical nodes');
+  // The engine never produced complexity or findings; those placeholder cards were removed.
+  await expect(page.locator('#analyzer-results')).not.toContainText('Complexity');
 
   await page.locator('#analyzer-language').selectOption('javascript');
   await page.locator('#analyzer-code').fill('function add(a, b) { return a + b; }\nconst total = add(1, 2);');
@@ -255,7 +273,7 @@ test('corrupted local storage does not break startup', async ({ page }) => {
   await page.reload();
 
   await expect(page.locator('#dashboard-screen')).toHaveClass(/active/);
-  await expect(page.locator('#dashboard-content .topic-card').first()).toBeVisible();
+  await expect(page.locator('#dashboard-content .rail-row').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 

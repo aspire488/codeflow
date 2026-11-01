@@ -196,19 +196,21 @@ printf("%d", *arr[0] + *arr[1]);`,
   }
 ];
 
+// Unlock order: each level requires the one before it. Levels of one chapter are adjacent,
+// so the quest map reads as a single path through the chapters.
 const LOGIC_QUEST_MAP = [
-  { id: 'loops-1', x: 10, y: 80, requires: null },
-  { id: 'loops-2', x: 30, y: 60, requires: 'loops-1' },
-  { id: 'conditionals-1', x: 50, y: 80, requires: 'loops-2' },
-  { id: 'arrays-1', x: 70, y: 60, requires: 'conditionals-1' },
-  { id: 'pointers-1', x: 30, y: 30, requires: 'arrays-1' },
-  { id: 'nested-loops-1', x: 50, y: 40, requires: 'pointers-1' },
-  { id: 'switch-1', x: 70, y: 30, requires: 'nested-loops-1' },
-  { id: 'string-1', x: 90, y: 50, requires: 'switch-1' },
-  { id: 'recursion-1', x: 50, y: 10, requires: 'string-1' },
-  { id: 'pointer-arith-1', x: 70, y: 15, requires: 'recursion-1' },
-  { id: 'boss-recursion', x: 90, y: 10, requires: 'pointer-arith-1' },
-  { id: 'boss-pointer', x: 90, y: 30, requires: 'boss-recursion' }
+  { id: 'loops-1', requires: null },
+  { id: 'loops-2', requires: 'loops-1' },
+  { id: 'nested-loops-1', requires: 'loops-2' },
+  { id: 'conditionals-1', requires: 'nested-loops-1' },
+  { id: 'switch-1', requires: 'conditionals-1' },
+  { id: 'arrays-1', requires: 'switch-1' },
+  { id: 'string-1', requires: 'arrays-1' },
+  { id: 'pointers-1', requires: 'string-1' },
+  { id: 'pointer-arith-1', requires: 'pointers-1' },
+  { id: 'recursion-1', requires: 'pointer-arith-1' },
+  { id: 'boss-recursion', requires: 'recursion-1' },
+  { id: 'boss-pointer', requires: 'boss-recursion' }
 ];
 
 if (typeof module !== 'undefined' && module.exports) {

@@ -35,10 +35,10 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Preprocessor includes stdio.h header" },
-      { variables: {}, output: "main() function called" },
-      { variables: {}, output: "printf() executes: 'Hello, World!'" },
-      { variables: {}, output: "return 0 exits program successfully" }
+      { variables: {}, output: "Preprocessor includes stdio.h header", line: 1, stdout: "" },
+      { variables: {}, output: "main() function called", line: 3, stdout: "" },
+      { variables: {}, output: "printf() executes: 'Hello, World!'", line: 4, stdout: "Hello, World!\n" },
+      { variables: {}, output: "return 0 exits program successfully", line: 5, stdout: "Hello, World!\n" }
     ]
   },
 
@@ -75,10 +75,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { age: "20 (int)" }, output: "age variable allocated and assigned 20" },
-      { variables: { age: "20", height: "5.9 (float)" }, output: "height variable allocated and assigned 5.9" },
-      { variables: { age: "20", height: "5.9", grade: "'A' (char)" }, output: "grade variable allocated and assigned 'A'" },
-      { variables: { age: "20", height: "5.9", grade: "'A'" }, output: "printf() displays formatted output" }
+      { variables: { age: "20 (int)" }, output: "age variable allocated and assigned 20", line: 4, stdout: "" },
+      { variables: { age: "20", height: "5.9 (float)" }, output: "height variable allocated and assigned 5.9", line: 5, stdout: "" },
+      { variables: { age: "20", height: "5.9", grade: "'A' (char)" }, output: "grade variable allocated and assigned 'A'", line: 6, stdout: "" },
+      { variables: { age: "20", height: "5.9", grade: "'A'" }, output: "printf(\"Age: %d\\n\", age) displays Age: 20", line: 8, stdout: "Age: 20\n" },
+      { variables: { age: "20", height: "5.9", grade: "'A'" }, output: "printf(\"Height: %.1f\\n\", height) displays Height: 5.9", line: 9, stdout: "Age: 20\nHeight: 5.9\n" },
+      { variables: { age: "20", height: "5.9", grade: "'A'" }, output: "printf(\"Grade: %c\\n\", grade) displays Grade: A", line: 10, stdout: "Age: 20\nHeight: 5.9\nGrade: A\n" }
     ]
   },
 
@@ -91,7 +93,7 @@ const TOPICS_DB = {
       "Size varies by platform (use sizeof())",
       "Type determines memory allocation and operations"
     ],
-    code: `#include <stdio.h>\n\nint main() {\n    printf("Size of int: %lu bytes\\n", sizeof(int));\n    printf("Size of float: %lu bytes\\n", sizeof(float));\n    printf("Size of char: %lu bytes\\n", sizeof(char));\n    printf("Size of double: %lu bytes\\n", sizeof(double));\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\nint main() {\n    printf("Size of int: %zu bytes\\n", sizeof(int));\n    printf("Size of float: %zu bytes\\n", sizeof(float));\n    printf("Size of char: %zu bytes\\n", sizeof(char));\n    printf("Size of double: %zu bytes\\n", sizeof(double));\n    \n    return 0;\n}`,
     explanation: [
       "sizeof() operator returns size in bytes",
       "int typically 4 bytes, float 4 bytes, char 1 byte, double 8 bytes",
@@ -134,17 +136,17 @@ const TOPICS_DB = {
       {
         question: "What is the output of 7 % 3?",
         options: ["2", "2.33", "21", "1"],
-        correct: 0,
+        correct: 3,
         explanation: "7 divided by 3 is 2 with remainder 1, so 7 % 3 = 1."
       }
     ],
     visualizationSteps: [
-      { variables: { a: "10", b: "3" }, output: "Variables initialized" },
-      { variables: { a: "10", b: "3", result: "13" }, output: "a + b = 13" },
-      { variables: { a: "10", b: "3", result: "7" }, output: "a - b = 7" },
-      { variables: { a: "10", b: "3", result: "30" }, output: "a * b = 30" },
-      { variables: { a: "10", b: "3", result: "3" }, output: "a / b = 3 (integer division)" },
-      { variables: { a: "10", b: "3", result: "1" }, output: "a % b = 1 (remainder)" }
+      { variables: { a: "10", b: "3" }, output: "Variables initialized", line: 4, stdout: "" },
+      { variables: { a: "10", b: "3", result: "13" }, output: "a + b = 13", line: 6, stdout: "a + b = 13\n" },
+      { variables: { a: "10", b: "3", result: "7" }, output: "a - b = 7", line: 7, stdout: "a + b = 13\na - b = 7\n" },
+      { variables: { a: "10", b: "3", result: "30" }, output: "a * b = 30", line: 8, stdout: "a + b = 13\na - b = 7\na * b = 30\n" },
+      { variables: { a: "10", b: "3", result: "3" }, output: "a / b = 3 (integer division)", line: 9, stdout: "a + b = 13\na - b = 7\na * b = 30\na / b = 3\n" },
+      { variables: { a: "10", b: "3", result: "1" }, output: "a % b = 1 (remainder)", line: 10, stdout: "a + b = 13\na - b = 7\na * b = 30\na / b = 3\na % b = 1\n" }
     ]
   },
 
@@ -175,10 +177,10 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Program waits for user input" },
-      { variables: { name: "'John'" }, output: "User enters name: John" },
-      { variables: { name: "'John'", age: "25" }, output: "User enters age: 25" },
-      { variables: { name: "'John'", age: "25" }, output: "printf() displays formatted message" }
+      { variables: {}, output: "The program prints the prompt \"Enter your name: \" and waits for user input", line: 7, stdout: "Enter your name: " },
+      { variables: { name: "'John'" }, output: "User enters name: John (scanf stores it in name; typed input is not echoed in this panel)", line: 8, stdout: "Enter your name: " },
+      { variables: { name: "'John'", age: "25" }, output: "User enters age: 25 (scanf stores it in age)", line: 11, stdout: "Enter your name: Enter your age: " },
+      { variables: { name: "'John'", age: "25" }, output: "printf() displays formatted message", line: 13, stdout: "Enter your name: Enter your age: Hello John, you are 25 years old!\n" }
     ]
   },
 
@@ -210,10 +212,10 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { marks: "85" }, output: "marks = 85" },
-      { variables: { marks: "85" }, output: "Check: 85 >= 90? False" },
-      { variables: { marks: "85" }, output: "Check: 85 >= 80? True" },
-      { variables: { marks: "85" }, output: "Execute: printf('Grade: B')" }
+      { variables: { marks: "85" }, output: "marks = 85", line: 4, stdout: "" },
+      { variables: { marks: "85" }, output: "Check: 85 >= 90? False", line: 6, stdout: "" },
+      { variables: { marks: "85" }, output: "Check: 85 >= 80? True", line: 8, stdout: "" },
+      { variables: { marks: "85" }, output: "Execute: printf('Grade: B')", line: 9, stdout: "Grade: B\n" }
     ]
   },
 
@@ -244,10 +246,10 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { day: "3" }, output: "day = 3" },
-      { variables: { day: "3" }, output: "switch(day) evaluates to 3" },
-      { variables: { day: "3" }, output: "case 3 matches, execute printf('Wednesday')" },
-      { variables: { day: "3" }, output: "break exits switch statement" }
+      { variables: { day: "3" }, output: "day = 3", line: 4, stdout: "" },
+      { variables: { day: "3" }, output: "switch(day) evaluates to 3", line: 6, stdout: "" },
+      { variables: { day: "3" }, output: "case 3 matches, execute printf('Wednesday')", line: 14, stdout: "Wednesday\n" },
+      { variables: { day: "3" }, output: "break exits switch statement", line: 15, stdout: "Wednesday\n" }
     ]
   },
 
@@ -278,13 +280,27 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { i: "1" }, output: "for loop starts, i=1" },
-      { variables: { i: "1" }, output: "Check: 1 <= 5? True, print 1" },
-      { variables: { i: "2" }, output: "i++, i=2, print 2" },
-      { variables: { i: "3" }, output: "i++, i=3, print 3" },
-      { variables: { i: "4" }, output: "i++, i=4, print 4" },
-      { variables: { i: "5" }, output: "i++, i=5, print 5" },
-      { variables: { i: "6" }, output: "i=6, 6<=5? False, loop ends" }
+      { variables: { i: "1" }, output: "for loop starts, i=1", line: 5, stdout: "" },
+      { variables: { i: "1" }, output: "Check: 1 <= 5? True, print 1", line: 6, stdout: "1 " },
+      { variables: { i: "2" }, output: "i++, i=2, print 2", line: 6, stdout: "1 2 " },
+      { variables: { i: "3" }, output: "i++, i=3, print 3", line: 6, stdout: "1 2 3 " },
+      { variables: { i: "4" }, output: "i++, i=4, print 4", line: 6, stdout: "1 2 3 4 " },
+      { variables: { i: "5" }, output: "i++, i=5, print 5", line: 6, stdout: "1 2 3 4 5 " },
+      { variables: { i: "6" }, output: "i=6, 6<=5? False, loop ends", line: 5, stdout: "1 2 3 4 5 " },
+      { variables: { i: "6" }, output: "printf(\"\\n\") ends the first output line", line: 8, stdout: "1 2 3 4 5 \n" },
+      { variables: { j: "1" }, output: "The while loop begins: int j = 1", line: 11, stdout: "1 2 3 4 5 \n" },
+      { variables: { j: "1" }, output: "Check: 1 <= 5? True, print 1", line: 13, stdout: "1 2 3 4 5 \n1 " },
+      { variables: { j: "2" }, output: "j++ makes j=2", line: 14, stdout: "1 2 3 4 5 \n1 " },
+      { variables: { j: "2" }, output: "Check: 2 <= 5? True, print 2", line: 13, stdout: "1 2 3 4 5 \n1 2 " },
+      { variables: { j: "3" }, output: "j++ makes j=3", line: 14, stdout: "1 2 3 4 5 \n1 2 " },
+      { variables: { j: "3" }, output: "Check: 3 <= 5? True, print 3", line: 13, stdout: "1 2 3 4 5 \n1 2 3 " },
+      { variables: { j: "4" }, output: "j++ makes j=4", line: 14, stdout: "1 2 3 4 5 \n1 2 3 " },
+      { variables: { j: "4" }, output: "Check: 4 <= 5? True, print 4", line: 13, stdout: "1 2 3 4 5 \n1 2 3 4 " },
+      { variables: { j: "5" }, output: "j++ makes j=5", line: 14, stdout: "1 2 3 4 5 \n1 2 3 4 " },
+      { variables: { j: "5" }, output: "Check: 5 <= 5? True, print 5", line: 13, stdout: "1 2 3 4 5 \n1 2 3 4 5 " },
+      { variables: { j: "6" }, output: "j++ makes j=6", line: 14, stdout: "1 2 3 4 5 \n1 2 3 4 5 " },
+      { variables: { j: "6" }, output: "Check: 6 <= 5? False, the while loop ends", line: 12, stdout: "1 2 3 4 5 \n1 2 3 4 5 " },
+      { variables: { j: "6" }, output: "return 0 ends the program", line: 17, stdout: "1 2 3 4 5 \n1 2 3 4 5 " }
     ]
   },
 
@@ -315,12 +331,18 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { i: "1", j: "1" }, output: "Outer i=1, inner j=1, print 1" },
-      { variables: { i: "1", j: "2" }, output: "j=2, print 2" },
-      { variables: { i: "1", j: "3" }, output: "j=3, print 3, newline" },
-      { variables: { i: "2", j: "1" }, output: "Outer i=2, inner j=1, print 2" },
-      { variables: { i: "2", j: "2" }, output: "j=2, print 4" },
-      { variables: { i: "2", j: "3" }, output: "j=3, print 6, newline" }
+      { variables: { i: "1", j: "1" }, output: "Outer i=1, inner j=1, print 1", line: 6, stdout: "1 " },
+      { variables: { i: "1", j: "2" }, output: "j=2, print 2", line: 6, stdout: "1 2 " },
+      { variables: { i: "1", j: "3" }, output: "j=3, print 3, inner loop ends", line: 6, stdout: "1 2 3 " },
+      { variables: { i: "1" }, output: "printf(\"\\n\") ends row 1", line: 8, stdout: "1 2 3 \n" },
+      { variables: { i: "2", j: "1" }, output: "Outer i=2, inner j=1, print 2", line: 6, stdout: "1 2 3 \n2 " },
+      { variables: { i: "2", j: "2" }, output: "j=2, print 4", line: 6, stdout: "1 2 3 \n2 4 " },
+      { variables: { i: "2", j: "3" }, output: "j=3, print 6, inner loop ends", line: 6, stdout: "1 2 3 \n2 4 6 " },
+      { variables: { i: "2", j: "3" }, output: "printf(\"\\n\") ends row 2", line: 8, stdout: "1 2 3 \n2 4 6 \n" },
+      { variables: { i: "3", j: "1" }, output: "Outer i=3, inner j=1, print 3", line: 6, stdout: "1 2 3 \n2 4 6 \n3 " },
+      { variables: { i: "3", j: "2" }, output: "j=2, print 6", line: 6, stdout: "1 2 3 \n2 4 6 \n3 6 " },
+      { variables: { i: "3", j: "3" }, output: "j=3, print 9, inner loop ends", line: 6, stdout: "1 2 3 \n2 4 6 \n3 6 9 " },
+      { variables: { i: "3", j: "3" }, output: "printf(\"\\n\") ends row 3", line: 8, stdout: "1 2 3 \n2 4 6 \n3 6 9 \n" }
     ]
   },
 
@@ -352,12 +374,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "main() starts execution" },
-      { variables: { result: "add(5,3)" }, output: "Call add function with arguments 5,3" },
-      { variables: { a: "5", b: "3" }, output: "Function parameters a=5, b=3" },
-      { variables: { a: "5", b: "3", sum: "8" }, output: "Calculate a + b = 8" },
-      { variables: { result: "8" }, output: "Return 8 to main(), result = 8" },
-      { variables: { result: "8" }, output: "printf displays 'Sum: 8'" }
+      { variables: {}, output: "main() starts execution", line: 6, stdout: "" },
+      { variables: { result: "add(5,3)" }, output: "Call add function with arguments 5,3", line: 7, stdout: "" },
+      { variables: { a: "5", b: "3" }, output: "Function parameters a=5, b=3", line: 13, stdout: "" },
+      { variables: { a: "5", b: "3", sum: "8" }, output: "Calculate a + b = 8", line: 14, stdout: "" },
+      { variables: { result: "8" }, output: "Return 8 to main(), result = 8", line: 7, stdout: "" },
+      { variables: { result: "8" }, output: "printf displays 'Sum: 8'", line: 8, stdout: "Sum: 8\n" }
     ]
   },
 
@@ -388,15 +410,16 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "5" }, output: "factorial(5) called" },
-      { variables: { n: "4" }, output: "factorial(4) called" },
-      { variables: { n: "3" }, output: "factorial(3) called" },
-      { variables: { n: "2" }, output: "factorial(2) called" },
-      { variables: { n: "1" }, output: "factorial(1) = 1 (base case)" },
-      { variables: { n: "2", result: "2" }, output: "2 * 1 = 2" },
-      { variables: { n: "3", result: "6" }, output: "3 * 2 = 6" },
-      { variables: { n: "4", result: "24" }, output: "4 * 6 = 24" },
-      { variables: { n: "5", result: "120" }, output: "5 * 24 = 120" }
+      { variables: { n: "5" }, output: "factorial(5) called", line: 11, stdout: "" },
+      { variables: { n: "4" }, output: "factorial(4) called", line: 7, stdout: "" },
+      { variables: { n: "3" }, output: "factorial(3) called", line: 7, stdout: "" },
+      { variables: { n: "2" }, output: "factorial(2) called", line: 7, stdout: "" },
+      { variables: { n: "1" }, output: "factorial(1) = 1 (base case)", line: 5, stdout: "" },
+      { variables: { n: "2", result: "2" }, output: "2 * 1 = 2", line: 7, stdout: "" },
+      { variables: { n: "3", result: "6" }, output: "3 * 2 = 6", line: 7, stdout: "" },
+      { variables: { n: "4", result: "24" }, output: "4 * 6 = 24", line: 7, stdout: "" },
+      { variables: { n: "5", result: "120" }, output: "5 * 24 = 120", line: 7, stdout: "" },
+      { variables: { n: "5", result: "120" }, output: "factorial(5) returns 120 to main(), and printf prints 5! = 120", line: 11, stdout: "5! = 120\n" }
     ]
   },
 
@@ -428,15 +451,16 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Array marks[5] allocated in memory" },
-      { variables: { "marks[0]": "85", "marks[1]": "92", "marks[2]": "78", "marks[3]": "96", "marks[4]": "88" }, output: "Array initialized with values" },
-      { variables: { i: "0", sum: "0" }, output: "Loop starts, i=0, sum=0" },
-      { variables: { i: "0", sum: "85" }, output: "sum += marks[0] = 85" },
-      { variables: { i: "1", sum: "177" }, output: "sum += marks[1] = 92, total 177" },
-      { variables: { i: "2", sum: "255" }, output: "sum += marks[2] = 78, total 255" },
-      { variables: { i: "3", sum: "351" }, output: "sum += marks[3] = 96, total 351" },
-      { variables: { i: "4", sum: "439" }, output: "sum += marks[4] = 88, total 439" },
-      { variables: { i: "5" }, output: "Loop ends, calculate average: 439/5 = 87.8" }
+      { variables: {}, output: "Array marks[5] allocated in memory", line: 4, stdout: "" },
+      { variables: { "marks[0]": "85", "marks[1]": "92", "marks[2]": "78", "marks[3]": "96", "marks[4]": "88" }, output: "Array initialized with values", line: 4, stdout: "" },
+      { variables: { "marks[0]": "85", "marks[1]": "92", "marks[2]": "78", "marks[3]": "96", "marks[4]": "88" }, output: "Lines 6-10 first print the marks: Marks: 85 92 78 96 88", line: 7, stdout: "Marks: 85 92 78 96 88 \n" },
+      { variables: { i: "0", sum: "0" }, output: "Loop starts, i=0, sum=0", line: 14, stdout: "Marks: 85 92 78 96 88 \n" },
+      { variables: { i: "0", sum: "85" }, output: "sum += marks[0] = 85", line: 15, stdout: "Marks: 85 92 78 96 88 \n" },
+      { variables: { i: "1", sum: "177" }, output: "sum += marks[1] = 92, total 177", line: 15, stdout: "Marks: 85 92 78 96 88 \n" },
+      { variables: { i: "2", sum: "255" }, output: "sum += marks[2] = 78, total 255", line: 15, stdout: "Marks: 85 92 78 96 88 \n" },
+      { variables: { i: "3", sum: "351" }, output: "sum += marks[3] = 96, total 351", line: 15, stdout: "Marks: 85 92 78 96 88 \n" },
+      { variables: { i: "4", sum: "439" }, output: "sum += marks[4] = 88, total 439", line: 15, stdout: "Marks: 85 92 78 96 88 \n" },
+      { variables: { i: "5" }, output: "Loop ends, calculate average: 439/5 = 87.8", line: 17, stdout: "Marks: 85 92 78 96 88 \nAverage: 87.80\n" }
     ]
   },
 
@@ -467,11 +491,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "3x3 matrix allocated in memory" },
-      { variables: {}, output: "Matrix initialized with values 1-9" },
-      { variables: { i: "0", j: "0" }, output: "Print row 0: 1 2 3" },
-      { variables: { i: "1", j: "0" }, output: "Print row 1: 4 5 6" },
-      { variables: { i: "2", j: "0" }, output: "Print row 2: 7 8 9" }
+      { variables: {}, output: "3x3 matrix allocated in memory", line: 4, stdout: "" },
+      { variables: {}, output: "Matrix initialized with values 1-9", line: 4, stdout: "" },
+      { variables: {}, output: "printf prints the heading Matrix:", line: 10, stdout: "Matrix:\n" },
+      { variables: { i: "0", j: "0" }, output: "Print row 0: 1 2 3", line: 13, stdout: "Matrix:\n1 2 3 \n" },
+      { variables: { i: "1", j: "0" }, output: "Print row 1: 4 5 6", line: 13, stdout: "Matrix:\n1 2 3 \n4 5 6 \n" },
+      { variables: { i: "2", j: "0" }, output: "Print row 2: 7 8 9", line: 13, stdout: "Matrix:\n1 2 3 \n4 5 6 \n7 8 9 \n" }
     ]
   },
 
@@ -484,14 +509,14 @@ const TOPICS_DB = {
       "Library functions in <string.h>",
       "No built-in string type in C"
     ],
-    code: `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char name[20] = "John";\n    char greeting[] = "Hello";\n    \n    printf("Name: %s\\n", name);\n    printf("Length: %lu\\n", strlen(name));\n    \n    // Copy string\n    char copy[20];\n    strcpy(copy, name);\n    printf("Copy: %s\\n", copy);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char name[20] = "John";\n    char greeting[] = "Hello";\n    \n    printf("Name: %s\\n", name);\n    printf("Length: %zu\\n", strlen(name));\n    \n    // Copy string\n    char copy[20];\n    strcpy(copy, name);\n    printf("Copy: %s\\n", copy);\n    \n    return 0;\n}`,
     explanation: [
       "char name[20] - character array for string",
       "Strings end with '\\0' automatically",
       "strlen() returns length excluding null terminator",
-      "strcpy() copies strings safely"
+      "strcpy() copies strings but does no bounds checking, so the destination must be large enough"
     ],
-    examTip: "Always allocate space for null terminator. Use strcpy/strncpy safely.",
+    examTip: "Always allocate space for null terminator. strcpy does no bounds checking; strncpy limits the copy but may not add the null terminator.",
     practiceQ: "Write a program to concatenate two strings without using strcat()",
     quiz: [
       {
@@ -502,10 +527,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "char name[20] allocated" },
-      { variables: { "name[0]": "'J'", "name[1]": "'o'", "name[2]": "'h'", "name[3]": "'n'", "name[4]": "'\\0'" }, output: "String 'John' stored with null terminator" },
-      { variables: { length: "4" }, output: "strlen() counts characters until \\0" },
-      { variables: {}, output: "strcpy() copies characters including \\0" }
+      { variables: {}, output: "char name[20] allocated", line: 5, stdout: "" },
+      { variables: { "name[0]": "'J'", "name[1]": "'o'", "name[2]": "'h'", "name[3]": "'n'", "name[4]": "'\\0'" }, output: "String 'John' stored with null terminator", line: 5, stdout: "" },
+      { variables: { "name[0]": "'J'", "name[1]": "'o'", "name[2]": "'h'", "name[3]": "'n'", "name[4]": "'\\0'" }, output: "printf prints Name: John", line: 8, stdout: "Name: John\n" },
+      { variables: { length: "4" }, output: "strlen() counts characters until \\0", line: 9, stdout: "Name: John\nLength: 4\n" },
+      { variables: {}, output: "strcpy() copies characters including \\0", line: 13, stdout: "Name: John\nLength: 4\n" },
+      { variables: {}, output: "printf prints Copy: John", line: 14, stdout: "Name: John\nLength: 4\nCopy: John\n" }
     ]
   },
 
@@ -537,10 +564,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { "str1": "'Hello'", "str2": "'World'" }, output: "Strings initialized" },
-      { variables: { "str1": "'Hello '" }, output: "strcat(str1, ' ') executed" },
-      { variables: { "str1": "'Hello World'" }, output: "strcat(str1, str2) executed" },
-      { variables: { result: "0" }, output: "strcmp('Hello World', 'Hello World') returns 0" }
+      { variables: { "str1": "'Hello'", "str2": "'World'" }, output: "Strings initialized", line: 5, stdout: "" },
+      { variables: { "str1": "'Hello '" }, output: "strcat(str1, ' ') executed", line: 9, stdout: "" },
+      { variables: { "str1": "'Hello World'" }, output: "strcat(str1, str2) executed", line: 10, stdout: "" },
+      { variables: { "str1": "'Hello World'" }, output: "printf prints Concatenated: Hello World", line: 11, stdout: "Concatenated: Hello World\n" },
+      { variables: { result: "0" }, output: "strcmp('Hello World', 'Hello World') returns 0", line: 14, stdout: "Concatenated: Hello World\n" },
+      { variables: { result: "0" }, output: "strcmp returned 0, so the if body prints Strings are equal", line: 15, stdout: "Concatenated: Hello World\nStrings are equal\n" }
     ]
   },
 
@@ -554,7 +583,7 @@ const TOPICS_DB = {
       "&variable - address of operator",
       "*pointer - dereference operator"
     ],
-    code: `#include <stdio.h>\n\nint main() {\n    int x = 10;\n    int *ptr = &x;  // ptr points to x\n    \n    printf("x = %d\\n", x);\n    printf("Address of x = %p\\n", &x);\n    printf("ptr = %p\\n", ptr);\n    printf("*ptr = %d\\n", *ptr);\n    \n    *ptr = 20;  // Change value through pointer\n    printf("After change: x = %d\\n", x);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\nint main() {\n    int x = 10;\n    int *ptr = &x;  // ptr points to x\n    \n    printf("x = %d\\n", x);\n    printf("Address of x = %p\\n", (void*)&x);\n    printf("ptr = %p\\n", (void*)ptr);\n    printf("*ptr = %d\\n", *ptr);\n    \n    *ptr = 20;  // Change value through pointer\n    printf("After change: x = %d\\n", x);\n    \n    return 0;\n}`,
     explanation: [
       "int *ptr - pointer to integer",
       "&x - address of x",
@@ -572,10 +601,14 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { x: "10" }, output: "Variable x allocated at address 0x1000" },
-      { variables: { x: "10", ptr: "0x1000" }, output: "Pointer ptr assigned address of x" },
-      { variables: { x: "10", ptr: "0x1000" }, output: "*ptr accesses value 10" },
-      { variables: { x: "20", ptr: "0x1000" }, output: "*ptr = 20 changes x through pointer" }
+      { variables: { x: "10" }, output: "Variable x is stored in memory (illustrative address 0x1000; real addresses differ on every run)", line: 4, stdout: "" },
+      { variables: { x: "10", ptr: "0x1000" }, output: "Pointer ptr assigned address of x (0x1000 is illustrative)", line: 5, stdout: "" },
+      { variables: { x: "10", ptr: "0x1000" }, output: "printf prints x = 10", line: 7, stdout: "x = 10\n" },
+      { variables: { x: "10", ptr: "0x1000" }, output: "printf prints the address of x. 0x1000 is illustrative: a real run prints a different address", line: 8, stdout: "x = 10\nAddress of x = 0x1000\n" },
+      { variables: { x: "10", ptr: "0x1000" }, output: "ptr holds the same address as &x, so the same illustrative 0x1000 is printed", line: 9, stdout: "x = 10\nAddress of x = 0x1000\nptr = 0x1000\n" },
+      { variables: { x: "10", ptr: "0x1000" }, output: "*ptr accesses value 10", line: 10, stdout: "x = 10\nAddress of x = 0x1000\nptr = 0x1000\n*ptr = 10\n" },
+      { variables: { x: "20", ptr: "0x1000" }, output: "*ptr = 20 changes x through pointer", line: 12, stdout: "x = 10\nAddress of x = 0x1000\nptr = 0x1000\n*ptr = 10\n" },
+      { variables: { x: "20", ptr: "0x1000" }, output: "printf prints After change: x = 20", line: 13, stdout: "x = 10\nAddress of x = 0x1000\nptr = 0x1000\n*ptr = 10\nAfter change: x = 20\n" }
     ]
   },
 
@@ -588,7 +621,7 @@ const TOPICS_DB = {
       "Pointer arithmetic follows data type size",
       "Common in array traversal"
     ],
-    code: `#include <stdio.h>\n\nint main() {\n    int arr[] = {10, 20, 30, 40, 50};\n    int *ptr = arr;  // Points to arr[0]\n    \n    printf("Using pointer arithmetic:\\n");\n    for (int i = 0; i < 5; i++) {\n        printf("arr[%d] = %d (address: %p)\\n", i, *(ptr + i), (ptr + i));\n    }\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\nint main() {\n    int arr[] = {10, 20, 30, 40, 50};\n    int *ptr = arr;  // Points to arr[0]\n    \n    printf("Using pointer arithmetic:\\n");\n    for (int i = 0; i < 5; i++) {\n        printf("arr[%d] = %d (address: %p)\\n", i, *(ptr + i), (void*)(ptr + i));\n    }\n    \n    return 0;\n}`,
     explanation: [
       "int *ptr = arr - ptr points to first element",
       "*(ptr + i) equivalent to arr[i]",
@@ -606,12 +639,13 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { "arr[0]": "10", "arr[1]": "20", "arr[2]": "30", "arr[3]": "40", "arr[4]": "50", ptr: "arr" }, output: "Array and pointer initialized" },
-      { variables: { ptr: "arr[0]" }, output: "*(ptr + 0) = arr[0] = 10" },
-      { variables: { ptr: "arr[1]" }, output: "*(ptr + 1) = arr[1] = 20" },
-      { variables: { ptr: "arr[2]" }, output: "*(ptr + 2) = arr[2] = 30" },
-      { variables: { ptr: "arr[3]" }, output: "*(ptr + 3) = arr[3] = 40" },
-      { variables: { ptr: "arr[4]" }, output: "*(ptr + 4) = arr[4] = 50" }
+      { variables: { "arr[0]": "10", "arr[1]": "20", "arr[2]": "30", "arr[3]": "40", "arr[4]": "50", ptr: "arr" }, output: "Array and pointer initialized", line: 5, stdout: "" },
+      { variables: { "arr[0]": "10", "arr[1]": "20", "arr[2]": "30", "arr[3]": "40", "arr[4]": "50", ptr: "arr" }, output: "printf prints the heading. The addresses printed below are illustrative; a real run shows other values, 4 bytes apart", line: 7, stdout: "Using pointer arithmetic:\n" },
+      { variables: { ptr: "arr[0]" }, output: "*(ptr + 0) = arr[0] = 10", line: 9, stdout: "Using pointer arithmetic:\narr[0] = 10 (address: 0x1000)\n" },
+      { variables: { ptr: "arr[1]" }, output: "*(ptr + 1) = arr[1] = 20", line: 9, stdout: "Using pointer arithmetic:\narr[0] = 10 (address: 0x1000)\narr[1] = 20 (address: 0x1004)\n" },
+      { variables: { ptr: "arr[2]" }, output: "*(ptr + 2) = arr[2] = 30", line: 9, stdout: "Using pointer arithmetic:\narr[0] = 10 (address: 0x1000)\narr[1] = 20 (address: 0x1004)\narr[2] = 30 (address: 0x1008)\n" },
+      { variables: { ptr: "arr[3]" }, output: "*(ptr + 3) = arr[3] = 40", line: 9, stdout: "Using pointer arithmetic:\narr[0] = 10 (address: 0x1000)\narr[1] = 20 (address: 0x1004)\narr[2] = 30 (address: 0x1008)\narr[3] = 40 (address: 0x100c)\n" },
+      { variables: { ptr: "arr[4]" }, output: "*(ptr + 4) = arr[4] = 50", line: 9, stdout: "Using pointer arithmetic:\narr[0] = 10 (address: 0x1000)\narr[1] = 20 (address: 0x1004)\narr[2] = 30 (address: 0x1008)\narr[3] = 40 (address: 0x100c)\narr[4] = 50 (address: 0x1010)\n" }
     ]
   },
 
@@ -631,7 +665,7 @@ const TOPICS_DB = {
       "numbers in main() decays to &numbers[0]",
       "Function receives pointer, not copy of array"
     ],
-    examTip: "Arrays are passed by reference (as pointers). Changes affect original array.",
+    examTip: "C passes a pointer to the first element (by value), so changes made through it affect the original array.",
     practiceQ: "Write a function to find sum of array elements using pointers",
     quiz: [
       {
@@ -642,13 +676,14 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Array numbers[] = {1,2,3,4,5} created" },
-      { variables: { arr: "numbers" }, output: "Function parameter arr receives pointer to numbers[0]" },
-      { variables: { i: "0" }, output: "arr[0] = *(arr + 0) = 1" },
-      { variables: { i: "1" }, output: "arr[1] = *(arr + 1) = 2" },
-      { variables: { i: "2" }, output: "arr[2] = *(arr + 2) = 3" },
-      { variables: { i: "3" }, output: "arr[3] = *(arr + 3) = 4" },
-      { variables: { i: "4" }, output: "arr[4] = *(arr + 4) = 5" }
+      { variables: {}, output: "Array numbers[] = {1,2,3,4,5} created", line: 11, stdout: "" },
+      { variables: { arr: "numbers" }, output: "Function parameter arr receives pointer to numbers[0]", line: 13, stdout: "" },
+      { variables: { i: "0" }, output: "arr[0] = *(arr + 0) = 1", line: 5, stdout: "1 " },
+      { variables: { i: "1" }, output: "arr[1] = *(arr + 1) = 2", line: 5, stdout: "1 2 " },
+      { variables: { i: "2" }, output: "arr[2] = *(arr + 2) = 3", line: 5, stdout: "1 2 3 " },
+      { variables: { i: "3" }, output: "arr[3] = *(arr + 3) = 4", line: 5, stdout: "1 2 3 4 " },
+      { variables: { i: "4" }, output: "arr[4] = *(arr + 4) = 5", line: 5, stdout: "1 2 3 4 5 " },
+      { variables: { i: "4" }, output: "printf(\"\\n\") ends the output line", line: 7, stdout: "1 2 3 4 5 \n" }
     ]
   },
 
@@ -679,10 +714,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Functions add and subtract defined" },
-      { variables: { operation: "add" }, output: "Function pointer assigned to add" },
-      { variables: { operation: "add", result: "8" }, output: "operation(5,3) calls add(5,3) = 8" },
-      { variables: { operation: "subtract", result: "2" }, output: "operation(5,3) calls subtract(5,3) = 2" }
+      { variables: {}, output: "Functions add and subtract defined", line: 3, stdout: "" },
+      { variables: { operation: "add" }, output: "Function pointer assigned to add", line: 9, stdout: "" },
+      { variables: { operation: "add", result: "8" }, output: "operation(5,3) calls add(5,3) = 8, and printf prints 5 + 3 = 8", line: 10, stdout: "5 + 3 = 8\n" },
+      { variables: { operation: "add", result: "8" }, output: "operation now points to subtract", line: 12, stdout: "5 + 3 = 8\n" },
+      { variables: { operation: "subtract", result: "2" }, output: "operation(5,3) calls subtract(5,3) = 2, and printf prints 5 - 3 = 2", line: 13, stdout: "5 + 3 = 8\n5 - 3 = 2\n" }
     ]
   },
 
@@ -714,11 +750,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "struct Student defined with name, roll_no, marks" },
-      { variables: { "s1.name": "'John'", "s1.roll_no": "101", "s1.marks": "85.5" }, output: "Structure members assigned values" },
-      { variables: { "s1.name": "'John'" }, output: "Access s1.name = 'John'" },
-      { variables: { "s1.roll_no": "101" }, output: "Access s1.roll_no = 101" },
-      { variables: { "s1.marks": "85.5" }, output: "Access s1.marks = 85.5" }
+      { variables: {}, output: "struct Student defined with name, roll_no, marks", line: 4, stdout: "" },
+      { variables: { "s1.name": "'John'", "s1.roll_no": "101", "s1.marks": "85.5" }, output: "Structure members assigned values", line: 13, stdout: "" },
+      { variables: { "s1.name": "'John'" }, output: "Access s1.name = 'John'", line: 17, stdout: "Name: John\n" },
+      { variables: { "s1.roll_no": "101" }, output: "Access s1.roll_no = 101", line: 18, stdout: "Name: John\nRoll No: 101\n" },
+      { variables: { "s1.marks": "85.5" }, output: "Access s1.marks = 85.5", line: 19, stdout: "Name: John\nRoll No: 101\nMarks: 85.50\n" }
     ]
   },
 
@@ -731,7 +767,7 @@ const TOPICS_DB = {
       "Useful for complex data relationships",
       "Memory layout is contiguous"
     ],
-    code: `#include <stdio.h>\n\nstruct Address {\n    char street[50];\n    char city[30];\n    int pincode;\n};\n\nstruct Employee {\n    char name[50];\n    int id;\n    struct Address addr;\n};\n\nint main() {\n    struct Employee emp;\n    \n    strcpy(emp.name, "Alice");\n    emp.id = 1001;\n    strcpy(emp.addr.street, "Main St");\n    strcpy(emp.addr.city, "NYC");\n    emp.addr.pincode = 10001;\n    \n    printf("Employee: %s (ID: %d)\\n", emp.name, emp.id);\n    printf("Address: %s, %s - %d\\n", emp.addr.street, emp.addr.city, emp.addr.pincode);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\n#include <string.h>\n\nstruct Address {\n    char street[50];\n    char city[30];\n    int pincode;\n};\n\nstruct Employee {\n    char name[50];\n    int id;\n    struct Address addr;\n};\n\nint main() {\n    struct Employee emp;\n    \n    strcpy(emp.name, "Alice");\n    emp.id = 1001;\n    strcpy(emp.addr.street, "Main St");\n    strcpy(emp.addr.city, "NYC");\n    emp.addr.pincode = 10001;\n    \n    printf("Employee: %s (ID: %d)\\n", emp.name, emp.id);\n    printf("Address: %s, %s - %d\\n", emp.addr.street, emp.addr.city, emp.addr.pincode);\n    \n    return 0;\n}`,
     explanation: [
       "struct Address nested inside struct Employee",
       "emp.addr.street - access nested member",
@@ -749,10 +785,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Nested structures Employee and Address defined" },
-      { variables: { "emp.name": "'Alice'", "emp.id": "1001" }, output: "Employee data assigned" },
-      { variables: { "emp.addr.street": "'Main St'", "emp.addr.city": "'NYC'", "emp.addr.pincode": "10001" }, output: "Nested address data assigned" },
-      { variables: {}, output: "Access emp.addr.street for nested member" }
+      { variables: {}, output: "Nested structures Employee and Address defined", line: 5, stdout: "" },
+      { variables: { "emp.name": "'Alice'", "emp.id": "1001" }, output: "Employee data assigned", line: 20, stdout: "" },
+      { variables: { "emp.addr.street": "'Main St'", "emp.addr.city": "'NYC'", "emp.addr.pincode": "10001" }, output: "Nested address data assigned", line: 22, stdout: "" },
+      { variables: { "emp.addr.street": "'Main St'", "emp.addr.city": "'NYC'", "emp.addr.pincode": "10001" }, output: "printf prints Employee: Alice (ID: 1001)", line: 26, stdout: "Employee: Alice (ID: 1001)\n" },
+      { variables: {}, output: "Access emp.addr.street for nested member", line: 27, stdout: "Employee: Alice (ID: 1001)\nAddress: Main St, NYC - 10001\n" }
     ]
   },
 
@@ -783,11 +820,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Array of 3 Book structures created" },
-      { variables: { "library[0].title": "'C Programming'", "library[0].author": "'Dennis Ritchie'", "library[0].price": "45.50" }, output: "First book data assigned" },
-      { variables: { "library[1].title": "'Data Structures'", "library[1].author": "'Robert Sedgewick'", "library[1].price": "55.75" }, output: "Second book data assigned" },
-      { variables: { i: "0" }, output: "Loop accesses library[0].title, library[0].author, library[0].price" },
-      { variables: { i: "1" }, output: "Loop accesses library[1].title, library[1].author, library[1].price" }
+      { variables: {}, output: "Array of 3 Book structures created", line: 11, stdout: "" },
+      { variables: { "library[0].title": "'C Programming'", "library[0].author": "'Dennis Ritchie'", "library[0].price": "45.50" }, output: "First book data assigned", line: 14, stdout: "" },
+      { variables: { "library[1].title": "'Data Structures'", "library[1].author": "'Robert Sedgewick'", "library[1].price": "55.75" }, output: "Second book data assigned", line: 18, stdout: "" },
+      { variables: { i: "0" }, output: "Loop accesses library[0].title, library[0].author, library[0].price", line: 24, stdout: "Book 1: C Programming by Dennis Ritchie ($45.50)\n" },
+      { variables: { i: "1" }, output: "Loop accesses library[1].title, library[1].author, library[1].price", line: 24, stdout: "Book 1: C Programming by Dennis Ritchie ($45.50)\nBook 2: Data Structures by Robert Sedgewick ($55.75)\n" }
     ]
   },
 
@@ -800,7 +837,7 @@ const TOPICS_DB = {
       "Only one member active at a time",
       "Memory efficient for mutually exclusive data"
     ],
-    code: `#include <stdio.h>\n\nunion Data {\n    int i;\n    float f;\n    char str[20];\n};\n\nint main() {\n    union Data data;\n    \n    data.i = 10;\n    printf("data.i = %d\\n", data.i);\n    \n    data.f = 3.14;\n    printf("data.f = %.2f\\n", data.f);\n    // data.i is now garbage\n    \n    strcpy(data.str, "Hello");\n    printf("data.str = %s\\n", data.str);\n    \n    return 0;\n}`,
+    code: `#include <stdio.h>\n\n#include <string.h>\n\nunion Data {\n    int i;\n    float f;\n    char str[20];\n};\n\nint main() {\n    union Data data;\n    \n    data.i = 10;\n    printf("data.i = %d\\n", data.i);\n    \n    data.f = 3.14;\n    printf("data.f = %.2f\\n", data.f);\n    // data.i is now garbage\n    \n    strcpy(data.str, "Hello");\n    printf("data.str = %s\\n", data.str);\n    \n    return 0;\n}`,
     explanation: [
       "union Data - all members share same memory",
       "sizeof(union) = size of largest member",
@@ -818,10 +855,13 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Union Data created, size = max(int, float, char[20]) = 20 bytes" },
-      { variables: { "data.i": "10" }, output: "data.i = 10 stored in shared memory" },
-      { variables: { "data.f": "3.14" }, output: "data.f = 3.14 overwrites same memory, data.i now garbage" },
-      { variables: { "data.str": "'Hello'" }, output: "data.str = 'Hello' overwrites same memory again" }
+      { variables: {}, output: "Union Data created, size = max(int, float, char[20]) = 20 bytes", line: 12, stdout: "" },
+      { variables: { "data.i": "10" }, output: "data.i = 10 stored in shared memory", line: 14, stdout: "" },
+      { variables: { "data.i": "10" }, output: "printf prints data.i = 10", line: 15, stdout: "data.i = 10\n" },
+      { variables: { "data.f": "3.14" }, output: "data.f = 3.14 overwrites same memory, data.i now garbage", line: 17, stdout: "data.i = 10\n" },
+      { variables: { "data.f": "3.14" }, output: "printf prints data.f = 3.14", line: 18, stdout: "data.i = 10\ndata.f = 3.14\n" },
+      { variables: { "data.str": "'Hello'" }, output: "data.str = 'Hello' overwrites same memory again", line: 21, stdout: "data.i = 10\ndata.f = 3.14\n" },
+      { variables: { "data.str": "'Hello'" }, output: "printf prints data.str = Hello", line: 22, stdout: "data.i = 10\ndata.f = 3.14\ndata.str = Hello\n" }
     ]
   },
 
@@ -853,11 +893,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { file: "NULL" }, output: "FILE pointer declared" },
-      { variables: { file: "0x2000" }, output: "fopen() succeeds, returns valid file pointer" },
-      { variables: { file: "0x2000" }, output: "fprintf() writes 'Hello, File!' to file" },
-      { variables: { file: "0x2000" }, output: "fprintf() writes 'This is line 2.' to file" },
-      { variables: { file: "NULL" }, output: "fclose() closes file and sets pointer to NULL" }
+      { variables: { file: "NULL" }, output: "FILE pointer declared", line: 4, stdout: "" },
+      { variables: { file: "0x2000" }, output: "fopen() succeeds, returns a valid file pointer (0x2000 is an illustrative value)", line: 7, stdout: "" },
+      { variables: { file: "0x2000" }, output: "fprintf() writes 'Hello, File!' to file", line: 13, stdout: "" },
+      { variables: { file: "0x2000" }, output: "fprintf() writes 'This is line 2.' to file", line: 14, stdout: "" },
+      { variables: { file: "0x2000 (dangling)" }, output: "fclose() closes the file (the pointer is not set to NULL automatically; it is dangling and must not be used)", line: 16, stdout: "" },
+      { variables: { file: "0x2000 (dangling)" }, output: "printf prints Data written to file", line: 17, stdout: "Data written to file\n" }
     ]
   },
 
@@ -889,16 +930,17 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "File opened for writing" },
-      { variables: {}, output: "fprintf() writes 1, 2, 3, 4, 5 to file" },
-      { variables: {}, output: "File closed" },
-      { variables: {}, output: "File reopened for reading" },
-      { variables: {}, output: "fgets() reads '1\\n' into buffer" },
-      { variables: {}, output: "fgets() reads '2\\n' into buffer" },
-      { variables: {}, output: "fgets() reads '3\\n' into buffer" },
-      { variables: {}, output: "fgets() reads '4\\n' into buffer" },
-      { variables: {}, output: "fgets() reads '5\\n' into buffer" },
-      { variables: {}, output: "fgets() returns NULL, loop ends" }
+      { variables: {}, output: "File opened for writing", line: 8, stdout: "" },
+      { variables: {}, output: "fprintf() writes 1, 2, 3, 4, 5 to file", line: 10, stdout: "" },
+      { variables: {}, output: "File closed", line: 12, stdout: "" },
+      { variables: {}, output: "File reopened for reading", line: 15, stdout: "" },
+      { variables: {}, output: "printf prints File contents:", line: 16, stdout: "File contents:\n" },
+      { variables: {}, output: "fgets() reads '1\\n' into buffer and printf prints it", line: 18, stdout: "File contents:\n1\n" },
+      { variables: {}, output: "fgets() reads '2\\n' into buffer and printf prints it", line: 18, stdout: "File contents:\n1\n2\n" },
+      { variables: {}, output: "fgets() reads '3\\n' into buffer and printf prints it", line: 18, stdout: "File contents:\n1\n2\n3\n" },
+      { variables: {}, output: "fgets() reads '4\\n' into buffer and printf prints it", line: 18, stdout: "File contents:\n1\n2\n3\n4\n" },
+      { variables: {}, output: "fgets() reads '5\\n' into buffer and printf prints it", line: 18, stdout: "File contents:\n1\n2\n3\n4\n5\n" },
+      { variables: {}, output: "fgets() returns NULL, loop ends", line: 17, stdout: "File contents:\n1\n2\n3\n4\n5\n" }
     ]
   },
 
@@ -929,16 +971,18 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "File opened for writing" },
-      { variables: {}, output: "fputc('H') writes 'H' to file" },
-      { variables: {}, output: "fputc('i') writes 'i' to file" },
-      { variables: {}, output: "fputc('!') writes '!' to file" },
-      { variables: {}, output: "File closed" },
-      { variables: {}, output: "File reopened for reading" },
-      { variables: { ch: "'H'" }, output: "fgetc() reads 'H'" },
-      { variables: { ch: "'i'" }, output: "fgetc() reads 'i'" },
-      { variables: { ch: "'!'" }, output: "fgetc() reads '!'" },
-      { variables: { ch: "EOF" }, output: "fgetc() returns EOF, loop ends" }
+      { variables: {}, output: "File opened for writing", line: 8, stdout: "" },
+      { variables: {}, output: "fputc('H') writes 'H' to file", line: 9, stdout: "" },
+      { variables: {}, output: "fputc('i') writes 'i' to file", line: 10, stdout: "" },
+      { variables: {}, output: "fputc('!') writes '!' to file", line: 11, stdout: "" },
+      { variables: {}, output: "File closed", line: 12, stdout: "" },
+      { variables: {}, output: "File reopened for reading", line: 15, stdout: "" },
+      { variables: {}, output: "printf prints File contents: ", line: 16, stdout: "File contents: " },
+      { variables: { ch: "'H'" }, output: "fgetc() reads 'H' and printf prints it", line: 18, stdout: "File contents: H" },
+      { variables: { ch: "'i'" }, output: "fgetc() reads 'i' and printf prints it", line: 18, stdout: "File contents: Hi" },
+      { variables: { ch: "'!'" }, output: "fgetc() reads '!' and printf prints it", line: 18, stdout: "File contents: Hi!" },
+      { variables: { ch: "EOF" }, output: "fgetc() returns EOF, loop ends", line: 17, stdout: "File contents: Hi!" },
+      { variables: { ch: "EOF" }, output: "printf(\"\\n\") ends the output line", line: 20, stdout: "File contents: Hi!\n" }
     ]
   },
 
@@ -972,12 +1016,13 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "5" }, output: "n = 5 elements needed" },
-      { variables: { arr: "NULL" }, output: "arr pointer declared" },
-      { variables: { arr: "0x3000" }, output: "malloc(5 * 4) = 20 bytes allocated at 0x3000" },
-      { variables: { "arr[0]": "1", "arr[1]": "2", "arr[2]": "3", "arr[3]": "4", "arr[4]": "5" }, output: "Array filled with values 1-5" },
-      { variables: { arr: "0x3000" }, output: "free(arr) deallocates memory at 0x3000" },
-      { variables: { arr: "NULL" }, output: "arr set to NULL to prevent dangling pointer" }
+      { variables: { n: "5" }, output: "n = 5 elements needed", line: 6, stdout: "" },
+      { variables: { arr: "NULL" }, output: "arr pointer declared", line: 5, stdout: "" },
+      { variables: { arr: "0x3000" }, output: "malloc(5 * 4) = 20 bytes allocated (illustrative address 0x3000; real addresses vary per run)", line: 9, stdout: "" },
+      { variables: { "arr[0]": "1", "arr[1]": "2", "arr[2]": "3", "arr[3]": "4", "arr[4]": "5" }, output: "The loop fills arr with the values 1-5 and prints each one", line: 17, stdout: "1 2 3 4 5 " },
+      { variables: { "arr[0]": "1", "arr[1]": "2", "arr[2]": "3", "arr[3]": "4", "arr[4]": "5" }, output: "printf(\"\\n\") ends the output line", line: 20, stdout: "1 2 3 4 5 \n" },
+      { variables: { arr: "0x3000" }, output: "free(arr) deallocates the memory (illustrative address 0x3000)", line: 23, stdout: "1 2 3 4 5 \n" },
+      { variables: { arr: "NULL" }, output: "arr set to NULL to prevent dangling pointer", line: 24, stdout: "1 2 3 4 5 \n" }
     ]
   },
 
@@ -1012,12 +1057,14 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { a: "12 (1100)", b: "10 (1010)" }, output: "a = 12 (1100), b = 10 (1010)" },
-      { variables: { result: "8 (1000)" }, output: "a & b: 1100 & 1010 = 1000 (8)" },
-      { variables: { result: "14 (1110)" }, output: "a | b: 1100 | 1010 = 1110 (14)" },
-      { variables: { result: "6 (0110)" }, output: "a ^ b: 1100 ^ 1010 = 0110 (6)" },
-      { variables: { result: "24 (11000)" }, output: "a << 1: 1100 << 1 = 11000 (24)" },
-      { variables: { result: "6 (0110)" }, output: "a >> 1: 1100 >> 1 = 0110 (6)" }
+      { variables: { a: "12 (1100)", b: "10 (1010)" }, output: "a = 12 (1100), b = 10 (1010)", line: 5, stdout: "" },
+      { variables: { a: "12 (1100)", b: "10 (1010)" }, output: "printf prints a = 12 (binary: 1100)", line: 7, stdout: "a = 12 (binary: 1100)\n" },
+      { variables: { a: "12 (1100)", b: "10 (1010)" }, output: "printf prints b = 10 (binary: 1010)", line: 8, stdout: "a = 12 (binary: 1100)\nb = 10 (binary: 1010)\n" },
+      { variables: { result: "8 (1000)" }, output: "a & b: 1100 & 1010 = 1000 (8)", line: 10, stdout: "a = 12 (binary: 1100)\nb = 10 (binary: 1010)\na & b = 8 (1000)\n" },
+      { variables: { result: "14 (1110)" }, output: "a | b: 1100 | 1010 = 1110 (14)", line: 11, stdout: "a = 12 (binary: 1100)\nb = 10 (binary: 1010)\na & b = 8 (1000)\na | b = 14 (1110)\n" },
+      { variables: { result: "6 (0110)" }, output: "a ^ b: 1100 ^ 1010 = 0110 (6)", line: 12, stdout: "a = 12 (binary: 1100)\nb = 10 (binary: 1010)\na & b = 8 (1000)\na | b = 14 (1110)\na ^ b = 6 (0110)\n" },
+      { variables: { result: "24 (11000)" }, output: "a << 1: 1100 << 1 = 11000 (24)", line: 13, stdout: "a = 12 (binary: 1100)\nb = 10 (binary: 1010)\na & b = 8 (1000)\na | b = 14 (1110)\na ^ b = 6 (0110)\na << 1 = 24 (11000)\n" },
+      { variables: { result: "6 (0110)" }, output: "a >> 1: 1100 >> 1 = 0110 (6)", line: 14, stdout: "a = 12 (binary: 1100)\nb = 10 (binary: 1010)\na & b = 8 (1000)\na | b = 14 (1110)\na ^ b = 6 (0110)\na << 1 = 24 (11000)\na >> 1 = 6 (0110)\n" }
     ]
   },
 
@@ -1049,12 +1096,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "5", first: "0", second: "1", i: "0" }, output: "Initialize: first=0, second=1, i=0" },
-      { variables: { next: "0", i: "0" }, output: "i=0: next=0 (special case)" },
-      { variables: { next: "0", i: "1" }, output: "i=1: next=1 (special case)" },
-      { variables: { next: "1", first: "0", second: "1", i: "2" }, output: "i=2: next=0+1=1, first=1, second=1" },
-      { variables: { next: "2", first: "1", second: "1", i: "3" }, output: "i=3: next=1+1=2, first=1, second=2" },
-      { variables: { next: "3", first: "1", second: "2", i: "4" }, output: "i=4: next=1+2=3, first=2, second=3" }
+      { variables: { n: "5", first: "0", second: "1", i: "0" }, output: "The prompts are printed and n=5 is entered. Initialize: first=0, second=1, i=0", line: 11, stdout: "Enter number of terms: Fibonacci Series: " },
+      { variables: { next: "0", i: "0" }, output: "i=0: next=0 (special case), printed", line: 13, stdout: "Enter number of terms: Fibonacci Series: 0 " },
+      { variables: { next: "0", i: "1" }, output: "i=1: next=1 (special case), printed", line: 13, stdout: "Enter number of terms: Fibonacci Series: 0 1 " },
+      { variables: { next: "1", first: "0", second: "1", i: "2" }, output: "i=2: next=0+1=1, first=1, second=1, printed", line: 15, stdout: "Enter number of terms: Fibonacci Series: 0 1 1 " },
+      { variables: { next: "2", first: "1", second: "1", i: "3" }, output: "i=3: next=1+1=2, first=1, second=2, printed", line: 15, stdout: "Enter number of terms: Fibonacci Series: 0 1 1 2 " },
+      { variables: { next: "3", first: "1", second: "2", i: "4" }, output: "i=4: next=1+2=3, first=2, second=3, printed. The loop ends after n=5 terms", line: 15, stdout: "Enter number of terms: Fibonacci Series: 0 1 1 2 3 " }
     ]
   },
 
@@ -1085,15 +1132,16 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "4" }, output: "fibonacci(4) called" },
-      { variables: { n: "3" }, output: "fibonacci(3) = fibonacci(2) + fibonacci(1)" },
-      { variables: { n: "2" }, output: "fibonacci(2) = fibonacci(1) + fibonacci(0)" },
-      { variables: { n: "1" }, output: "fibonacci(1) = 1 (base case)" },
-      { variables: { n: "0" }, output: "fibonacci(0) = 0 (base case)" },
-      { variables: { n: "2", result: "1" }, output: "fibonacci(2) = 1 + 0 = 1" },
-      { variables: { n: "1" }, output: "fibonacci(1) = 1 (base case)" },
-      { variables: { n: "3", result: "2" }, output: "fibonacci(3) = 1 + 1 = 2" },
-      { variables: { n: "4", result: "3" }, output: "fibonacci(4) = 2 + 1 = 3" }
+      { variables: { n: "4" }, output: "n=4 is entered and fibonacci(4) is called", line: 18, stdout: "Enter n: " },
+      { variables: { n: "3" }, output: "fibonacci(3) = fibonacci(2) + fibonacci(1)", line: 9, stdout: "Enter n: " },
+      { variables: { n: "2" }, output: "fibonacci(2) = fibonacci(1) + fibonacci(0)", line: 9, stdout: "Enter n: " },
+      { variables: { n: "1" }, output: "fibonacci(1) = 1 (base case)", line: 7, stdout: "Enter n: " },
+      { variables: { n: "0" }, output: "fibonacci(0) = 0 (base case)", line: 5, stdout: "Enter n: " },
+      { variables: { n: "2", result: "1" }, output: "fibonacci(2) = 1 + 0 = 1", line: 9, stdout: "Enter n: " },
+      { variables: { n: "1" }, output: "fibonacci(1) = 1 (base case)", line: 7, stdout: "Enter n: " },
+      { variables: { n: "3", result: "2" }, output: "fibonacci(3) = 1 + 1 = 2", line: 9, stdout: "Enter n: " },
+      { variables: { n: "4", result: "3" }, output: "fibonacci(4) = 2 + 1 = 3", line: 9, stdout: "Enter n: " },
+      { variables: { n: "4", result: "3" }, output: "printf prints Fibonacci(4) = 3 (The walkthrough stops here; the rest of the program is not stepped through.)", line: 18, stdout: "Enter n: Fibonacci(4) = 3\n" }
     ]
   },
 
@@ -1124,12 +1172,13 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "5", factorial: "1", i: "1" }, output: "Initialize factorial=1, i=1" },
-      { variables: { factorial: "1", i: "1" }, output: "factorial = 1 × 1 = 1" },
-      { variables: { factorial: "2", i: "2" }, output: "factorial = 1 × 2 = 2" },
-      { variables: { factorial: "6", i: "3" }, output: "factorial = 2 × 3 = 6" },
-      { variables: { factorial: "24", i: "4" }, output: "factorial = 6 × 4 = 24" },
-      { variables: { factorial: "120", i: "5" }, output: "factorial = 24 × 5 = 120" }
+      { variables: { n: "5", factorial: "1", i: "1" }, output: "The prompt is printed and n=5 is entered. Initialize factorial=1, i=1", line: 13, stdout: "Enter n: " },
+      { variables: { factorial: "1", i: "1" }, output: "factorial = 1 × 1 = 1", line: 14, stdout: "Enter n: " },
+      { variables: { factorial: "2", i: "2" }, output: "factorial = 1 × 2 = 2", line: 14, stdout: "Enter n: " },
+      { variables: { factorial: "6", i: "3" }, output: "factorial = 2 × 3 = 6", line: 14, stdout: "Enter n: " },
+      { variables: { factorial: "24", i: "4" }, output: "factorial = 6 × 4 = 24", line: 14, stdout: "Enter n: " },
+      { variables: { factorial: "120", i: "5" }, output: "factorial = 24 × 5 = 120", line: 14, stdout: "Enter n: " },
+      { variables: { factorial: "120", i: "5" }, output: "printf prints 5! = 120", line: 16, stdout: "Enter n: 5! = 120\n" }
     ]
   },
 
@@ -1160,16 +1209,17 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "4" }, output: "factorial(4) called" },
-      { variables: { n: "3" }, output: "factorial(4) = 4 * factorial(3)" },
-      { variables: { n: "2" }, output: "factorial(3) = 3 * factorial(2)" },
-      { variables: { n: "1" }, output: "factorial(2) = 2 * factorial(1)" },
-      { variables: { n: "0" }, output: "factorial(1) = 1 * factorial(0)" },
-      { variables: { n: "0", result: "1" }, output: "factorial(0) = 1 (base case)" },
-      { variables: { n: "1", result: "1" }, output: "factorial(1) = 1 * 1 = 1" },
-      { variables: { n: "2", result: "2" }, output: "factorial(2) = 2 * 1 = 2" },
-      { variables: { n: "3", result: "6" }, output: "factorial(3) = 3 * 2 = 6" },
-      { variables: { n: "4", result: "24" }, output: "factorial(4) = 4 * 6 = 24" }
+      { variables: { n: "4" }, output: "n=4 is entered and factorial(4) is called", line: 19, stdout: "Enter n: " },
+      { variables: { n: "3" }, output: "factorial(4) = 4 * factorial(3)", line: 7, stdout: "Enter n: " },
+      { variables: { n: "2" }, output: "factorial(3) = 3 * factorial(2)", line: 7, stdout: "Enter n: " },
+      { variables: { n: "1" }, output: "factorial(2) = 2 * factorial(1)", line: 7, stdout: "Enter n: " },
+      { variables: { n: "0" }, output: "factorial(1) = 1 * factorial(0)", line: 7, stdout: "Enter n: " },
+      { variables: { n: "0", result: "1" }, output: "factorial(0) = 1 (base case)", line: 5, stdout: "Enter n: " },
+      { variables: { n: "1", result: "1" }, output: "factorial(1) = 1 * 1 = 1", line: 7, stdout: "Enter n: " },
+      { variables: { n: "2", result: "2" }, output: "factorial(2) = 2 * 1 = 2", line: 7, stdout: "Enter n: " },
+      { variables: { n: "3", result: "6" }, output: "factorial(3) = 3 * 2 = 6", line: 7, stdout: "Enter n: " },
+      { variables: { n: "4", result: "24" }, output: "factorial(4) = 4 * 6 = 24", line: 7, stdout: "Enter n: " },
+      { variables: { n: "4", result: "24" }, output: "printf prints 4! = 24", line: 19, stdout: "Enter n: 4! = 24\n" }
     ]
   },
 
@@ -1201,10 +1251,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "17" }, output: "Check if 17 is prime" },
-      { variables: { n: "17" }, output: "17 > 3, not divisible by 2 or 3" },
-      { variables: { i: "5" }, output: "Check i=5: 5*5=25 > 17, stop" },
-      { variables: { result: "1" }, output: "No divisors found, 17 is prime" }
+      { variables: { n: "17" }, output: "The prompt is printed and 17 is entered. Check if 17 is prime", line: 22, stdout: "Enter number: " },
+      { variables: { n: "17" }, output: "17 > 3, not divisible by 2 or 3", line: 7, stdout: "Enter number: " },
+      { variables: { i: "5" }, output: "Check i=5: 5*5=25 > 17, stop", line: 9, stdout: "Enter number: " },
+      { variables: { result: "1" }, output: "No divisors found, 17 is prime", line: 14, stdout: "Enter number: " },
+      { variables: { result: "1" }, output: "printf prints 17 is prime", line: 23, stdout: "Enter number: 17 is prime\n" }
     ]
   },
 
@@ -1236,11 +1287,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "121", original: "121", reverse: "0" }, output: "Initialize: n=121, original=121, reverse=0" },
-      { variables: { remainder: "1", reverse: "1", n: "12" }, output: "remainder=121%10=1, reverse=0*10+1=1, n=121/10=12" },
-      { variables: { remainder: "2", reverse: "12", n: "1" }, output: "remainder=12%10=2, reverse=1*10+2=12, n=12/10=1" },
-      { variables: { remainder: "1", reverse: "121", n: "0" }, output: "remainder=1%10=1, reverse=12*10+1=121, n=1/10=0" },
-      { variables: { original: "121", reverse: "121" }, output: "121 == 121, number is palindrome" }
+      { variables: { n: "121", original: "121", reverse: "0" }, output: "The prompt is printed and 121 is entered. Initialize: n=121, original=121, reverse=0", line: 9, stdout: "Enter number: " },
+      { variables: { remainder: "1", reverse: "1", n: "12" }, output: "remainder=121%10=1, reverse=0*10+1=1, n=121/10=12", line: 13, stdout: "Enter number: " },
+      { variables: { remainder: "2", reverse: "12", n: "1" }, output: "remainder=12%10=2, reverse=1*10+2=12, n=12/10=1", line: 13, stdout: "Enter number: " },
+      { variables: { remainder: "1", reverse: "121", n: "0" }, output: "remainder=1%10=1, reverse=12*10+1=121, n=1/10=0", line: 13, stdout: "Enter number: " },
+      { variables: { original: "121", reverse: "121" }, output: "121 == 121, number is palindrome", line: 17, stdout: "Enter number: " },
+      { variables: { original: "121", reverse: "121" }, output: "printf prints 121 is palindrome", line: 18, stdout: "Enter number: 121 is palindrome\n" }
     ]
   },
 
@@ -1272,11 +1324,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { str: "'radar'", length: "5" }, output: "String 'radar', length=5" },
-      { variables: { i: "0" }, output: "Compare str[0]='r' with str[4]='r' - match" },
-      { variables: { i: "1" }, output: "Compare str[1]='a' with str[3]='a' - match" },
-      { variables: { i: "2" }, output: "i=2 >= 5/2=2.5, loop ends" },
-      { variables: { isPalindrome: "1" }, output: "All comparisons matched, string is palindrome" }
+      { variables: { str: "'radar'", length: "5" }, output: "The prompt is printed and 'radar' is entered. String 'radar', length=5", line: 11, stdout: "Enter string: " },
+      { variables: { i: "0" }, output: "Compare str[0]='r' with str[4]='r' - match", line: 14, stdout: "Enter string: " },
+      { variables: { i: "1" }, output: "Compare str[1]='a' with str[3]='a' - match", line: 14, stdout: "Enter string: " },
+      { variables: { i: "2" }, output: "i=2 >= 5/2=2 (integer division), loop ends", line: 13, stdout: "Enter string: " },
+      { variables: { isPalindrome: "1" }, output: "All comparisons matched, string is palindrome", line: 20, stdout: "Enter string: " },
+      { variables: { isPalindrome: "1" }, output: "printf prints radar is palindrome", line: 21, stdout: "Enter string: radar is palindrome\n" }
     ]
   },
 
@@ -1307,12 +1360,13 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "153", original: "153", digits: "0" }, output: "Count digits: 153 has 3 digits" },
-      { variables: { original: "153", digits: "3" }, output: "Reset original=153" },
-      { variables: { remainder: "3", result: "27", original: "15" }, output: "3³=27, result=27, original=15" },
-      { variables: { remainder: "5", result: "152", original: "1" }, output: "5³=125, result=27+125=152, original=1" },
-      { variables: { remainder: "1", result: "153", original: "0" }, output: "1³=1, result=152+1=153, original=0" },
-      { variables: { n: "153", result: "153" }, output: "153 == 153, number is Armstrong" }
+      { variables: { n: "153", original: "153", digits: "0" }, output: "The prompt is printed and 153 is entered. Count digits: 153 has 3 digits", line: 13, stdout: "Enter number: " },
+      { variables: { original: "153", digits: "3" }, output: "Reset original=153", line: 18, stdout: "Enter number: " },
+      { variables: { remainder: "3", result: "27", original: "15" }, output: "3³=27, result=27, original=15", line: 23, stdout: "Enter number: " },
+      { variables: { remainder: "5", result: "152", original: "1" }, output: "5³=125, result=27+125=152, original=1", line: 23, stdout: "Enter number: " },
+      { variables: { remainder: "1", result: "153", original: "0" }, output: "1³=1, result=152+1=153, original=0", line: 23, stdout: "Enter number: " },
+      { variables: { n: "153", result: "153" }, output: "153 == 153, number is Armstrong", line: 27, stdout: "Enter number: " },
+      { variables: { n: "153", result: "153" }, output: "printf prints 153 is Armstrong number", line: 28, stdout: "Enter number: 153 is Armstrong number\n" }
     ]
   },
 
@@ -1343,11 +1397,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "123", sum: "0" }, output: "Initialize n=123, sum=0" },
-      { variables: { remainder: "3", sum: "3", n: "12" }, output: "remainder=123%10=3, sum=0+3=3, n=123/10=12" },
-      { variables: { remainder: "2", sum: "5", n: "1" }, output: "remainder=12%10=2, sum=3+2=5, n=12/10=1" },
-      { variables: { remainder: "1", sum: "6", n: "0" }, output: "remainder=1%10=1, sum=5+1=6, n=1/10=0" },
-      { variables: { sum: "6" }, output: "Sum of digits = 6" }
+      { variables: { n: "123", sum: "0" }, output: "The prompt is printed and 123 is entered. Initialize n=123, sum=0", line: 9, stdout: "Enter number: " },
+      { variables: { remainder: "3", sum: "3", n: "12" }, output: "remainder=123%10=3, sum=0+3=3, n=123/10=12", line: 11, stdout: "Enter number: " },
+      { variables: { remainder: "2", sum: "5", n: "1" }, output: "remainder=12%10=2, sum=3+2=5, n=12/10=1", line: 11, stdout: "Enter number: " },
+      { variables: { remainder: "1", sum: "6", n: "0" }, output: "remainder=1%10=1, sum=5+1=6, n=1/10=0", line: 11, stdout: "Enter number: " },
+      { variables: { sum: "6" }, output: "Sum of digits = 6", line: 15, stdout: "Enter number: Sum of digits: 6\n" }
     ]
   },
 
@@ -1378,11 +1432,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { n: "123", reverse: "0" }, output: "Initialize n=123, reverse=0" },
-      { variables: { remainder: "3", reverse: "3", n: "12" }, output: "remainder=123%10=3, reverse=0*10+3=3, n=123/10=12" },
-      { variables: { remainder: "2", reverse: "32", n: "1" }, output: "remainder=12%10=2, reverse=3*10+2=32, n=12/10=1" },
-      { variables: { remainder: "1", reverse: "321", n: "0" }, output: "remainder=1%10=1, reverse=32*10+1=321, n=1/10=0" },
-      { variables: { reverse: "321" }, output: "Reversed number = 321" }
+      { variables: { n: "123", reverse: "0" }, output: "The prompt is printed and 123 is entered. Initialize n=123, reverse=0", line: 9, stdout: "Enter number: " },
+      { variables: { remainder: "3", reverse: "3", n: "12" }, output: "remainder=123%10=3, reverse=0*10+3=3, n=123/10=12", line: 11, stdout: "Enter number: " },
+      { variables: { remainder: "2", reverse: "32", n: "1" }, output: "remainder=12%10=2, reverse=3*10+2=32, n=12/10=1", line: 11, stdout: "Enter number: " },
+      { variables: { remainder: "1", reverse: "321", n: "0" }, output: "remainder=1%10=1, reverse=32*10+1=321, n=1/10=0", line: 11, stdout: "Enter number: " },
+      { variables: { reverse: "321" }, output: "Reversed number = 321", line: 15, stdout: "Enter number: Reversed number: 321\n" }
     ]
   },
 
@@ -1413,12 +1467,13 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Matrix1: [1 2; 3 4], Matrix2: [5 6; 7 8]" },
-      { variables: { "sum[0][0]": "6" }, output: "sum[0][0] = 1 + 5 = 6" },
-      { variables: { "sum[0][1]": "8" }, output: "sum[0][1] = 2 + 6 = 8" },
-      { variables: { "sum[1][0]": "10" }, output: "sum[1][0] = 3 + 7 = 10" },
-      { variables: { "sum[1][1]": "12" }, output: "sum[1][1] = 4 + 8 = 12" },
-      { variables: {}, output: "Result: [6 8; 10 12]" }
+      { variables: {}, output: "Both matrices have been read. Matrix1: [1 2; 3 4], Matrix2: [5 6; 7 8]", line: 26, stdout: "Enter rows and columns: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { "sum[0][0]": "6" }, output: "sum[0][0] = 1 + 5 = 6", line: 28, stdout: "Enter rows and columns: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { "sum[0][1]": "8" }, output: "sum[0][1] = 2 + 6 = 8", line: 28, stdout: "Enter rows and columns: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { "sum[1][0]": "10" }, output: "sum[1][0] = 3 + 7 = 10", line: 28, stdout: "Enter rows and columns: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { "sum[1][1]": "12" }, output: "sum[1][1] = 4 + 8 = 12", line: 28, stdout: "Enter rows and columns: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { "sum[1][1]": "12" }, output: "printf prints the heading Sum matrix:", line: 32, stdout: "Enter rows and columns: Enter first matrix:\nEnter second matrix:\nSum matrix:\n" },
+      { variables: {}, output: "Result: [6 8; 10 12]", line: 35, stdout: "Enter rows and columns: Enter first matrix:\nEnter second matrix:\nSum matrix:\n6 8 \n10 12 \n" }
     ]
   },
 
@@ -1449,12 +1504,13 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "Matrix1: 2x2 [1 2; 3 4], Matrix2: 2x2 [5 6; 7 8]" },
-      { variables: { i: "0", j: "0", k: "0" }, output: "product[0][0] += 1*5 = 5" },
-      { variables: { i: "0", j: "0", k: "1" }, output: "product[0][0] += 2*7 = 19" },
-      { variables: { i: "0", j: "1", k: "0" }, output: "product[0][1] += 1*6 = 6" },
-      { variables: { i: "0", j: "1", k: "1" }, output: "product[0][1] += 2*8 = 22" },
-      { variables: {}, output: "Result: [19 22; 43 50]" }
+      { variables: {}, output: "Both matrices have been read. Matrix1: 2x2 [1 2; 3 4], Matrix2: 2x2 [5 6; 7 8]", line: 35, stdout: "Enter dimensions of first matrix: Enter dimensions of second matrix: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { i: "0", j: "0", k: "0" }, output: "product[0][0] += 1*5 = 5", line: 39, stdout: "Enter dimensions of first matrix: Enter dimensions of second matrix: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { i: "0", j: "0", k: "1" }, output: "product[0][0] += 2*7 = 19", line: 39, stdout: "Enter dimensions of first matrix: Enter dimensions of second matrix: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { i: "0", j: "1", k: "0" }, output: "product[0][1] += 1*6 = 6", line: 39, stdout: "Enter dimensions of first matrix: Enter dimensions of second matrix: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { i: "0", j: "1", k: "1" }, output: "product[0][1] += 2*8 = 22", line: 39, stdout: "Enter dimensions of first matrix: Enter dimensions of second matrix: Enter first matrix:\nEnter second matrix:\n" },
+      { variables: { i: "0", j: "1", k: "1" }, output: "printf prints the heading Product matrix:", line: 45, stdout: "Enter dimensions of first matrix: Enter dimensions of second matrix: Enter first matrix:\nEnter second matrix:\nProduct matrix:\n" },
+      { variables: {}, output: "Result: [19 22; 43 50]", line: 48, stdout: "Enter dimensions of first matrix: Enter dimensions of second matrix: Enter first matrix:\nEnter second matrix:\nProduct matrix:\n19 22 \n43 50 \n" }
     ]
   },
 
@@ -1485,9 +1541,10 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { arr: "[10,20,30,40,50]", key: "30", i: "0" }, output: "Check arr[0]=10 == 30? No" },
-      { variables: { i: "1" }, output: "Check arr[1]=20 == 30? No" },
-      { variables: { i: "2" }, output: "Check arr[2]=30 == 30? Yes, return 2" }
+      { variables: { arr: "[10,20,30,40,50]", key: "30", i: "0" }, output: "Check arr[0]=10 == 30? No", line: 5, stdout: "" },
+      { variables: { i: "1" }, output: "Check arr[1]=20 == 30? No", line: 5, stdout: "" },
+      { variables: { i: "2" }, output: "Check arr[2]=30 == 30? Yes, return 2", line: 6, stdout: "" },
+      { variables: { i: "2" }, output: "printf prints Element found at index 2", line: 19, stdout: "Element found at index 2\n" }
     ]
   },
 
@@ -1520,8 +1577,9 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { arr: "[10,20,30,40,50]", key: "30", left: "0", right: "4" }, output: "Search in indices 0-4" },
-      { variables: { mid: "2", "arr[2]": "30" }, output: "mid=2, arr[2]=30 == 30, found at index 2" }
+      { variables: { arr: "[10,20,30,40,50]", key: "30", left: "0", right: "4" }, output: "Search in indices 0-4", line: 22, stdout: "" },
+      { variables: { mid: "2", "arr[2]": "30" }, output: "mid=2, arr[2]=30 == 30, found at index 2", line: 8, stdout: "" },
+      { variables: { mid: "2", "arr[2]": "30" }, output: "printf prints Element found at index 2", line: 25, stdout: "Element found at index 2\n" }
     ]
   },
 
@@ -1552,14 +1610,16 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { arr: "[64,34,25,12,22]", i: "0", j: "0" }, output: "Pass 1: Compare 64>34, swap to [34,64,25,12,22]" },
-      { variables: { j: "1" }, output: "Compare 64>25, swap to [34,25,64,12,22]" },
-      { variables: { j: "2" }, output: "Compare 64>12, swap to [34,25,12,64,22]" },
-      { variables: { j: "3" }, output: "Compare 64>22, swap to [34,25,12,22,64]" },
-      { variables: { i: "1", j: "0" }, output: "Pass 2: Compare 34>25, swap to [25,34,12,22,64]" },
-      { variables: { j: "1" }, output: "Compare 34>12, swap to [25,12,34,22,64]" },
-      { variables: { j: "2" }, output: "Compare 34>22, swap to [25,12,22,34,64]" },
-      { variables: { arr: "[12,22,25,34,64]" }, output: "Array sorted after 4 passes" }
+      { variables: { arr: "[64,34,25,12,22]", i: "0", j: "0" }, output: "The original array is printed first. Pass 1: Compare 64>34, swap to [34,64,25,12,22]", line: 6, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { j: "1" }, output: "Compare 64>25, swap to [34,25,64,12,22]", line: 6, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { j: "2" }, output: "Compare 64>12, swap to [34,25,12,64,22]", line: 6, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { j: "3" }, output: "Compare 64>22, swap to [34,25,12,22,64]", line: 6, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { i: "1", j: "0" }, output: "Pass 2: Compare 34>25, swap to [25,34,12,22,64]", line: 6, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { j: "1" }, output: "Compare 34>12, swap to [25,12,34,22,64]", line: 6, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { j: "2" }, output: "Compare 34>22, swap to [25,12,22,34,64]", line: 6, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { arr: "[12,22,25,34,64]" }, output: "Array sorted after 4 passes", line: 13, stdout: "Original array: 64 34 25 12 22 " },
+      { variables: { arr: "[12,22,25,34,64]" }, output: "printf starts the sorted line", line: 27, stdout: "Original array: 64 34 25 12 22 \nSorted array: " },
+      { variables: { arr: "[12,22,25,34,64]" }, output: "The loop prints the sorted array: 12 22 25 34 64", line: 29, stdout: "Original array: 64 34 25 12 22 \nSorted array: 12 22 25 34 64 " }
     ]
   },
 
@@ -1590,13 +1650,15 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { arr: "[64,25,12,22,11]", i: "0", minIndex: "4" }, output: "Find minimum 11 at index 4" },
-      { variables: { arr: "[11,25,12,22,64]" }, output: "Swap 64 and 11: [11,25,12,22,64]" },
-      { variables: { i: "1", minIndex: "2" }, output: "Find minimum 12 at index 2" },
-      { variables: { arr: "[11,12,25,22,64]" }, output: "Swap 25 and 12: [11,12,25,22,64]" },
-      { variables: { i: "2", minIndex: "3" }, output: "Find minimum 22 at index 3" },
-      { variables: { arr: "[11,12,22,25,64]" }, output: "Swap 25 and 22: [11,12,22,25,64]" },
-      { variables: { arr: "[11,12,22,25,64]" }, output: "Array sorted" }
+      { variables: { arr: "[64,25,12,22,11]", i: "0", minIndex: "4" }, output: "The original array is printed first. Find minimum 11 at index 4", line: 10, stdout: "Original array: 64 25 12 22 11 " },
+      { variables: { arr: "[11,25,12,22,64]" }, output: "Swap 64 and 11: [11,25,12,22,64]", line: 17, stdout: "Original array: 64 25 12 22 11 " },
+      { variables: { i: "1", minIndex: "2" }, output: "Find minimum 12 at index 2", line: 10, stdout: "Original array: 64 25 12 22 11 " },
+      { variables: { arr: "[11,12,25,22,64]" }, output: "Swap 25 and 12: [11,12,25,22,64]", line: 17, stdout: "Original array: 64 25 12 22 11 " },
+      { variables: { i: "2", minIndex: "3" }, output: "Find minimum 22 at index 3", line: 10, stdout: "Original array: 64 25 12 22 11 " },
+      { variables: { arr: "[11,12,22,25,64]" }, output: "Swap 25 and 22: [11,12,22,25,64]", line: 17, stdout: "Original array: 64 25 12 22 11 " },
+      { variables: { arr: "[11,12,22,25,64]" }, output: "Array sorted", line: 20, stdout: "Original array: 64 25 12 22 11 " },
+      { variables: { arr: "[11,12,22,25,64]" }, output: "printf starts the sorted line", line: 34, stdout: "Original array: 64 25 12 22 11 \nSorted array: " },
+      { variables: { arr: "[11,12,22,25,64]" }, output: "The loop prints the sorted array: 11 12 22 25 64", line: 36, stdout: "Original array: 64 25 12 22 11 \nSorted array: 11 12 22 25 64 " }
     ]
   },
 
@@ -1628,10 +1690,10 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { str: "'hello'", length: "5", i: "0", j: "4" }, output: "i=0, j=4, swap 'h' and 'o'" },
-      { variables: { str: "'olleh'", i: "1", j: "3" }, output: "i=1, j=3, swap 'e' and 'l'" },
-      { variables: { str: "'olleh'", i: "2", j: "2" }, output: "i=2, j=2, middle character unchanged" },
-      { variables: { str: "'olleh'" }, output: "String reversed successfully" }
+      { variables: { str: "'hello'", length: "5", i: "0", j: "4" }, output: "The string 'hello' is entered and printed. i=0, j=4, swap 'h' and 'o'", line: 10, stdout: "Enter string: Original: hello\n" },
+      { variables: { str: "'olleh'", i: "1", j: "3" }, output: "i=1, j=3, swap 'e' and 'l'", line: 10, stdout: "Enter string: Original: hello\n" },
+      { variables: { str: "'olleh'", i: "2", j: "2" }, output: "i=2, j=2, middle character unchanged", line: 8, stdout: "Enter string: Original: hello\n" },
+      { variables: { str: "'olleh'" }, output: "String reversed successfully", line: 27, stdout: "Enter string: Original: hello\nReversed: olleh\n" }
     ]
   },
 
@@ -1662,12 +1724,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { str: "'hello'", i: "0", count: "0" }, output: "Check 'h' - not vowel" },
-      { variables: { i: "1", count: "1" }, output: "Check 'e' - vowel, count=1" },
-      { variables: { i: "2", count: "1" }, output: "Check 'l' - not vowel" },
-      { variables: { i: "3", count: "1" }, output: "Check 'l' - not vowel" },
-      { variables: { i: "4", count: "2" }, output: "Check 'o' - vowel, count=2" },
-      { variables: { count: "2" }, output: "Total vowels: 2" }
+      { variables: { str: "'hello'", i: "0", count: "0" }, output: "The prompt is printed and 'hello' is entered. Check 'h' - not vowel", line: 17, stdout: "Enter string: " },
+      { variables: { i: "1", count: "1" }, output: "Check 'e' - vowel, count=1", line: 18, stdout: "Enter string: " },
+      { variables: { i: "2", count: "1" }, output: "Check 'l' - not vowel", line: 17, stdout: "Enter string: " },
+      { variables: { i: "3", count: "1" }, output: "Check 'l' - not vowel", line: 17, stdout: "Enter string: " },
+      { variables: { i: "4", count: "2" }, output: "Check 'o' - vowel, count=2", line: 18, stdout: "Enter string: " },
+      { variables: { count: "2" }, output: "Total vowels: 2", line: 22, stdout: "Enter string: Number of vowels: 2\n" }
     ]
   },
 
@@ -1698,11 +1760,11 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { a: "48", b: "18" }, output: "gcd(48,18) = gcd(18, 48%18)" },
-      { variables: { a: "18", b: "12" }, output: "gcd(18,12) = gcd(12, 18%12)" },
-      { variables: { a: "12", b: "6" }, output: "gcd(12,6) = gcd(6, 12%6)" },
-      { variables: { a: "6", b: "0" }, output: "gcd(6,0) = 6 (base case)" },
-      { variables: { result: "6" }, output: "GCD = 6" }
+      { variables: { a: "48", b: "18" }, output: "The prompt is printed and 48 18 is entered. gcd(48,18) = gcd(18, 48%18)", line: 7, stdout: "Enter two numbers: " },
+      { variables: { a: "18", b: "12" }, output: "gcd(18,12) = gcd(12, 18%12)", line: 7, stdout: "Enter two numbers: " },
+      { variables: { a: "12", b: "6" }, output: "gcd(12,6) = gcd(6, 12%6)", line: 7, stdout: "Enter two numbers: " },
+      { variables: { a: "6", b: "0" }, output: "gcd(6,0) = 6 (base case)", line: 5, stdout: "Enter two numbers: " },
+      { variables: { result: "6" }, output: "GCD = 6", line: 17, stdout: "Enter two numbers: GCD of 48 and 18 is 6\n" }
     ]
   },
 
@@ -1733,13 +1795,14 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { x: "2", y: "3" }, output: "power(2,3) = 2 * power(2,2)" },
-      { variables: { x: "2", y: "2" }, output: "power(2,2) = 2 * power(2,1)" },
-      { variables: { x: "2", y: "1" }, output: "power(2,1) = 2 * power(2,0)" },
-      { variables: { x: "2", y: "0", result: "1" }, output: "power(2,0) = 1 (base case)" },
-      { variables: { result: "2" }, output: "2 * 1 = 2" },
-      { variables: { result: "4" }, output: "2 * 2 = 4" },
-      { variables: { result: "8" }, output: "2 * 4 = 8" }
+      { variables: { x: "2", y: "3" }, output: "The prompt is printed and 2 3 is entered. power(2,3) = 2 * power(2,2)", line: 7, stdout: "Enter base and exponent: " },
+      { variables: { x: "2", y: "2" }, output: "power(2,2) = 2 * power(2,1)", line: 7, stdout: "Enter base and exponent: " },
+      { variables: { x: "2", y: "1" }, output: "power(2,1) = 2 * power(2,0)", line: 7, stdout: "Enter base and exponent: " },
+      { variables: { x: "2", y: "0", result: "1" }, output: "power(2,0) = 1 (base case)", line: 5, stdout: "Enter base and exponent: " },
+      { variables: { result: "2" }, output: "2 * 1 = 2", line: 7, stdout: "Enter base and exponent: " },
+      { variables: { result: "4" }, output: "2 * 2 = 4", line: 7, stdout: "Enter base and exponent: " },
+      { variables: { result: "8" }, output: "2 * 4 = 8", line: 7, stdout: "Enter base and exponent: " },
+      { variables: { result: "8" }, output: "printf prints 2^3 = 8", line: 17, stdout: "Enter base and exponent: 2^3 = 8\n" }
     ]
   },
 
@@ -1771,12 +1834,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { x: "10", y: "20" }, output: "Before swap: x=10, y=20" },
-      { variables: { a: "&x", b: "&y" }, output: "Function receives addresses of x and y" },
-      { variables: { temp: "10" }, output: "temp = *a = 10" },
-      { variables: { x: "20", temp: "10" }, output: "*a = *b sets x = 20" },
-      { variables: { y: "10", temp: "10" }, output: "*b = temp sets y = 10" },
-      { variables: { x: "20", y: "10" }, output: "After swap: x=20, y=10" }
+      { variables: { x: "10", y: "20" }, output: "Before swap: x=10, y=20", line: 12, stdout: "Before swap: x=10, y=20\n" },
+      { variables: { a: "&x", b: "&y" }, output: "Function receives addresses of x and y", line: 14, stdout: "Before swap: x=10, y=20\n" },
+      { variables: { temp: "10" }, output: "temp = *a = 10", line: 4, stdout: "Before swap: x=10, y=20\n" },
+      { variables: { x: "20", temp: "10" }, output: "*a = *b sets x = 20", line: 5, stdout: "Before swap: x=10, y=20\n" },
+      { variables: { y: "10", temp: "10" }, output: "*b = temp sets y = 10", line: 6, stdout: "Before swap: x=10, y=20\n" },
+      { variables: { x: "20", y: "10" }, output: "After swap: x=20, y=10", line: 16, stdout: "Before swap: x=10, y=20\nAfter swap: x=20, y=10\n" }
     ]
   },
 
@@ -1807,12 +1870,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { arr: "[1,2,3,4,5]", n: "5", sum: "0", i: "0" }, output: "sum += *(arr + 0) = 1, sum=1" },
-      { variables: { i: "1", sum: "3" }, output: "sum += *(arr + 1) = 2, sum=3" },
-      { variables: { i: "2", sum: "6" }, output: "sum += *(arr + 2) = 3, sum=6" },
-      { variables: { i: "3", sum: "10" }, output: "sum += *(arr + 3) = 4, sum=10" },
-      { variables: { i: "4", sum: "15" }, output: "sum += *(arr + 4) = 5, sum=15" },
-      { variables: { sum: "15" }, output: "Total sum = 15" }
+      { variables: { arr: "[1,2,3,4,5]", n: "5", sum: "0", i: "0" }, output: "sum += *(arr + 0) = 1, sum=1", line: 6, stdout: "" },
+      { variables: { i: "1", sum: "3" }, output: "sum += *(arr + 1) = 2, sum=3", line: 6, stdout: "" },
+      { variables: { i: "2", sum: "6" }, output: "sum += *(arr + 2) = 3, sum=6", line: 6, stdout: "" },
+      { variables: { i: "3", sum: "10" }, output: "sum += *(arr + 3) = 4, sum=10", line: 6, stdout: "" },
+      { variables: { i: "4", sum: "15" }, output: "sum += *(arr + 4) = 5, sum=15", line: 6, stdout: "" },
+      { variables: { sum: "15" }, output: "Total sum = 15", line: 17, stdout: "Sum of array elements: 15\n" }
     ]
   },
 
@@ -1843,12 +1906,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "struct Student defined with name, roll_no, marks, grade" },
-      { variables: {}, output: "Array students[3] created" },
-      { variables: { "students[0].name": "'John'", "students[0].roll_no": "101", "students[0].marks": "85.5" }, output: "First student data assigned" },
-      { variables: { "students[0].grade": "'B'" }, output: "Grade 'B' assigned (marks >= 80)" },
-      { variables: { "students[1].name": "'Alice'", "students[1].roll_no": "102", "students[1].marks": "92.0" }, output: "Second student data assigned" },
-      { variables: { "students[1].grade": "'A'" }, output: "Grade 'A' assigned (marks >= 90)" }
+      { variables: {}, output: "struct Student defined with name, roll_no, marks, grade", line: 4, stdout: "" },
+      { variables: {}, output: "Array students[3] created", line: 12, stdout: "" },
+      { variables: { "students[0].name": "'John'", "students[0].roll_no": "101", "students[0].marks": "85.5" }, output: "First student data assigned (John, 101, 85.5)", line: 22, stdout: "Enter details for student 1:\nName: Roll No: Marks: " },
+      { variables: { "students[0].grade": "'B'" }, output: "Grade 'B' assigned (marks >= 80)", line: 26, stdout: "Enter details for student 1:\nName: Roll No: Marks: " },
+      { variables: { "students[1].name": "'Alice'", "students[1].roll_no": "102", "students[1].marks": "92.0" }, output: "Second student data assigned (Mary, 102, 92)", line: 22, stdout: "Enter details for student 1:\nName: Roll No: Marks: Enter details for student 2:\nName: Roll No: Marks: " },
+      { variables: { "students[1].grade": "'A'" }, output: "Grade 'A' assigned (marks >= 90) (The walkthrough stops here; the rest of the program is not stepped through.)", line: 25, stdout: "Enter details for student 1:\nName: Roll No: Marks: Enter details for student 2:\nName: Roll No: Marks: " }
     ]
   },
 
@@ -1879,13 +1942,14 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: {}, output: "File opened for writing" },
-      { variables: { "s.name": "'John'", "s.roll_no": "101", "s.marks": "85.5" }, output: "Student data prepared" },
-      { variables: {}, output: "fprintf() writes 'John 101 85.50' to file" },
-      { variables: {}, output: "File closed" },
-      { variables: {}, output: "File reopened for reading" },
-      { variables: {}, output: "fscanf() reads name, roll_no, marks from file" },
-      { variables: { "s.name": "'John'", "s.roll_no": "101", "s.marks": "85.5" }, output: "Data successfully read back" }
+      { variables: {}, output: "File opened for writing", line: 15, stdout: "" },
+      { variables: { "s.name": "'John'", "s.roll_no": "101", "s.marks": "85.5" }, output: "Student data prepared", line: 21, stdout: "" },
+      { variables: {}, output: "fprintf() writes 'John 101 85.50' to file", line: 25, stdout: "" },
+      { variables: {}, output: "File closed", line: 26, stdout: "" },
+      { variables: {}, output: "File reopened for reading", line: 29, stdout: "" },
+      { variables: {}, output: "printf prints Data from file:", line: 35, stdout: "Data from file:\n" },
+      { variables: {}, output: "fscanf() reads name, roll_no, marks from file", line: 36, stdout: "Data from file:\n" },
+      { variables: { "s.name": "'John'", "s.roll_no": "101", "s.marks": "85.5" }, output: "Data successfully read back", line: 37, stdout: "Data from file:\nName: John, Roll: 101, Marks: 85.50\n" }
     ]
   },
 
@@ -1916,12 +1980,12 @@ const TOPICS_DB = {
       }
     ],
     visualizationSteps: [
-      { variables: { rows: "3", i: "1", j: "1" }, output: "Row 1: print 1 star" },
-      { variables: { i: "2", j: "1" }, output: "Row 2: print star 1" },
-      { variables: { i: "2", j: "2" }, output: "Row 2: print star 2" },
-      { variables: { i: "3", j: "1" }, output: "Row 3: print star 1" },
-      { variables: { i: "3", j: "2" }, output: "Row 3: print star 2" },
-      { variables: { i: "3", j: "3" }, output: "Row 3: print star 3" }
+      { variables: { rows: "3", i: "1", j: "1" }, output: "The heading is printed. Row 1: print 1 star", line: 10, stdout: "Right Triangle:\n* " },
+      { variables: { i: "2", j: "1" }, output: "Row 2: print star 1 (the newline ended row 1)", line: 10, stdout: "Right Triangle:\n* \n* " },
+      { variables: { i: "2", j: "2" }, output: "Row 2: print star 2", line: 10, stdout: "Right Triangle:\n* \n* * " },
+      { variables: { i: "3", j: "1" }, output: "Row 3: print star 1 (the newline ended row 2)", line: 10, stdout: "Right Triangle:\n* \n* * \n* " },
+      { variables: { i: "3", j: "2" }, output: "Row 3: print star 2", line: 10, stdout: "Right Triangle:\n* \n* * \n* * " },
+      { variables: { i: "3", j: "3" }, output: "Row 3: print star 3 (The walkthrough stops here; the rest of the program is not stepped through.)", line: 10, stdout: "Right Triangle:\n* \n* * \n* * * " }
     ]
   },
 
@@ -2059,7 +2123,7 @@ const TOPICS_DB = {
       "colspan and rowspan for cell spanning",
       "Semantic table structure with <thead>, <tbody>, <tfoot>"
     ],
-    code: `<table border="1">\n    <thead>\n        <tr>\n            <th>Name</th>\n            <th>Age</th>\n            <th>City</th>\n        </tr>\n    </thead>\n    <tbody>\n        <tr>\n            <td>John</td>\n            <td>25</td>\n            <td>NYC</td>\n        </tr>\n        <tr>\n            <td>Alice</td>\n            <td>30</td>\n            <td>LA</td>\n        </tr>\n    </tbody>\n    <tfoot>\n        <tr>\n            <th colspan="3">Total: 2 people</th>\n        </tr>\n    </tfoot>\n</table>`,
+    code: `<style>\n    table, th, td {\n        border: 1px solid #333;\n        border-collapse: collapse;\n    }\n</style>\n\n<table>\n    <thead>\n        <tr>\n            <th>Name</th>\n            <th>Age</th>\n            <th>City</th>\n        </tr>\n    </thead>\n    <tbody>\n        <tr>\n            <td>John</td>\n            <td>25</td>\n            <td>NYC</td>\n        </tr>\n        <tr>\n            <td>Alice</td>\n            <td>30</td>\n            <td>LA</td>\n        </tr>\n    </tbody>\n    <tfoot>\n        <tr>\n            <th colspan="3">Total: 2 people</th>\n        </tr>\n    </tfoot>\n</table>`,
     explanation: [
       "<thead> table header section",
       "<tbody> table body with data",
@@ -2159,13 +2223,13 @@ const TOPICS_DB = {
       "Margin: space outside border",
       "Width/height apply to content area"
     ],
-    code: `.box {\n    width: 200px;\n    height: 100px;\n    padding: 20px;\n    border: 2px solid #000;\n    margin: 10px;\n    \n    /* Total width: 200 + 40 + 4 + 20 = 264px */\n    /* Content: 200px */\n    /* Padding: 20px × 2 = 40px */\n    /* Border: 2px × 2 = 4px */\n    /* Margin: 10px × 2 = 20px */\n}`,
+    code: `.box {\n    width: 200px;\n    height: 100px;\n    padding: 20px;\n    border: 2px solid #000;\n    margin: 10px;\n    \n    /* Element width (content + padding + border): 200 + 40 + 4 = 244px */\n    /* Total space occupied incl. margin: 244 + 20 = 264px */\n    /* Content: 200px */\n    /* Padding: 20px × 2 = 40px */\n    /* Border: 2px × 2 = 4px */\n    /* Margin: 10px × 2 = 20px */\n}`,
     explanation: [
       "width: 200px sets content width",
       "padding: 20px adds 20px on all sides",
       "border: 2px solid #000 adds 2px border",
       "margin: 10px adds 10px space outside",
-      "Total element width: content + padding + border + margin"
+      "Element width = content + padding + border; space occupied also includes the margin"
     ],
     examTip: "Box model: Content → Padding → Border → Margin. Width/height = content only.",
     practiceQ: "Create card component with proper spacing using box model properties",
@@ -2224,7 +2288,7 @@ const TOPICS_DB = {
       "Gradients: linear-gradient(), radial-gradient()",
       "Transparency with rgba(), opacity"
     ],
-    code: `.color-examples {\n    /* Named colors */\n    color: red;\n    background-color: blue;\n    \n    /* Hex colors */\n    color: #ff0000;\n    background-color: #0000ff;\n    \n    /* RGB colors */\n    color: rgb(255, 0, 0);\n    background-color: rgb(0, 0, 255);\n}\n\n.background-examples {\n    /* Background image */\n    background-image: url('image.jpg');\n    background-repeat: no-repeat;\n    background-position: center;\n    background-size: cover;\n    \n    /* Linear gradient */\n    background: linear-gradient(to right, #ff0000, #0000ff);\n    \n    /* Transparency */\n    background-color: rgba(255, 0, 0, 0.5);\n}`,
+    code: `.color-examples {\n    /* Named colors */\n    color: red;\n    background-color: blue;\n    \n    /* Hex colors */\n    color: #ff0000;\n    background-color: #0000ff;\n    \n    /* RGB colors */\n    color: rgb(255, 0, 0);\n    background-color: rgb(0, 0, 255);\n}\n\n.background-examples {\n    /* Background image */\n    background-image: url('image.jpg');\n    background-repeat: no-repeat;\n    background-position: center;\n    background-size: cover;\n    \n}\n\n.gradient-example {\n    /* background shorthand resets other background-* properties, so keep it in its own rule */\n    background: linear-gradient(to right, #ff0000, #0000ff);\n}\n\n.transparent-example {\n    /* Transparency */\n    background-color: rgba(255, 0, 0, 0.5);\n}`,
     explanation: [
       "Named colors: red, blue, green, etc.",
       "Hex: #RRGGBB format",
@@ -2330,7 +2394,7 @@ const TOPICS_DB = {
       "align-items: cross axis alignment",
       "flex-wrap: prevent overflow",
       "gap: spacing between items",
-      "flex: 1 1 200px means grow, shrink, min-width 200px"
+      "flex: 1 1 200px means grow factor 1, shrink factor 1, flex-basis 200px (the starting size, not a min-width)"
     ],
     examTip: "Main axis: justify-content. Cross axis: align-items. Flex: grow shrink basis.",
     practiceQ: "Create responsive card layout using flexbox",
@@ -2369,10 +2433,10 @@ const TOPICS_DB = {
     practiceQ: "Create variables for student object with name, grades array, and isEnrolled boolean",
     quiz: [
       {
-        question: "Which can be reassigned?",
+        question: "Which CANNOT be reassigned?",
         options: ["var", "let", "const", "None"],
-        correct: 1,
-        explanation: "let variables can be reassigned, const cannot, var can but shouldn't be used"
+        correct: 2,
+        explanation: "const bindings cannot be reassigned. let and var can be (var is best avoided in modern code)"
       }
     ],
     visualizationSteps: []

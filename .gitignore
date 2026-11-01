@@ -1,8 +1,10 @@
 node_modules
+.playwright-browsers/
 .git
 *.log
 *.zip
 dist
+*.db
 .DS_Store
 Thumbs.db
 ruff_cache
