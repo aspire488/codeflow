@@ -27,7 +27,7 @@ function renderLesson(topicId) {
   const explanations = Array.isArray(topic.explanation) ? topic.explanation : [];
 
   host.innerHTML = `
-    <div class="screen-heading">
+    <div class="stack-head">
       <button class="stitch-btn secondary" data-nav="topics">
         <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> All topics
       </button>

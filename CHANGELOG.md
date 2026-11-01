@@ -44,3 +44,27 @@ All notable changes to CodeFlow are documented here.
 - Execution-first programming learning prototype with visible code behavior
 - Deterministic test and production-build validation in GitHub Actions
 - Engineering architecture and testing documentation
+
+## 1.3.0 - Premium UI/UX pass
+
+### Fixed
+- Syntax highlighting no longer corrupts code. The regex highlighter rewrote markup it had already
+  generated, so attribute text such as `class="text-[#d73a49]"` appeared in the code block and `<`
+  characters were swallowed. Replaced with a single-pass tokeniser that escapes text before wrapping it.
+- Mobile drawer width was ignored by the cascade (`.stitch-sidebar.app-sidebar` outranked the media
+  query), so it never reached its intended width.
+- Visualizer: the 73-topic chip wall is now a grouped `<select>`, and the selector spans both grid
+  columns instead of pushing the code panel into column two.
+- The desktop hamburger button is hidden again (`.icon-button` had overridden `.mobile-only`).
+- Lesson and quiz headers left-align instead of centring the title between a back button and meta text.
+- Action buttons no longer sit flush against inputs in the quiz and output prediction screens.
+- Authored walkthrough narration is no longer printed in the Output panel as if it were program stdout.
+
+### Changed
+- `styles.css` is now one token layer (colour, type, space, radius, elevation, motion) with a single
+  component vocabulary, replacing the previous override stack.
+- Sidebar navigation grouped into Learn / Practice / Studio / Support, with 40px touch targets.
+- Removed the vendored Tailwind runtime (`tailwind.js`, ~300 KB); nothing referenced its utilities after
+  the stylesheet rewrite. Service worker cache bumped to `codeflow-v4`.
+- The study assistant replies synchronously; the 350ms artificial delay is gone and the screen states
+  in its header that it is rule-based, not a language model.

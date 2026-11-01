@@ -1,6 +1,18 @@
 // ============================================
-// CHATBOT SCREEN - knowledge-base assistant
+// CHATBOT SCREEN
+//
+// This assistant is a curated knowledge base, not a language model. The UI
+// says so, the replies are synchronous, and nothing pretends to be an API
+// call. If a hosted model is wired in later it belongs behind a server
+// endpoint - never with a key in this file.
 // ============================================
+
+const CHAT_SUGGESTIONS = [
+  'Explain pointers',
+  'Difference between let and var',
+  'CSS flexbox',
+  'What is a segmentation fault'
+];
 
 let chatBound = false;
 const chatHistory = [];
@@ -21,6 +33,24 @@ function appendChatMessage(text, sender) {
   return bubble;
 }
 
+function renderChatSuggestions() {
+  const host = document.getElementById('chat-suggestions');
+  if (!host || host.childElementCount) return;
+  CHAT_SUGGESTIONS.forEach((text) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'suggest-chip';
+    chip.textContent = text;
+    chip.addEventListener('click', () => {
+      const input = document.getElementById('chat-input');
+      if (!input) return;
+      input.value = text;
+      input.focus();
+    });
+    host.appendChild(chip);
+  });
+}
+
 function renderChatbot() {
   const log = document.getElementById('chat-messages');
   const input = document.getElementById('chat-input');
@@ -29,22 +59,39 @@ function renderChatbot() {
 
   if (!log.childElementCount) {
     appendChatMessage(
-      'Hi! I am the CodeFlow study assistant. I answer from a curated C, HTML, CSS and JavaScript knowledge base - I am not a general-purpose language model.',
+      'I am the CodeFlow study assistant. I answer from a curated C, HTML, CSS and JavaScript knowledge base - I am not a general-purpose language model, so I can be wrong about anything outside it.',
       'bot'
     );
-    appendChatMessage('Try: "explain pointers", "css flexbox", "difference between let and var", or "what is a segmentation fault".', 'bot');
+    appendChatMessage('Ask about a concept, a keyword or an error message. Try one of the suggestions below.', 'bot');
   }
+
+  renderChatSuggestions();
 
   if (chatBound) return;
   chatBound = true;
 
   send?.addEventListener('click', sendChatMessage);
   input?.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       sendChatMessage();
     }
   });
+}
+
+function answerFromKnowledgeBase(text) {
+  if (typeof KNOWLEDGE_BASE === 'undefined' || typeof KNOWLEDGE_BASE.getResponse !== 'function') {
+    return 'The knowledge base did not load, so I cannot answer right now. The rest of CodeFlow still works.';
+  }
+  try {
+    const answer = KNOWLEDGE_BASE.getResponse(text);
+    return answer && String(answer).trim()
+      ? answer
+      : 'I do not have a matching entry for that yet. Try naming the concept directly - for example "pointer arithmetic" or "flex-direction".';
+  } catch (error) {
+    console.error('[chat] knowledge base failed:', error);
+    return 'Something went wrong while looking that up. Please try rephrasing.';
+  }
 }
 
 function sendChatMessage() {
@@ -52,36 +99,12 @@ function sendChatMessage() {
   if (!input) return;
   const text = input.value.trim();
   if (!text) return;
-  if (text.length > 500) return;
 
   input.value = '';
   appendChatMessage(text, 'user');
   chatHistory.push({ role: 'user', text });
 
-  const pending = appendChatMessage('Thinking...', 'pending');
-
-  setTimeout(() => {
-    let answer;
-    try {
-      if (typeof KNOWLEDGE_BASE !== 'undefined' && typeof KNOWLEDGE_BASE.getResponse === 'function') {
-        answer = KNOWLEDGE_BASE.getResponse(text);
-      } else {
-        answer = 'The knowledge base did not load, so I cannot answer that right now.';
-      }
-    } catch (error) {
-      console.error('[chat] knowledge base failed:', error);
-      answer = 'Something went wrong while looking that up. Please try rephrasing.';
-    }
-
-    if (pending && pending.parentNode) {
-      pending.classList.remove('pending');
-      pending.classList.add('bot');
-      pending.textContent = answer;
-    } else {
-      appendChatMessage(answer, 'bot');
-    }
-    chatHistory.push({ role: 'bot', text: answer });
-    const log = document.getElementById('chat-messages');
-    if (log) log.scrollTop = log.scrollHeight;
-  }, 350);
+  const answer = answerFromKnowledgeBase(text);
+  appendChatMessage(answer, 'bot');
+  chatHistory.push({ role: 'bot', text });
 }

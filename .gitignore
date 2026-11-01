@@ -9,3 +9,6 @@ ruff_cache
 .vercel
 test-results
 playwright-report
+screenshots
+test-results
+playwright-report

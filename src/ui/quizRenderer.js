@@ -66,7 +66,7 @@ function renderQuizQuestion() {
   const progress = Math.round((session.index / total) * 100);
 
   host.innerHTML = `
-    <div class="screen-heading">
+    <div class="stack-head">
       <button class="stitch-btn secondary" data-nav="quiz">
         <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Quiz center
       </button>
@@ -83,7 +83,8 @@ function renderQuizQuestion() {
       <div class="quiz-options" id="quiz-options">
         ${question.options.map((option, index) => `
           <button class="quiz-option" data-option="${index}" ${session.answered ? 'disabled' : ''}>
-            <span>${escapeHtml(option)}</span>
+            <span class="key">${String.fromCharCode(65 + index)}</span>
+            <span class="label">${escapeHtml(option)}</span>
             <span class="material-symbols-outlined" style="font-size:18px"></span>
           </button>`).join('')}
       </div>

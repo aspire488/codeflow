@@ -73,3 +73,10 @@ example. It never pretends to interpret arbitrary C.
 - Global namespace: name collisions are a real hazard, hence the duplicate-declaration test.
 - The analyzer is heuristic pattern matching, not a parser.
 - `backend/` and `electron/` are outside the web app and untested here.
+
+## Syntax highlighting
+
+`src/core/syntaxHighlighter.js` scans source once and escapes each plain chunk before wrapping
+tokens in `<span class="tok-*">`. The earlier implementation chained `.replace()` calls over the
+already-generated HTML, which matched inside its own attributes and corrupted the output. Any future
+language support must extend the tokeniser, not add another regex pass over emitted markup.

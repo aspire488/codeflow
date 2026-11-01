@@ -119,7 +119,7 @@ function escapeHtml(text) {
 
 function emptyState(title, message, actionLabel, actionRoute) {
   const action = actionLabel && actionRoute
-    ? `<button class="stitch-btn mt-4" data-nav="${escapeHtml(actionRoute)}">${escapeHtml(actionLabel)}</button>`
+    ? `<button class="stitch-btn" style="margin-top:16px" data-nav="${escapeHtml(actionRoute)}">${escapeHtml(actionLabel)}</button>`
     : '';
   return `<div class="empty-state">
     <span class="material-symbols-outlined empty-icon">inbox</span>
@@ -139,7 +139,7 @@ function showErrorState(route, error) {
     <span class="material-symbols-outlined empty-icon">error</span>
     <h3 class="card-title">This screen failed to load</h3>
     <p class="muted">${escapeHtml(error && error.message ? error.message : 'Unknown error')}</p>
-    <button class="stitch-btn mt-4" data-nav="dashboard">Back to dashboard</button>
+    <button class="stitch-btn" style="margin-top:16px" data-nav="dashboard">Back to dashboard</button>
   </div>`;
 }
 

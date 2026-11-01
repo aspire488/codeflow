@@ -89,3 +89,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Keep the vanilla stack, keep content in 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Design system
+
+`styles.css` is a single token layer - colour, typography, spacing, radius, elevation and motion are
+declared once at the top - followed by one component vocabulary (`.stitch-btn`, `.stitch-card`,
+`.badge`, `.filter-chip`, `.viz-panel`, `.quiz-option`, ...). Every screen is composed from those
+primitives rather than from per-screen overrides.
+
+The palette keeps the original Stitch identity: `#0d1117` canvas, `#58a6ff` accent, `#1c2026`
+surfaces, Material Symbols icons. There is no CSS framework at runtime and no build step for styles.

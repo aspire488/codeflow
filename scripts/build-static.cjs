@@ -12,7 +12,6 @@ const outDir = path.join(root, 'dist');
 const FILES = [
   'index.html',
   'styles.css',
-  'tailwind.js',
   'manifest.json',
   'service-worker.js'
 ];

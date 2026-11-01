@@ -52,7 +52,7 @@ A learner can, without developer intervention:
 ## 4. Non-functional requirements
 
 - **Stack:** vanilla JS/HTML/CSS. No React, Vue, Angular or Electron in the web app.
-- **Footprint:** no runtime dependencies; the only local library is the Tailwind utility bundle.
+- **Footprint:** no runtime dependencies; only Inter and Material Symbols load from Google Fonts.
 - **Resilience:** corrupted `localStorage` must not prevent startup; malformed fields are discarded and defaults restored.
 - **Security:** interpolated text passes through `escapeHtml`; no secrets in frontend code; the assistant makes no network calls.
 - **Accessibility:** 40px minimum targets, labelled controls, Escape closes overlays, focus restored after dialogs, reduced-motion support.

@@ -205,17 +205,15 @@ function buildAuthoredSteps(topicKey) {
   const topic = TOPICS_DB[topicKey];
   if (!topic || !Array.isArray(topic.visualizationSteps) || !topic.visualizationSteps.length) return [];
 
-  let consoleSoFar = '';
-  return topic.visualizationSteps.map((step, index) => {
-    const line = String(step.output || '');
-    consoleSoFar += line ? (consoleSoFar ? '\n' : '') + line : '';
-    return {
-      line: Number.isFinite(step.line) ? step.line : null,
-      description: line || `Step ${index + 1}`,
-      variables: step.variables || {},
-      console: consoleSoFar
-    };
-  });
+  // These entries are an authored walkthrough. Their `output` field is the
+  // narration for the step, not program stdout, so it must never be rendered
+  // in the console panel as if the program had printed it.
+  return topic.visualizationSteps.map((step, index) => ({
+    line: Number.isFinite(step.line) ? step.line : null,
+    description: String(step.output || 'Step ' + (index + 1)),
+    variables: step.variables || {},
+    console: String(step.stdout || '')
+  }));
 }
 
 function buildStepsForTopic(topicKey) {
@@ -285,6 +283,8 @@ function renderVisualizer(param) {
   else if (mode === 'pointers') renderPointerMode();
   else if (mode === 'recursion') renderRecursionMode();
   else renderLoopMode();
+
+  bindVizTopicSelect();
 }
 
 function bindVizTabs() {
@@ -312,15 +312,33 @@ function bindVizKeyboard() {
   });
 }
 
-function topicSelectorMarkup() {
+function vizTopicOptionsMarkup() {
   const keys = Object.keys(TOPICS_DB || {});
-  return `<div class="filter-row" style="margin-bottom:16px">
-    <span class="muted" style="align-self:center;margin-right:4px">Topic</span>
-    ${keys.map((key) => `
-      <button class="filter-chip ${key === VizState.topicKey ? 'active' : ''}" data-nav="visualize/${VizState.mode}/${key}">
-        ${escapeHtml(TOPICS_DB[key].title)}
-      </button>`).join('')}
+  const groups = [['c', 'C Programming'], ['html', 'HTML'], ['css', 'CSS'], ['js', 'JavaScript']];
+  return groups.map(([subject, label]) => {
+    const items = keys.filter((key) => TOPICS_DB[key].subject === subject);
+    if (!items.length) return '';
+    return '<optgroup label="' + escapeHtml(label) + '">' + items.map((key) =>
+      '<option value="' + escapeHtml(key) + '"' + (key === VizState.topicKey ? ' selected' : '') + '>' +
+      escapeHtml(TOPICS_DB[key].title) + '</option>').join('') + '</optgroup>';
+  }).join('');
+}
+
+function topicSelectorMarkup() {
+  const total = Object.keys(TOPICS_DB || {}).length;
+  return `<div class="viz-topic" style="margin-bottom:16px">
+    <label class="field-label" for="viz-topic-select" style="margin:0">Example</label>
+    <select class="select" id="viz-topic-select" aria-label="Choose a code example">${vizTopicOptionsMarkup()}</select>
+    <span class="faint">${total} lessons</span>
   </div>`;
+}
+
+function bindVizTopicSelect() {
+  const select = document.getElementById('viz-topic-select');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    navigateTo('visualize/' + VizState.mode + '/' + select.value);
+  });
 }
 
 function renderCodeMode() {
@@ -341,7 +359,7 @@ function renderCodeMode() {
         <table class="viz-table"><tbody id="viz-variables"></tbody></table>
       </div>
       <div class="viz-panel">
-        <h4>Output</h4>
+        <h4>${topic.visualizationSteps ? 'Output (authored walkthrough)' : 'Output'}</h4>
         <div class="console" id="viz-console"></div>
       </div>
     </div>

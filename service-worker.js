@@ -1,12 +1,11 @@
 // service-worker.js - CodeFlow PWA service worker
-const CACHE_VERSION = 'codeflow-v3';
+const CACHE_VERSION = 'codeflow-v4';
 
 const PRECACHE = [
   '/',
   '/index.html',
   '/styles.css',
   '/manifest.json',
-  '/tailwind.js',
   '/data/topicsDB.js',
   '/data/quizDB.js',
   '/data/outputPredictionDB.js',
