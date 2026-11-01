@@ -1,45 +1,46 @@
-// quizEngine.js - Quiz handling functions
-
-// Quiz functionality is now integrated into topicRenderer.js
-// This file can be expanded for additional quiz features like:
-// - Quiz statistics and analytics
-// - Quiz difficulty levels
-// - Timed quizzes
-// - Quiz categories and filtering
-// - Quiz progress tracking
-// - Quiz achievements and rewards
+// ============================================
+// QUIZ HELPERS (pure functions, unit tested)
+// ============================================
 
 function getQuizForTopic(topicKey) {
+  if (typeof QUIZ_DB === 'undefined') return [];
   return QUIZ_DB[topicKey] || [];
 }
 
 function calculateQuizScore(answers, correctAnswers) {
+  const total = correctAnswers.length;
   let correct = 0;
   answers.forEach((answer, index) => {
-    if (answer === correctAnswers[index]) correct++;
+    if (answer === correctAnswers[index]) correct += 1;
   });
   return {
     correct,
-    total: correctAnswers.length,
-    percentage: Math.round((correct / correctAnswers.length) * 100)
+    total,
+    percentage: total > 0 ? Math.round((correct / total) * 100) : 0
   };
 }
 
 function getQuizDifficulty(topicKey) {
-  // Determine quiz difficulty based on topic
-  const advancedTopics = ['pointers', 'memory', 'bitwise-operators', 'recursion'];
-  const intermediateTopics = ['functions', 'arrays', 'structures', 'file-basics'];
-
-  if (advancedTopics.includes(topicKey)) return 'hard';
-  if (intermediateTopics.includes(topicKey)) return 'medium';
+  const advanced = ['pointers', 'pointer-arithmetic', 'dynamic-memory', 'bitwise-operators', 'recursion'];
+  const intermediate = ['functions', 'arrays', 'structures', 'file-basics', 'string-functions'];
+  if (advanced.includes(topicKey)) return 'hard';
+  if (intermediate.includes(topicKey)) return 'medium';
   return 'easy';
 }
 
 function getRandomQuizQuestions(topicKey, count = 3) {
-  const questions = QUIZ_DB[topicKey] || [];
-  if (questions.length <= count) return questions;
-
-  // Shuffle and return subset
-  const shuffled = [...questions].sort(() => Math.random() - 0.5);
+  const questions = getQuizForTopic(topicKey);
+  if (questions.length <= count) return questions.slice();
+  const shuffled = questions.slice();
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = shuffled[i];
+    shuffled[i] = shuffled[j];
+    shuffled[j] = temp;
+  }
   return shuffled.slice(0, count);
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { getQuizForTopic, calculateQuizScore, getQuizDifficulty, getRandomQuizQuestions };
 }

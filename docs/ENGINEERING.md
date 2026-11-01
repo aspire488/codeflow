@@ -1,60 +1,75 @@
-# CodeFlow engineering model
+# CodeFlow engineering notes
 
-CodeFlow is an educational prototype whose core goal is to make program execution understandable and inspectable.
+## Shape of the application
 
-## Architecture
+Classic browser scripts, loaded in dependency order from `index.html`. There is
+no bundler at runtime and no module system; each file attaches functions to the
+global scope that later files call. That is a deliberate constraint of the
+project, and it makes load order and unique names part of correctness.
 
-```text
-User input
-   |
-   v
-UI / learning modules
-   |
-   v
-Core event + routing layer
-   |
-   +----> execution / teaching engines
-   |
-   +----> deterministic state transitions
-   |
-   v
-Visualization + feedback
+```
+data/*.js          content only (topics, quizzes, predictions, quest, knowledge base)
+src/core/          syntaxHighlighter, router, app (state, delegation, modal, boot)
+src/engines/       visualization, output prediction, analyzer, logic quest, adaptive practice, quiz helpers
+src/ui/            one renderer per screen
+scripts/           static build (copies the tree, verifies script paths)
+tests/             structural + unit (node:test) and browser (Playwright)
 ```
 
-The architecture deliberately separates presentation, orchestration, execution behavior, and rendering so individual teaching experiences can evolve without rewriting the whole application.
+### Load order
 
-## Engineering principles
+1. `data/*` - defines `TOPICS_DB`, `QUIZ_DB`, `outputPredictionDB`, `GAME_LEVELS`, `KNOWLEDGE_BASE`, `LOGIC_QUEST_LEVELS`/`LOGIC_QUEST_MAP`.
+2. `src/core/syntaxHighlighter.js` - `highlightCode` is used by every renderer.
+3. `src/engines/*` - expose pure logic and screen renderers (`renderVisualizer`, `renderOutputPrediction`, `renderLogicQuestMap`, `analyzeCodeLogic`, `AdaptiveEngine`).
+4. `src/ui/*` - one renderer per screen; they consume data and engines.
+5. `src/core/router.js` - route table mapping route names to screen ids and renderers.
+6. `src/core/app.js` - `AppState`, persistence, delegated events, modal lifecycle, single bootstrap. Must load last.
 
-1. **Deterministic first** — the same supported example should produce the same state transition and output.
-2. **Observable execution** — teaching value comes from showing what the program did, not only displaying source code.
-3. **Explicit boundaries** — unsupported language constructs should be rejected or marked unsupported rather than silently misinterpreted.
-4. **Test before expansion** — new execution constructs should arrive with unit coverage before they become part of the public learning surface.
-5. **AI is bounded** — experimental AI assistance can explain or guide, but it should not silently become the execution engine.
+## Invariants enforced by tests
 
-## Current validation
+- Every `<script src>` in `index.html` exists on disk.
+- Every `screen:` id in the router exists in `index.html`.
+- No `function name()` is declared twice across `src/`.
+- Every file in the service worker precache list exists.
+- Manifest icons are real files, not data URIs.
+- Only one component owns each responsibility: one router, one click delegation,
+  one `escapeHtml`, one `renderVisualization` path.
 
-The repository has a lightweight Node-based smoke test and a production build check in GitHub Actions. These are intentionally cheap enough to run on every change.
+## State and storage
 
-For future execution work, the preferred test layers are:
+`AppState` (`xp`, `streak`, `completedTopics`, `quizScores`, `currentTopic`) is
+persisted to `codeflow_app_state`. `sanitizeState` validates every field on load:
+non-numeric XP becomes 0, non-array topics become `[]`, quiz scores are clamped
+to their total, and unreadable JSON is discarded with defaults restored.
+`AdaptiveEngine` and Logic Quest keep their own keys and validate independently.
 
-- **Unit:** parser / AST nodes / state transitions
-- **Integration:** execution engine → visualization state
-- **Browser:** critical learner journeys
-- **Build:** production bundle generation
+## Visualization honesty
 
-## AST execution roadmap
+Two mechanisms, never mixed silently:
 
-The next architectural step is a small AST-backed intermediate representation for the subset of examples CodeFlow teaches. The first supported constructs should be deliberately narrow:
+1. **Authored steps** - `topic.visualizationSteps` written for the lesson.
+2. **Computed traces** - `traceLoop` parses start/condition/update and actually
+   runs the loop (bounded to 50 iterations) to produce iterations and output;
+   `traceRecursion` evaluates `fact(n)` and records calls and returns;
+   `buildFlowchart` classifies statements structurally; the pointer mode models
+   `&x` and `*p` for one bundled program.
 
-- variable assignment
-- numeric/string literals
-- arithmetic expressions
-- output statements
-- bounded loops
-- explicit unsupported-syntax errors
+When a snippet is outside that subset, the UI says so and points at a supported
+example. It never pretends to interpret arbitrary C.
 
-This is **not** intended to become a general Python or JavaScript interpreter. The purpose is predictable educational execution with an inspectable intermediate representation.
+## Scroll and modal lifecycle
 
-## Prototype boundary
+- `html, body { overflow: hidden }`; each `.screen` owns a `.screen-scroll`.
+- `openModal` sets `aria-hidden="false"`, locks scroll, focuses the panel and
+  remembers the trigger. `closeModal` reverses all three and restores focus.
+- Escape and backdrop clicks close the dialog; the overlay uses
+  `visibility: hidden; pointer-events: none` when inactive so it can never
+  intercept clicks (this was the original "stuck blur" bug).
+- The mobile drawer sits above its backdrop (`z-index 40` vs `35`) so the
+  backdrop cannot swallow navigation clicks.
 
-CodeFlow should remain honest about what it is: an execution-visualization and programming-learning prototype. Correctness, testability, accessibility, and understandable behavior take priority over adding a large number of language features.
+## Known constraints
+
+- Global namespace: name collisions are a real hazard, hence the duplicate-declaration test.
+- The analyzer is heuristic pattern matching, not a parser.
+- `backend/` and `electron/` are outside the web app and untested here.

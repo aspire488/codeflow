@@ -1,96 +1,94 @@
 // ============================================
-// LESSON RENDERER - Lesson Content UI
+// LESSON RENDERER
 // ============================================
 
 function renderLesson(topicId) {
-    const content = document.getElementById('lesson-content');
-    const title = document.getElementById('lesson-title');
+  const host = document.getElementById('lesson-content');
+  if (!host) return;
 
-    if (!content || !title) return;
+  const keys = Object.keys(TOPICS_DB || {});
+  if (!keys.length) {
+    host.innerHTML = emptyState('Content unavailable', 'The topic database did not load.', 'Back to dashboard', 'dashboard');
+    return;
+  }
 
-    // Clear existing content
-    content.innerHTML = '';
+  const key = topicId && TOPICS_DB[topicId] ? topicId : keys[0];
+  const topic = TOPICS_DB[key];
+  AppState.currentTopic = key;
+  saveState();
 
-    // Get topic data
-    let topic = null;
-    if (typeof TOPICS_DB !== 'undefined' && TOPICS_DB.topics) {
-        topic = TOPICS_DB.topics.find(t => t.id === topicId);
-    }
+  const sameSubject = keys.filter((k) => TOPICS_DB[k].subject === topic.subject);
+  const position = sameSubject.indexOf(key);
+  const previous = position > 0 ? sameSubject[position - 1] : null;
+  const next = position >= 0 && position < sameSubject.length - 1 ? sameSubject[position + 1] : null;
+  const language = languageForSubject(topic.subject);
+  const isDone = AppState.completedTopics.includes(key);
+  const concepts = Array.isArray(topic.concept) ? topic.concept : [];
+  const explanations = Array.isArray(topic.explanation) ? topic.explanation : [];
 
-    if (!topic) {
-        // Fallback topic data
-        const fallbackTopics = {
-            'variables': {
-                title: 'Variables & Data Types',
-                content: `
-                    <div class="stitch-card p-6 mb-6">
-                        <h3 class="text-xl font-bold mb-4">What are Variables?</h3>
-                        <p class="text-gray-300 mb-4">
-                            Variables are containers for storing data values. In C programming, you must declare a variable before using it.
-                        </p>
-                        <div class="bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4">
-                            <pre><code class="language-c">// Variable declaration
-int age = 25;
-float price = 19.99;
-char letter = 'A';</code></pre>
-                        </div>
-                    </div>
+  host.innerHTML = `
+    <div class="screen-heading">
+      <button class="stitch-btn secondary" data-nav="topics">
+        <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> All topics
+      </button>
+      <h2 class="screen-title" style="margin-top:16px">${escapeHtml(topic.title)}</h2>
+      <p class="screen-subtitle">
+        ${escapeHtml(subjectLabel(topic.subject))} &middot; Lesson ${position + 1} of ${sameSubject.length}
+        ${isDone ? ' &middot; <span class="badge success">Completed</span>' : ''}
+      </p>
+    </div>
+    <div class="lesson-layout">
+      ${concepts.length ? `
+        <section class="stitch-card lesson-section">
+          <h3>The concept</h3>
+          <ul class="lesson-list">${concepts.map((point) => `<li>${escapeHtml(point)}</li>`).join('')}</ul>
+        </section>` : ''}
+      ${topic.code ? `
+        <section class="code-panel">
+          <div class="code-panel-bar">
+            <span>${escapeHtml(key)}.${language === 'javascript' ? 'js' : language}</span>
+            <button class="stitch-btn secondary" data-action="visualize" data-topic="${escapeHtml(key)}">
+              <span class="material-symbols-outlined" style="font-size:16px">terminal</span> Visualize this code
+            </button>
+          </div>
+          <pre><code>${highlightCode(topic.code, language)}</code></pre>
+        </section>` : ''}
+      ${explanations.length ? `
+        <section class="stitch-card lesson-section">
+          <h3>Line by line</h3>
+          <ul class="lesson-list">${explanations.map((point) => `<li>${escapeHtml(point)}</li>`).join('')}</ul>
+        </section>` : ''}
+      ${topic.examTip ? `<section class="callout tip"><strong>Exam tip:</strong> ${escapeHtml(topic.examTip)}</section>` : ''}
+      ${topic.practiceQ ? `
+        <section class="stitch-card lesson-section">
+          <h3>Try it yourself</h3>
+          <p class="muted">${escapeHtml(topic.practiceQ)}</p>
+          <div class="button-row">
+            <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(key)}">
+              <span class="material-symbols-outlined" style="font-size:16px">quiz</span> Quiz this topic
+            </button>
+            <button class="stitch-btn secondary" data-action="start-predict" data-topic="${escapeHtml(key)}">
+              <span class="material-symbols-outlined" style="font-size:16px">psychology</span> Predict output
+            </button>
+            ${isDone ? '' : '<button class="stitch-btn secondary" id="mark-complete">Mark as complete</button>'}
+          </div>
+        </section>` : ''}
+      <div class="lesson-nav">
+        <button class="stitch-btn secondary" ${previous ? `data-nav="lesson/${escapeHtml(previous)}"` : 'disabled'}>
+          <span class="material-symbols-outlined" style="font-size:16px">chevron_left</span> Previous
+        </button>
+        <button class="stitch-btn" ${next ? `data-nav="lesson/${escapeHtml(next)}"` : 'disabled'}>
+          Next <span class="material-symbols-outlined" style="font-size:16px">chevron_right</span>
+        </button>
+      </div>
+    </div>
+  `;
 
-                    <div class="stitch-card p-6 mb-6">
-                        <h3 class="text-xl font-bold mb-4">Data Types</h3>
-                        <ul class="space-y-2 text-gray-300">
-                            <li><strong>int:</strong> Integer numbers (-2,147,483,648 to 2,147,483,647)</li>
-                            <li><strong>float:</strong> Floating-point numbers (3.14, -0.5)</li>
-                            <li><strong>char:</strong> Single characters ('A', 'z', '1')</li>
-                            <li><strong>double:</strong> Double precision floating-point</li>
-                        </ul>
-                    </div>
-                `
-            },
-            'loops': {
-                title: 'Loops & Control Flow',
-                content: `
-                    <div class="stitch-card p-6 mb-6">
-                        <h3 class="text-xl font-bold mb-4">For Loops</h3>
-                        <p class="text-gray-300 mb-4">
-                            For loops are used when you know how many times to repeat a block of code.
-                        </p>
-                        <div class="bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4">
-                            <pre><code class="language-c">for(int i = 0; i < 10; i++) {
-    printf("Count: %d\\n", i);
-}</code></pre>
-                        </div>
-                    </div>
-
-                    <div class="stitch-card p-6 mb-6">
-                        <h3 class="text-xl font-bold mb-4">While Loops</h3>
-                        <p class="text-gray-300 mb-4">
-                            While loops repeat as long as a condition is true.
-                        </p>
-                        <div class="bg-gray-800 p-4 rounded-lg font-mono text-sm mb-4">
-                            <pre><code class="language-c">int count = 0;
-while(count < 5) {
-    printf("Count: %d\\n", count);
-    count++;
-}</code></pre>
-                        </div>
-                    </div>
-                `
-            }
-        };
-
-        topic = fallbackTopics[topicId] || {
-            title: 'Lesson Content',
-            content: '<div class="stitch-card p-6"><p class="text-gray-400">Lesson content coming soon...</p></div>'
-        };
-    }
-
-    // Update title
-    title.textContent = topic.title;
-
-    // Render content
-    content.innerHTML = topic.content || '<div class="stitch-card p-6"><p class="text-gray-400">Lesson content not available.</p></div>';
-
-    // Apply syntax highlighting
-    applySyntaxHighlighting();
+  const completeButton = document.getElementById('mark-complete');
+  if (completeButton) {
+    completeButton.addEventListener('click', () => {
+      markTopicComplete(key);
+      renderLesson(key);
+    });
+  }
 }

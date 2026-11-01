@@ -1,224 +1,72 @@
-# CodeFlow Product Requirements Document
+# CodeFlow - Product Requirements Document
 
-## 1. Product Overview
+**Version:** 1.2.0
+**Status:** Shipped, with documented limits
 
-### Product Name
-CodeFlow — Interactive Programming Learning Platform
+## 1. Product overview
 
-### Product Description
-CodeFlow is a lightweight browser-based learning platform designed to help students understand programming concepts through interactive visualization and gamified practice. Built with vanilla JavaScript, it runs entirely in the browser with no backend dependencies, making it fast, reliable, and easy to deploy.
+CodeFlow teaches introductory programming by making program state visible. The learner reads a short lesson, watches execution step by step, predicts output, and is quizzed on the same concept. Performance feeds adaptive practice.
 
-### Target Users
-- **Primary:** KTU S2 Computer Science students learning C programming
-- **Secondary:** Beginner programmers building foundational concepts
-- **Tertiary:** Self-learners seeking interactive programming education
+**Audience:** beginner programmers, especially KTU Computer Science students.
 
-### Problems Solved
-Students often struggle with:
-- Understanding pointer behavior and memory management
-- Visualizing recursion execution flow
-- Tracing code line-by-line during exams
-- Building logical thinking for problem-solving
-- Maintaining engagement with traditional learning materials
+**Subjects:** C Programming, HTML, CSS, JavaScript.
 
-CodeFlow addresses these by providing:
-- Real-time code execution visualization
-- Step-by-step memory state tracking
-- Gamified learning with XP and achievements
-- Adaptive practice based on performance
-- Instant doubt resolution via chatbot
+**Deployment:** static site. No server, account, database or API key is required for any learner-facing feature.
 
----
+## 2. Success criteria
 
-## 2. Core Features
+A learner can, without developer intervention:
 
-### 2.1 Lessons System
-- Structured programming lessons covering C fundamentals
-- Code examples with syntax highlighting
-- Concept explanations with bullet points
-- Exam tips and practice questions
-- Topic-to-topic navigation
+1. Reach every feature from visible navigation on phone and desktop.
+2. Complete a lesson and have that completion survive a reload.
+3. Take a quiz, understand each answer, and see the score in progress.
+4. Step a program forwards and backwards and read variable state.
+5. Play a Logic Quest level that requires reasoning about execution order.
+6. Ask the assistant a question and get a knowledge-base answer.
 
-### 2.2 Topic Explorer
-- Grid-based topic display with cards
-- Progress indicators per topic
-- Subject categorization (C, Web Dev)
-- Quick access to lessons, quizzes, and visualization
+## 3. Requirements and status
 
-### 2.3 Quiz System
-- **MCQ Quizzes:** Multiple choice with instant feedback
-- **Output Prediction:** Predict program output, whitespace-insensitive answer checking
-- Topic-specific and mixed quizzes
-- Score tracking and retry functionality
+| ID | Requirement | Status |
+| --- | --- | --- |
+| F1 | Hash router with 11 screens, back/forward, unknown-route fallback | Implemented |
+| F2 | Topic explorer filterable by subject | Implemented |
+| F3 | Lesson viewer: concepts, code, line-by-line notes, exam tip, practice prompt, prev/next | Implemented |
+| F4 | Quiz center: MCQ, explanations, score, retry, persistence | Implemented |
+| F5 | Output prediction with whitespace-tolerant checking and reveal | Implemented |
+| F6 | Step-by-step visualization with play/pause, next, back, reset | Implemented |
+| F7 | Flow diagram derived from source structure | Implemented |
+| F8 | Pointer visualization (address-of, dereference) | Implemented |
+| F9 | Recursion call stack from a real evaluation | Implemented |
+| F10 | Loop trace table from a real loop execution | Implemented |
+| F11 | Logic Quest: chapter map, XP, unlocks, persistence, execution-order challenge | Implemented (vertical slice) |
+| F12 | Logic Analyzer for C, JS, HTML, CSS | Implemented (heuristic) |
+| F13 | Assistant screen with history, loading state, error handling | Implemented (rule-based) |
+| F14 | Adaptive practice driven by recorded answers | Implemented |
+| F15 | Progress dashboard with per-subject progress and reset | Implemented |
+| F16 | PWA: manifest, real icons, offline shell | Implemented |
+| F17 | Responsive layout from 320px without horizontal overflow | Implemented |
+| F18 | Automated browser tests on desktop and mobile viewports | Implemented |
+| F19 | Free-form LLM answers | Not implemented (no provider, no key) |
+| F20 | General-purpose code execution | Out of scope by design |
 
-### 2.4 Visualization Engine
-- **Step-by-Step Execution:** Execute code line by line
-- **Variable State Display:** Show current values of all variables
-- **Pointer Visualization:** Visual representation of pointers and memory addresses
-- **Recursion Stack:** Display call stack for recursive functions
-- **Loop Trace:** Track iterations with variable changes table
+## 4. Non-functional requirements
 
-### 2.5 Logic Quest Game
-- 12 levels of progressive difficulty
-- XP system with level progression
-- Boss challenges at key milestones
-- Badge achievements
-- Progress persistence
+- **Stack:** vanilla JS/HTML/CSS. No React, Vue, Angular or Electron in the web app.
+- **Footprint:** no runtime dependencies; the only local library is the Tailwind utility bundle.
+- **Resilience:** corrupted `localStorage` must not prevent startup; malformed fields are discarded and defaults restored.
+- **Security:** interpolated text passes through `escapeHtml`; no secrets in frontend code; the assistant makes no network calls.
+- **Accessibility:** 40px minimum targets, labelled controls, Escape closes overlays, focus restored after dialogs, reduced-motion support.
+- **Scroll integrity:** only the active screen scrolls; body scroll is locked only while a modal is open and always restored.
 
-### 2.6 Adaptive Practice Engine
-- Track student performance per topic
-- Identify weak areas automatically
-- Recommend practice exercises
-- Mastery level tracking
-- Smart practice suggestions
+## 5. Explicit non-goals
 
-### 2.7 Logic Analyzer
-- Multi-language support (C, JavaScript, HTML, CSS)
-- Code syntax analysis
-- Logic flow visualization
-- Performance on demand (50K char limit)
+- Compiling, interpreting or validating arbitrary C or JavaScript.
+- Server-side grading of submissions.
+- Accounts, cloud sync or analytics.
+- Presenting the assistant as a general-purpose AI model.
 
-### 2.8 Chatbot
-- AI-powered doubt assistant
-- Keyword-based responses from knowledge base
-- Programming-specific responses (C, HTML, CSS, JS)
-- XSS-safe message rendering
-- Quick access via FAB button
+## 6. Quality gates
 
-### 2.9 PWA Support
-- Installable as standalone app
-- Offline mode with cached content
-- Service worker for asset caching
-- Mobile-responsive design
-
----
-
-## 3. User Experience Requirements
-
-### 3.1 Navigation
-- Hash-based SPA routing
-- Deep linking support for all screens
-- Fallback to dashboard for invalid routes
-- Single active screen at a time
-
-### 3.2 Responsive Design
-- Mobile-first approach
-- Breakpoints: 320px, 375px, 412px, 768px, 1024px, 1440px
-- Touch-friendly targets (minimum 40px)
-- No horizontal scrolling
-- Grid: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
-
-### 3.3 State Persistence
-- LocalStorage for user progress
-- XP and level tracking
-- Quiz scores and completion
-- Topic progress
-- Graceful handling of corrupted data
-
-### 3.4 Performance
-- Total bundle size under 120MB
-- Lazy loading for heavy modules
-- No infinite loops
-- Logic analyzer runs only on demand
-
----
-
-## 4. Technical Requirements
-
-### 4.1 Technology Stack
-- **Frontend:** HTML5, CSS3, Vanilla JavaScript (ES6+)
-- **Styling:** Tailwind CSS (via CDN), custom CSS
-- **Icons:** Material Symbols Outlined
-- **Storage:** LocalStorage API
-- **PWA:** Service Workers, Web App Manifest
-
-### 4.2 Browser Support
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-### 4.3 File Structure
-```
-codeflow/
-├── index.html
-├── styles.css
-├── app.js
-├── router.js
-├── vercel.json
-├── manifest.json
-├── service-worker.js
-├── visualizationEngine.js
-├── outputPredictionEngine.js
-├── logicAnalyzerEngine.js
-├── logicQuestEngine.js
-├── adaptivePracticeEngine.js
-├── selfTestEngine.js
-├── chatbot.js
-├── topicRenderer.js
-├── quizEngine.js
-├── gameMode.js
-├── data/
-│   ├── topicsDB.js
-│   ├── quizDB.js
-│   ├── outputPredictionDB.js
-│   ├── logicQuestDB.js
-│   ├── gameLevels.js
-│   └── knowledgeBase.js
-└── utils/
-    └── storage.js
-```
-
----
-
-## 5. Success Metrics
-
-### 5.1 Engagement Metrics
-- Average session duration
-- Daily active users
-- Lesson completion rate
-- Quiz attempt rate
-
-### 5.2 Learning Outcomes
-- Quiz accuracy improvement over time
-- Topic mastery progression
-- XP accumulation rate
-- Level advancement
-
-### 5.3 Technical Metrics
-- Page load time under 3 seconds
-- Zero console errors in production
-- PWA install rate
-- Offline mode usage
-
----
-
-## 6. Constraints
-
-### 6.1 Technical Constraints
-- Vanilla JavaScript only (no frameworks)
-- No backend server required
-- Low memory footprint
-- Works on low-end laptops
-
-### 6.2 Scope Constraints
-- Focus on KTU S2 CSE curriculum
-- C programming as primary focus
-- Web basics as secondary focus
-
----
-
-## 7. Future Considerations
-
-- User accounts and cloud sync
-- Leaderboards and social features
-- More programming languages
-- Video lessons integration
-- Code execution sandbox
-
----
-
-*Document Version: 1.0*
-*Last Updated: April 2026*
-*Author: CodeFlow Development Team*
+- `npm test`: structural checks (script paths, route/screen ids, duplicate globals, precache paths, icons) plus unit tests for loop tracing, recursion, flow parsing, output normalisation, quest execution order, scoring and state sanitising.
+- `npm run test:e2e`: Playwright on desktop 1280x800 and Pixel 5.
+- `npm run build`: static build that fails if a referenced script is missing from the artifact.

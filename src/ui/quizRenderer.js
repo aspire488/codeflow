@@ -1,161 +1,209 @@
 // ============================================
-// QUIZ RENDERER - Quiz Interface UI
+// QUIZ CENTER
 // ============================================
 
+let quizSession = null;
+
+function questionsForTopic(topicId) {
+  const fromDb = typeof QUIZ_DB !== 'undefined' ? QUIZ_DB[topicId] : null;
+  if (Array.isArray(fromDb) && fromDb.length) return fromDb;
+  const topic = TOPICS_DB[topicId];
+  if (topic && Array.isArray(topic.quiz) && topic.quiz.length) return topic.quiz;
+  return [];
+}
+
 function renderQuiz(topicId) {
-    const content = document.getElementById('quiz-content');
-    if (!content) return;
+  const host = document.getElementById('quiz-content');
+  if (!host) return;
+  quizSession = null;
 
-    // Clear existing content
-    content.innerHTML = '';
+  const topicsWithQuizzes = Object.keys(QUIZ_DB || {}).filter((key) => questionsForTopic(key).length > 0);
 
-    // Get quiz data
-    let quizData = null;
-    if (typeof QUIZ_DB !== 'undefined' && QUIZ_DB.quizzes) {
-        quizData = QUIZ_DB.quizzes.find(q => q.topicId === topicId);
-    }
+  if (!topicId || !TOPICS_DB[topicId]) {
+    const rows = topicsWithQuizzes.map((key) => {
+      const topic = TOPICS_DB[key];
+      const score = AppState.quizScores[key];
+      return `
+        <button class="quiz-option" data-action="start-quiz" data-topic="${escapeHtml(key)}">
+          <span>
+            <strong>${escapeHtml(topic ? topic.title : key)}</strong>
+            <span class="muted" style="display:block;font-size:12px">${questionsForTopic(key).length} questions &middot; ${escapeHtml(subjectLabel(topic ? topic.subject : 'c'))}</span>
+          </span>
+          <span class="badge ${score ? 'success' : 'muted-badge'}">${score ? score.percentage + '%' : 'New'}</span>
+        </button>`;
+    }).join('');
 
-    if (!quizData) {
-        // Fallback quiz
-        quizData = {
-            title: 'Sample Quiz',
-            questions: [
-                {
-                    question: 'What is a variable in C programming?',
-                    options: [
-                        'A function that stores data',
-                        'A container for storing data values',
-                        'A type of loop',
-                        'A mathematical operator'
-                    ],
-                    correct: 1
-                },
-                {
-                    question: 'Which data type is used to store integer values?',
-                    options: ['float', 'char', 'int', 'double'],
-                    correct: 2
-                }
-            ]
-        };
-    }
-
-    // Render quiz interface
-    content.innerHTML = `
-        <div class="max-w-2xl mx-auto">
-            <div class="stitch-card p-6 mb-6">
-                <h3 class="text-xl font-bold mb-4">${quizData.title}</h3>
-                <div class="text-sm text-gray-400 mb-4">Question <span id="current-question">1</span> of ${quizData.questions.length}</div>
-
-                <div id="question-container">
-                    <p class="text-lg mb-6" id="question-text">${quizData.questions[0].question}</p>
-
-                    <div class="space-y-3" id="options-container">
-                        ${quizData.questions[0].options.map((option, index) => `
-                            <button class="quiz-option w-full text-left p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" data-option="${index}">
-                                ${option}
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div class="flex justify-between mt-6">
-                    <button class="stitch-btn" id="prev-btn" disabled>Previous</button>
-                    <button class="stitch-btn" id="next-btn">Next</button>
-                </div>
-            </div>
-
-            <div class="stitch-card p-6">
-                <h4 class="font-semibold mb-4">Progress</h4>
-                <div class="w-full bg-gray-700 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="progress-bar" style="width: 0%"></div>
-                </div>
-                <div class="text-sm text-gray-400 mt-2" id="progress-text">0% Complete</div>
-            </div>
-        </div>
+    host.innerHTML = `
+      <div class="screen-heading">
+        <h2 class="screen-title">Quiz center</h2>
+        <p class="screen-subtitle">Pick a topic. Every question includes an explanation.</p>
+      </div>
+      ${topicsWithQuizzes.length
+        ? `<div class="quiz-options">${rows}</div>`
+        : emptyState('No quizzes loaded', 'The quiz database did not load.', 'Back to dashboard', 'dashboard')}
     `;
+    return;
+  }
 
-    // Quiz state
-    let currentQuestion = 0;
-    let answers = new Array(quizData.questions.length).fill(null);
-    let score = 0;
+  const questions = questionsForTopic(topicId);
+  if (!questions.length) {
+    host.innerHTML = emptyState('No quiz for this topic yet', 'This topic has a lesson but no questions yet. Try output prediction instead.', 'Output prediction', 'predict');
+    return;
+  }
 
-    function updateQuestion() {
-        const question = quizData.questions[currentQuestion];
-        document.getElementById('question-text').textContent = question.question;
-        document.getElementById('current-question').textContent = currentQuestion + 1;
+  quizSession = { topicId, questions, index: 0, score: 0, selected: -1, answered: false, answers: [] };
+  renderQuizQuestion();
+}
 
-        const optionsContainer = document.getElementById('options-container');
-        optionsContainer.innerHTML = question.options.map((option, index) => `
-            <button class="quiz-option w-full text-left p-4 rounded-lg transition-colors ${
-                answers[currentQuestion] === index ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
-            }" data-option="${index}">
-                ${option}
-            </button>
-        `).join('');
+function renderQuizQuestion() {
+  const host = document.getElementById('quiz-content');
+  const session = quizSession;
+  if (!host || !session) return;
 
-        // Update navigation buttons
-        document.getElementById('prev-btn').disabled = currentQuestion === 0;
-        document.getElementById('next-btn').textContent =
-            currentQuestion === quizData.questions.length - 1 ? 'Finish' : 'Next';
+  const question = session.questions[session.index];
+  const topic = TOPICS_DB[session.topicId];
+  const total = session.questions.length;
+  const progress = Math.round((session.index / total) * 100);
 
-        // Update progress
-        const progress = ((currentQuestion + 1) / quizData.questions.length) * 100;
-        document.getElementById('progress-bar').style.width = progress + '%';
-        document.getElementById('progress-text').textContent = Math.round(progress) + '% Complete';
+  host.innerHTML = `
+    <div class="screen-heading">
+      <button class="stitch-btn secondary" data-nav="quiz">
+        <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Quiz center
+      </button>
+      <h2 class="screen-title" style="margin-top:16px">${escapeHtml(topic ? topic.title : session.topicId)}</h2>
+      <p class="screen-subtitle">Question ${session.index + 1} of ${total} &middot; Score ${session.score}</p>
+    </div>
+    <div class="progress-bar" style="margin-bottom:16px"><div class="progress-fill" style="width:${progress}%"></div></div>
+    <div class="stitch-card quiz-card">
+      <div class="quiz-meta">
+        <span>${escapeHtml(subjectLabel(topic ? topic.subject : 'c'))}</span>
+        <span>${session.answered ? 'Answer locked' : 'Select one answer'}</span>
+      </div>
+      <h3 class="quiz-question">${escapeHtml(question.question)}</h3>
+      <div class="quiz-options" id="quiz-options">
+        ${question.options.map((option, index) => `
+          <button class="quiz-option" data-option="${index}" ${session.answered ? 'disabled' : ''}>
+            <span>${escapeHtml(option)}</span>
+            <span class="material-symbols-outlined" style="font-size:18px"></span>
+          </button>`).join('')}
+      </div>
+      <div id="quiz-feedback"></div>
+      <div class="button-row">
+        <button class="stitch-btn" id="quiz-check" ${session.answered ? 'disabled' : ''}>Check answer</button>
+        <button class="stitch-btn secondary" id="quiz-next" style="display:none">
+          ${session.index < total - 1 ? 'Next question' : 'See results'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  const optionButtons = Array.from(host.querySelectorAll('.quiz-option'));
+
+  optionButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (session.answered) return;
+      session.selected = Number(button.getAttribute('data-option'));
+      optionButtons.forEach((b) => b.classList.remove('selected'));
+      button.classList.add('selected');
+    });
+  });
+
+  document.getElementById('quiz-check').addEventListener('click', () => {
+    if (session.selected < 0) {
+      document.getElementById('quiz-feedback').innerHTML =
+        '<div class="feedback bad"><strong>Pick an answer first</strong>Choose one of the options above.</div>';
+      return;
     }
 
-    function showResults() {
-        content.innerHTML = `
-            <div class="max-w-2xl mx-auto">
-                <div class="stitch-card p-6 text-center">
-                    <h3 class="text-2xl font-bold mb-4">Quiz Complete!</h3>
-                    <div class="text-6xl font-black text-blue-400 mb-4">${score}/${quizData.questions.length}</div>
-                    <p class="text-gray-400 mb-6">You scored ${Math.round((score/quizData.questions.length)*100)}%</p>
-                    <div class="flex gap-4 justify-center">
-                        <button class="stitch-btn" onclick="navigateTo('dashboard')">Back to Dashboard</button>
-                        <button class="stitch-btn" onclick="renderQuiz('${topicId}')">Retake Quiz</button>
-                    </div>
-                </div>
-            </div>
-        `;
+    session.answered = true;
+    const isCorrect = session.selected === question.correct;
+    if (isCorrect) session.score += 1;
+    session.answers.push({ question: question.question, selected: session.selected, correct: question.correct, isCorrect });
+
+    if (typeof AdaptiveEngine !== 'undefined' && AdaptiveEngine.recordAnswer) {
+      AdaptiveEngine.recordAnswer(session.topicId, isCorrect);
     }
 
-    // Event listeners
-    content.addEventListener('click', function(e) {
-        if (e.target.classList.contains('quiz-option')) {
-            const optionIndex = parseInt(e.target.getAttribute('data-option'));
-            answers[currentQuestion] = optionIndex;
-
-            // Update UI
-            document.querySelectorAll('.quiz-option').forEach(btn => {
-                btn.classList.remove('bg-blue-600');
-                btn.classList.add('bg-gray-700', 'hover:bg-gray-600');
-            });
-            e.target.classList.remove('bg-gray-700', 'hover:bg-gray-600');
-            e.target.classList.add('bg-blue-600');
-        }
-
-        if (e.target.id === 'next-btn') {
-            if (currentQuestion < quizData.questions.length - 1) {
-                currentQuestion++;
-                updateQuestion();
-            } else {
-                // Calculate score
-                answers.forEach((answer, index) => {
-                    if (answer === quizData.questions[index].correct) {
-                        score++;
-                    }
-                });
-                showResults();
-            }
-        }
-
-        if (e.target.id === 'prev-btn' && currentQuestion > 0) {
-            currentQuestion--;
-            updateQuestion();
-        }
+    optionButtons.forEach((button, index) => {
+      button.disabled = true;
+      button.classList.remove('selected');
+      const icon = button.querySelector('.material-symbols-outlined');
+      if (index === question.correct) {
+        button.classList.add('correct');
+        if (icon) icon.textContent = 'check_circle';
+      } else if (index === session.selected) {
+        button.classList.add('wrong');
+        if (icon) icon.textContent = 'cancel';
+      }
     });
 
-    // Initialize first question
-    updateQuestion();
+    document.getElementById('quiz-feedback').innerHTML = `
+      <div class="feedback ${isCorrect ? 'ok' : 'bad'}">
+        <strong>${isCorrect ? 'Correct' : 'Not quite'}</strong>
+        ${escapeHtml(question.explanation || '')}
+      </div>`;
+
+    document.getElementById('quiz-check').disabled = true;
+    document.getElementById('quiz-next').style.display = 'inline-flex';
+  });
+
+  document.getElementById('quiz-next').addEventListener('click', () => {
+    if (session.index < session.questions.length - 1) {
+      session.index += 1;
+      session.selected = -1;
+      session.answered = false;
+      renderQuizQuestion();
+    } else {
+      renderQuizResult();
+    }
+  });
+}
+
+function renderQuizResult() {
+  const host = document.getElementById('quiz-content');
+  const session = quizSession;
+  if (!host || !session) return;
+
+  const total = session.questions.length;
+  const percentage = Math.round((session.score / total) * 100);
+  const passed = percentage >= 70;
+
+  AppState.quizScores[session.topicId] = { score: session.score, total, percentage };
+  if (passed) markTopicComplete(session.topicId);
+  else saveState();
+
+  addXP(passed ? 20 : 5);
+  syncChrome();
+
+  const wrong = session.answers.filter((answer) => !answer.isCorrect);
+
+  host.innerHTML = `
+    <div class="stitch-card result-card">
+      <span class="material-symbols-outlined" style="font-size:44px;color:${passed ? '#67df70' : '#ff6b6b'}">
+        ${passed ? 'emoji_events' : 'school'}
+      </span>
+      <h2 class="screen-title" style="margin-top:8px">${passed ? 'Passed' : 'Keep practising'}</h2>
+      <div class="result-score">${session.score}/${total}</div>
+      <p class="muted">${percentage}% &middot; ${passed ? '+20 XP' : '+5 XP'}</p>
+      <div class="button-row" style="justify-content:center">
+        <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(session.topicId)}">
+          <span class="material-symbols-outlined" style="font-size:16px">refresh</span> Retry quiz
+        </button>
+        <button class="stitch-btn secondary" data-nav="lesson/${escapeHtml(session.topicId)}">Review lesson</button>
+        <button class="stitch-btn secondary" data-nav="progress">View progress</button>
+      </div>
+    </div>
+    ${wrong.length ? `
+      <h3 class="card-title" style="margin-top:32px">Review these</h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        ${wrong.map((answer) => {
+          const question = session.questions.find((q) => q.question === answer.question);
+          return `<div class="stitch-card pad-lg">
+            <p style="font-weight:600;margin:0 0 8px">${escapeHtml(answer.question)}</p>
+            <p class="muted" style="margin:0">Correct answer: <strong>${escapeHtml(question ? question.options[answer.correct] : '')}</strong></p>
+            <p class="muted" style="margin:6px 0 0">${escapeHtml(question && question.explanation ? question.explanation : '')}</p>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+  `;
 }

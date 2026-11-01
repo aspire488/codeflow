@@ -1,34 +1,87 @@
 // ============================================
-// CHATBOT RENDERER - AI Assistant UI
+// CHATBOT SCREEN - knowledge-base assistant
 // ============================================
 
+let chatBound = false;
+const chatHistory = [];
+
+function chatBubble(text, sender) {
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${sender}`;
+  bubble.textContent = text;
+  return bubble;
+}
+
+function appendChatMessage(text, sender) {
+  const log = document.getElementById('chat-messages');
+  if (!log) return null;
+  const bubble = chatBubble(text, sender);
+  log.appendChild(bubble);
+  log.scrollTop = log.scrollHeight;
+  return bubble;
+}
+
 function renderChatbot() {
-    const messages = document.getElementById('chat-messages');
-    if (!messages) return;
+  const log = document.getElementById('chat-messages');
+  const input = document.getElementById('chat-input');
+  const send = document.getElementById('chat-send');
+  if (!log) return;
 
-    // Clear existing messages and show welcome
-    messages.innerHTML = `
-        <div class="text-center text-gray-400 py-8">
-            <span class="material-symbols-outlined text-4xl mb-2">chat</span>
-            <p>Ask me anything about programming!</p>
-            <p class="text-sm mt-2">Try questions like:</p>
-            <div class="text-xs mt-2 space-y-1">
-                <p>• "What is a pointer in C?"</p>
-                <p>• "How do I use loops?"</p>
-                <p>• "Explain recursion"</p>
-            </div>
-        </div>
-    `;
+  if (!log.childElementCount) {
+    appendChatMessage(
+      'Hi! I am the CodeFlow study assistant. I answer from a curated C, HTML, CSS and JavaScript knowledge base - I am not a general-purpose language model.',
+      'bot'
+    );
+    appendChatMessage('Try: "explain pointers", "css flexbox", "difference between let and var", or "what is a segmentation fault".', 'bot');
+  }
 
-    // Clear input
-    const input = document.getElementById('chat-input');
-    if (input) {
-        input.value = '';
-        input.focus();
+  if (chatBound) return;
+  chatBound = true;
+
+  send?.addEventListener('click', sendChatMessage);
+  input?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      sendChatMessage();
+    }
+  });
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  if (text.length > 500) return;
+
+  input.value = '';
+  appendChatMessage(text, 'user');
+  chatHistory.push({ role: 'user', text });
+
+  const pending = appendChatMessage('Thinking...', 'pending');
+
+  setTimeout(() => {
+    let answer;
+    try {
+      if (typeof KNOWLEDGE_BASE !== 'undefined' && typeof KNOWLEDGE_BASE.getResponse === 'function') {
+        answer = KNOWLEDGE_BASE.getResponse(text);
+      } else {
+        answer = 'The knowledge base did not load, so I cannot answer that right now.';
+      }
+    } catch (error) {
+      console.error('[chat] knowledge base failed:', error);
+      answer = 'Something went wrong while looking that up. Please try rephrasing.';
     }
 
-    // If chatbot engine exists, initialize it
-    if (typeof Chatbot !== 'undefined' && Chatbot.init) {
-        Chatbot.init();
+    if (pending && pending.parentNode) {
+      pending.classList.remove('pending');
+      pending.classList.add('bot');
+      pending.textContent = answer;
+    } else {
+      appendChatMessage(answer, 'bot');
     }
+    chatHistory.push({ role: 'bot', text: answer });
+    const log = document.getElementById('chat-messages');
+    if (log) log.scrollTop = log.scrollHeight;
+  }, 350);
 }

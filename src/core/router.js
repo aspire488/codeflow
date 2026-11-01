@@ -1,181 +1,116 @@
-let currentRoute = "dashboard";
-let routeParam = null;
+// ============================================
+// ROUTER - single source of truth for navigation
+// ============================================
 
-// Screen ID mapping for new Stitch UI
-const SCREEN_MAP = {
-  'dashboard': 'dashboard-screen',
-  'lesson': 'lesson-screen',
-  'quiz': 'quiz-screen',
-  'visualize': 'visualize-screen',
-  'game': 'game-screen',
-  'chatbot': 'chatbot-screen',
-  'logic': 'logic-analyzer-screen'
+const ROUTES = {
+  dashboard: { screen: 'dashboard-screen', title: 'Dashboard', render: () => renderDashboard() },
+  topics:    { screen: 'topics-screen',    title: 'Explore Topics', render: () => renderTopicExplorer() },
+  lesson:    { screen: 'lesson-screen',    title: 'Lessons', render: (p) => renderLesson(p) },
+  quiz:      { screen: 'quiz-screen',      title: 'Quiz Center', render: (p) => renderQuiz(p) },
+  predict:   { screen: 'predict-screen',   title: 'Output Prediction', render: (p) => renderOutputPrediction(p) },
+  visualize: { screen: 'visualize-screen', title: 'Visualization', render: (p) => renderVisualizer(p) },
+  game:      { screen: 'game-screen',      title: 'Logic Quest', render: () => renderLogicQuestMap() },
+  logic:     { screen: 'logic-screen',     title: 'Logic Analyzer', render: () => renderLogicAnalyzer() },
+  chatbot:   { screen: 'chatbot-screen',   title: 'AI Assistant', render: () => renderChatbot() },
+  practice:  { screen: 'practice-screen',  title: 'Adaptive Practice', render: () => renderAdaptivePractice() },
+  progress:  { screen: 'progress-screen',  title: 'Progress', render: () => renderProgressDashboard() }
 };
 
-// Unified screen switching
-function showScreen(screenName) {
-  // Hide all screens
-  document.querySelectorAll('.screen').forEach(screen => {
-    screen.classList.remove('active');
-    screen.style.display = 'none';
+let currentRoute = 'dashboard';
+let currentParam = null;
+
+// Parse "#lesson/loops" into { route, param }
+function parseHashRoute() {
+  const raw = (window.location.hash || '').replace(/^#\/?/, '');
+  if (!raw) return { route: 'dashboard', param: null };
+  const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
+  return { route: parts[0] || 'dashboard', param: parts.length > 1 ? parts.slice(1).join('/') : null };
+}
+
+// Show exactly one screen. Unknown routes fall back to the dashboard.
+function showScreen(route) {
+  const definition = ROUTES[route];
+  const screenId = definition ? definition.screen : ROUTES.dashboard.screen;
+
+  document.querySelectorAll('.screen').forEach((screen) => {
+    const isActive = screen.id === screenId;
+    screen.classList.toggle('active', isActive);
+    if (isActive) {
+      // Reset scroll position per screen change without touching body overflow.
+      const scroller = screen.querySelector('.screen-scroll');
+      if (scroller) scroller.scrollTop = 0;
+    }
   });
 
-  // Show target screen
-  const screenId = SCREEN_MAP[screenName] || SCREEN_MAP['dashboard'];
   const target = document.getElementById(screenId);
-  
-  if (target) {
-    target.classList.add('active');
-    target.style.display = 'flex';
-    
-    // Reset scroll position on screen change
-    const main = target.querySelector('main');
-    if (main) {
-      main.scrollTop = 0;
-    } else {
-      target.scrollTop = 0;
-    }
-    
-    // Ensure body scroll is restored
-    document.body.style.overflow = 'auto';
-  }
-  
+  const titleEl = document.getElementById('page-title');
+  if (titleEl) titleEl.textContent = (definition || ROUTES.dashboard).title;
+  document.title = `${(definition || ROUTES.dashboard).title} - CodeFlow`;
+
+  document.querySelectorAll('.nav-item').forEach((item) => {
+    item.classList.toggle('active', item.getAttribute('data-nav') === route);
+  });
+
+  closeMobileSidebar();
   return target;
 }
 
-// Initialize router
+function navigateTo(route) {
+  const clean = String(route || '').replace(/^#/, '');
+  const nextHash = `#${clean}`;
+  if (window.location.hash === nextHash) {
+    handleRouteChange();
+  } else {
+    window.location.hash = nextHash;
+  }
+}
+
+function handleRouteChange() {
+  const { route, param } = parseHashRoute();
+  const isKnown = Object.prototype.hasOwnProperty.call(ROUTES, route);
+  const resolvedRoute = isKnown ? route : 'dashboard';
+
+  currentRoute = resolvedRoute;
+  currentParam = isKnown ? param : null;
+  if (!isKnown) {
+    // Replace the invalid hash so back/forward does not fight the fallback.
+    window.history.replaceState(null, '', '#dashboard');
+  }
+
+  showScreen(resolvedRoute);
+
+  try {
+    ROUTES[resolvedRoute].render(param);
+  } catch (error) {
+    console.error(`[router] Failed to render route "${resolvedRoute}":`, error);
+    if (typeof showErrorState === 'function') {
+      showErrorState(resolvedRoute, error);
+    }
+  }
+
+  if (typeof syncChrome === 'function') syncChrome();
+
+  // Move focus to the screen for keyboard and screen-reader users.
+  const screen = document.getElementById(ROUTES[resolvedRoute].screen);
+  if (screen) {
+    screen.setAttribute('tabindex', '-1');
+    screen.focus({ preventScroll: true });
+  }
+}
+
 function initRouter() {
+  window.addEventListener('hashchange', handleRouteChange);
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', handleRouteChange);
   } else {
     handleRouteChange();
   }
-  
-  window.addEventListener('hashchange', handleRouteChange);
-  
-  // Reset scroll on route change
-  window.addEventListener('hashchange', () => {
-    document.body.style.overflow = 'auto';
-  });
 }
 
-// Parse hash route
-function parseHashRoute() {
-  const hash = window.location.hash.replace(/^#/, '') || 'dashboard';
-  const [route, ...rest] = hash.split('/');
-  return {
-    route: route || 'dashboard',
-    param: rest.length ? decodeURIComponent(rest.join('/')) : null
-  };
-}
-
-// Helper functions
-function getFirstTopicKey() {
-  return (typeof TOPICS_DB !== 'undefined' && Object.keys(TOPICS_DB).length > 0) 
-    ? Object.keys(TOPICS_DB)[0] 
-    : 'c-basics';
-}
-
-function isValidTopic(topicId) {
-  return topicId && typeof TOPICS_DB !== 'undefined' && TOPICS_DB.hasOwnProperty(topicId);
-}
-
-// Main route handler
-function handleRouteChange() {
-  const { route, param } = parseHashRoute();
-  
-  // Store for reference
-  currentRoute = route;
-  routeParam = param;
-  
-  // Show appropriate screen
-  const targetScreen = showScreen(route);
-
-  if (!targetScreen) {
-    showScreen('dashboard');
-    return;
-  }
-
-  // Route-specific rendering
-  switch (route) {
-    case 'dashboard':
-      if (typeof renderDashboard === 'function') {
-        renderDashboard();
-      }
-      break;
-      
-    case 'lesson':
-      if (param && !isValidTopic(param)) {
-        navigateTo('dashboard');
-        return;
-      }
-      if (typeof renderTopic === 'function') {
-        renderTopic(param || getFirstTopicKey());
-      }
-      break;
-      
-    case 'quiz':
-      if (param && !isValidTopic(param)) {
-        navigateTo('dashboard');
-        return;
-      }
-      if (typeof startQuiz === 'function') {
-        startQuiz(param || getFirstTopicKey());
-      }
-      break;
-      
-    case 'visualize':
-      if (param && !isValidTopic(param)) {
-        navigateTo('dashboard');
-        return;
-      }
-      if (typeof startVisualization === 'function') {
-        startVisualization(param || getFirstTopicKey());
-      }
-      break;
-      
-    case 'game':
-      if (typeof openGameMode === 'function') {
-        openGameMode();
-      }
-      break;
-      
-    case 'chatbot':
-      if (typeof renderChatbot === 'function') {
-        renderChatbot();
-      }
-      break;
-      
-    case 'logic':
-      if (typeof renderLogicAnalyzer === 'function') {
-        renderLogicAnalyzer();
-      }
-      break;
-      
-    case 'predict':
-      if (typeof renderOutputPredictionMode === 'function') {
-        renderOutputPredictionMode(param);
-      }
-      break;
-      
-    default:
-      showScreen('dashboard');
-      if (typeof renderDashboard === 'function') {
-        renderDashboard();
-      }
-  }
-}
-
-// Navigation helper
-function navigateTo(route) {
-  window.location.hash = '#' + route.replace(/^#/, '');
-}
-
-// Route accessors
 function getCurrentRoute() {
   return currentRoute;
 }
 
 function getRouteParam() {
-  return routeParam;
+  return currentParam;
 }
