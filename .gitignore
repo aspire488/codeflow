@@ -3,6 +3,7 @@ node_modules
 *.log
 *.zip
 dist
+*.db
 .DS_Store
 Thumbs.db
 ruff_cache

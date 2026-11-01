@@ -17,19 +17,26 @@ function defaultState() {
   return { xp: 0, streak: 0, completedTopics: [], quizScores: {}, currentTopic: null, lastRoute: null };
 }
 
+// Far above anything earnable; stops corrupted storage rendering absurd levels.
+const MAX_XP = 1000000;
+
+function hasTopic(id) {
+  return typeof TOPICS_DB === 'undefined' || Object.prototype.hasOwnProperty.call(TOPICS_DB, id);
+}
+
 // Merge only well-formed fields so corrupted storage cannot break the app.
 function sanitizeState(raw) {
   const base = defaultState();
   if (!raw || typeof raw !== 'object') return base;
 
-  if (Number.isFinite(raw.xp) && raw.xp >= 0) base.xp = Math.floor(raw.xp);
+  if (Number.isFinite(raw.xp) && raw.xp >= 0) base.xp = Math.min(Math.floor(raw.xp), MAX_XP);
   if (Number.isFinite(raw.streak) && raw.streak >= 0) base.streak = Math.floor(raw.streak);
   if (Array.isArray(raw.completedTopics)) {
-    base.completedTopics = raw.completedTopics.filter((t) => typeof t === 'string');
+    base.completedTopics = [...new Set(raw.completedTopics.filter((t) => typeof t === 'string' && hasTopic(t)))];
   }
   if (raw.quizScores && typeof raw.quizScores === 'object' && !Array.isArray(raw.quizScores)) {
     Object.entries(raw.quizScores).forEach(([topic, score]) => {
-      if (score && typeof score === 'object' && Number.isFinite(score.score) && Number.isFinite(score.total)) {
+      if (hasTopic(topic) && score && typeof score === 'object' && Number.isFinite(score.score) && Number.isFinite(score.total)) {
         base.quizScores[topic] = {
           score: Math.max(0, Math.min(score.score, score.total)),
           total: score.total,
@@ -55,17 +62,57 @@ function loadState() {
   }
 }
 
+// Fold another tab's saved progress into ours without losing either side.
+function mergeState(target, other) {
+  target.xp = Math.max(target.xp, other.xp);
+  target.streak = Math.max(target.streak, other.streak);
+  target.completedTopics = [...new Set([...other.completedTopics, ...target.completedTopics])];
+  Object.entries(other.quizScores).forEach(([topic, score]) => {
+    const mine = target.quizScores[topic];
+    if (!mine || score.percentage > mine.percentage) target.quizScores[topic] = score;
+  });
+}
+
 function saveState() {
   try {
+    // Re-read first: another tab may have written since we loaded.
+    const stored = localStorage.getItem(STATE_KEY);
+    if (stored) mergeState(AppState, sanitizeState(JSON.parse(stored)));
+  } catch (_) { /* unreadable storage is overwritten below */ }
+  try {
     localStorage.setItem(STATE_KEY, JSON.stringify(AppState));
+    return true;
   } catch (error) {
     console.warn('[state] Progress could not be saved.', error);
+    showToast('Progress could not be saved in this browser (storage is full or blocked). It will be lost when you close this tab.');
+    return false;
   }
+}
+
+function showToast(message, ms = 6000) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => toast.classList.remove('show'), ms);
+}
+
+// Another tab saved progress: adopt it so this tab does not overwrite it later.
+function onStorageChange(event) {
+  if (event.key !== null && event.key !== STATE_KEY) return;
+  if (event.newValue) {
+    try { Object.assign(AppState, sanitizeState(JSON.parse(event.newValue))); } catch (_) { return; }
+  } else {
+    Object.assign(AppState, defaultState());
+  }
+  syncChrome();
+  if (['dashboard', 'topics', 'progress'].includes(currentRoute)) ROUTES[currentRoute].render(currentParam);
 }
 
 function addXP(amount) {
   if (!Number.isFinite(amount) || amount <= 0) return;
-  AppState.xp += Math.floor(amount);
+  AppState.xp = Math.min(AppState.xp + Math.floor(amount), MAX_XP);
   saveState();
   syncChrome();
 }
@@ -122,7 +169,7 @@ function emptyState(title, message, actionLabel, actionRoute) {
     ? `<button class="stitch-btn" style="margin-top:16px" data-nav="${escapeHtml(actionRoute)}">${escapeHtml(actionLabel)}</button>`
     : '';
   return `<div class="empty-state">
-    <span class="material-symbols-outlined empty-icon">inbox</span>
+    <span aria-hidden="true" class="material-symbols-outlined empty-icon">inbox</span>
     <h3 class="card-title">${escapeHtml(title)}</h3>
     <p class="muted">${escapeHtml(message)}</p>
     ${action}
@@ -136,7 +183,7 @@ function showErrorState(route, error) {
   const host = screen ? screen.querySelector('.screen-inner, .chat-shell') : null;
   if (!host) return;
   host.innerHTML = `<div class="empty-state">
-    <span class="material-symbols-outlined empty-icon">error</span>
+    <span aria-hidden="true" class="material-symbols-outlined empty-icon">error</span>
     <h3 class="card-title">This screen failed to load</h3>
     <p class="muted">${escapeHtml(error && error.message ? error.message : 'Unknown error')}</p>
     <button class="stitch-btn" style="margin-top:16px" data-nav="dashboard">Back to dashboard</button>
@@ -231,12 +278,25 @@ function openMobileSidebar() {
   sidebar.classList.add('open');
   if (backdrop) backdrop.classList.add('visible');
   if (button) button.setAttribute('aria-expanded', 'true');
+  // inert keeps focus (and screen readers) out of the page behind the drawer.
+  setPageInert(true);
+  sidebar.querySelector('.nav-item')?.focus({ preventScroll: true });
+}
+
+function setPageInert(on) {
+  ['screen-container', 'help-btn'].forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.inert = on;
+  });
 }
 
 function closeMobileSidebar() {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
   const button = document.getElementById('mobile-menu-btn');
+  const wasOpen = sidebar && sidebar.classList.contains('open');
+  setPageInert(false);
+  if (wasOpen && button) button.focus({ preventScroll: true });
   if (sidebar) sidebar.classList.remove('open');
   if (backdrop) backdrop.classList.remove('visible');
   if (button) button.setAttribute('aria-expanded', 'false');
@@ -288,6 +348,7 @@ function initEventDelegation() {
     }
   });
 
+  window.addEventListener('storage', onStorageChange);
   document.getElementById('mobile-menu-btn')?.addEventListener('click', toggleMobileSidebar);
   document.getElementById('sidebar-backdrop')?.addEventListener('click', closeMobileSidebar);
 

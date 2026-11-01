@@ -12,7 +12,7 @@ function renderLesson(topicId) {
     return;
   }
 
-  const key = topicId && TOPICS_DB[topicId] ? topicId : keys[0];
+  const key = topicId && hasTopic(topicId) ? topicId : keys[0];
   const topic = TOPICS_DB[key];
   AppState.currentTopic = key;
   saveState();
@@ -29,7 +29,7 @@ function renderLesson(topicId) {
   host.innerHTML = `
     <div class="stack-head">
       <button class="stitch-btn secondary" data-nav="topics">
-        <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> All topics
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">arrow_back</span> All topics
       </button>
       <h2 class="screen-title" style="margin-top:16px">${escapeHtml(topic.title)}</h2>
       <p class="screen-subtitle">
@@ -48,7 +48,7 @@ function renderLesson(topicId) {
           <div class="code-panel-bar">
             <span>${escapeHtml(key)}.${language === 'javascript' ? 'js' : language}</span>
             <button class="stitch-btn secondary" data-action="visualize" data-topic="${escapeHtml(key)}">
-              <span class="material-symbols-outlined" style="font-size:16px">terminal</span> Visualize this code
+              <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">terminal</span> Visualize this code
             </button>
           </div>
           <pre><code>${highlightCode(topic.code, language)}</code></pre>
@@ -65,20 +65,20 @@ function renderLesson(topicId) {
           <p class="muted">${escapeHtml(topic.practiceQ)}</p>
           <div class="button-row">
             <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(key)}">
-              <span class="material-symbols-outlined" style="font-size:16px">quiz</span> Quiz this topic
+              <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">quiz</span> Quiz this topic
             </button>
             <button class="stitch-btn secondary" data-action="start-predict" data-topic="${escapeHtml(key)}">
-              <span class="material-symbols-outlined" style="font-size:16px">psychology</span> Predict output
+              <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">psychology</span> Predict output
             </button>
             ${isDone ? '' : '<button class="stitch-btn secondary" id="mark-complete">Mark as complete</button>'}
           </div>
         </section>` : ''}
       <div class="lesson-nav">
         <button class="stitch-btn secondary" ${previous ? `data-nav="lesson/${escapeHtml(previous)}"` : 'disabled'}>
-          <span class="material-symbols-outlined" style="font-size:16px">chevron_left</span> Previous
+          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">chevron_left</span> Previous
         </button>
         <button class="stitch-btn" ${next ? `data-nav="lesson/${escapeHtml(next)}"` : 'disabled'}>
-          Next <span class="material-symbols-outlined" style="font-size:16px">chevron_right</span>
+          Next <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">chevron_right</span>
         </button>
       </div>
     </div>

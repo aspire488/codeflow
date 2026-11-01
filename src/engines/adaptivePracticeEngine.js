@@ -1,5 +1,16 @@
 // adaptivePracticeEngine.js - Adaptive Practice Engine for CodeFlow
 
+// Keep only well-formed numeric counters so corrupted storage cannot yield NaN or absurd stats.
+function sanitizeAdaptiveState(raw) {
+  const count = (value) => (Number.isFinite(value) && value >= 0 ? Math.min(Math.floor(value), 100000) : 0);
+  const clean = {};
+  Object.entries(raw).forEach(([key, entry]) => {
+    if ((typeof hasTopic === 'function' && !hasTopic(key)) || !entry || typeof entry !== 'object') return;
+    clean[key] = { correct: count(entry.correct), wrong: count(entry.wrong), streak: count(entry.streak), mastered: entry.mastered === true };
+  });
+  return clean;
+}
+
 const AdaptiveEngine = {
   learningState: {},
   
@@ -12,8 +23,8 @@ const AdaptiveEngine = {
       const data = localStorage.getItem('codeflow_adaptive_state');
       if (data) {
         const parsed = JSON.parse(data);
-        if (parsed && typeof parsed === 'object') {
-          this.learningState = parsed;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          this.learningState = sanitizeAdaptiveState(parsed);
         }
       }
     } catch (e) {
@@ -138,71 +149,10 @@ function getAdaptiveState() {
   return AdaptiveEngine.learningState;
 }
 
-function renderSmartPracticeUI(containerId = 'smartPracticeContainer') {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  
-  const weakTopics = AdaptiveEngine.getWeakTopics();
-  const displayTopics = weakTopics.slice(0, 8);
-  
-  if (displayTopics.length === 0) {
-    container.innerHTML = `
-      <div class="bg-tertiary-container/20 border border-tertiary/40 rounded-lg p-4 text-center">
-        <span class="material-symbols-outlined text-tertiary text-3xl mb-2">emoji_events</span>
-        <h3 class="text-lg font-bold text-tertiary">All Topics Mastered!</h3>
-        <p class="text-sm text-on-surface-variant">Great job! You've completed all practice.</p>
-        <button onclick="AdaptiveEngine.resetProgress()" class="mt-3 px-4 py-2 bg-surface-container text-on-surface-variant rounded hover:bg-surface-container-high text-sm">
-          Reset Progress
-        </button>
-      </div>
-    `;
-    return;
-  }
-  
-  let html = `
-    <div class="space-y-3">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-on-surface">Smart Practice</h3>
-        <button onclick="startSmartPractice()" class="px-4 py-2 bg-tertiary text-on-tertiary rounded-lg hover:brightness-110 text-sm font-bold flex items-center gap-2">
-          <span class="material-symbols-outlined text-sm">play_arrow</span>
-          Start Practice
-        </button>
-      </div>
-      <p class="text-xs text-on-surface-variant mb-4">Focus on your weakest topics to improve faster.</p>
-  `;
-  
-  displayTopics.forEach(topic => {
-    const progress = AdaptiveEngine.getMasteryProgress(topic.topicKey);
-    const topicTitle = TOPICS_DB[topic.topicKey]?.title || topic.topicKey;
-    const barWidth = progress.percentage;
-    const barColor = progress.status === 'Mastered' ? 'bg-tertiary' : progress.percentage >= 70 ? 'bg-primary' : 'bg-error';
-    
-    html += `
-      <div class="bg-surface-container rounded-lg p-3 border border-outline-variant/20">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-semibold text-on-surface">${topicTitle}</span>
-          <span class="text-xs ${progress.status === 'Mastered' ? 'text-tertiary' : 'text-outline'}">${progress.status}</span>
-        </div>
-        <div class="h-2 bg-surface-container-high rounded-full overflow-hidden">
-          <div class="${barColor} h-full transition-all" style="width: ${barWidth}%"></div>
-        </div>
-        <div class="flex justify-between mt-1 text-xs text-outline">
-          <span>${progress.correct} correct</span>
-          <span>${progress.wrong} wrong</span>
-          <span>${progress.percentage}%</span>
-        </div>
-      </div>
-    `;
-  });
-  
-  container.innerHTML = html;
-}
-
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     AdaptiveEngine,
     startSmartPractice,
-    getAdaptiveState,
-    renderSmartPracticeUI
+    getAdaptiveState
   };
 }

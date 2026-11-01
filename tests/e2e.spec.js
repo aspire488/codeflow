@@ -193,7 +193,9 @@ test('logic analyzer produces structural results for C and JavaScript', async ({
   await page.goto('/#logic');
   await page.locator('#analyze-btn').click();
   await expect(page.locator('#analyzer-results')).not.toContainText('Results will appear here');
-  await expect(page.locator('#analyzer-results')).toContainText('Complexity');
+  await expect(page.locator('#analyzer-results')).toContainText('Logical nodes');
+  // The engine never produced complexity or findings; those placeholder cards were removed.
+  await expect(page.locator('#analyzer-results')).not.toContainText('Complexity');
 
   await page.locator('#analyzer-language').selectOption('javascript');
   await page.locator('#analyzer-code').fill('function add(a, b) { return a + b; }\nconst total = add(1, 2);');

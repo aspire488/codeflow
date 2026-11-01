@@ -5,9 +5,9 @@
 let quizSession = null;
 
 function questionsForTopic(topicId) {
-  const fromDb = typeof QUIZ_DB !== 'undefined' ? QUIZ_DB[topicId] : null;
+  const fromDb = typeof QUIZ_DB !== 'undefined' && Object.prototype.hasOwnProperty.call(QUIZ_DB, topicId) ? QUIZ_DB[topicId] : null;
   if (Array.isArray(fromDb) && fromDb.length) return fromDb;
-  const topic = TOPICS_DB[topicId];
+  const topic = hasTopic(topicId) ? TOPICS_DB[topicId] : null;
   if (topic && Array.isArray(topic.quiz) && topic.quiz.length) return topic.quiz;
   return [];
 }
@@ -19,7 +19,7 @@ function renderQuiz(topicId) {
 
   const topicsWithQuizzes = Object.keys(QUIZ_DB || {}).filter((key) => questionsForTopic(key).length > 0);
 
-  if (!topicId || !TOPICS_DB[topicId]) {
+  if (!topicId || !hasTopic(topicId)) {
     const rows = topicsWithQuizzes.map((key) => {
       const topic = TOPICS_DB[key];
       const score = AppState.quizScores[key];
@@ -68,7 +68,7 @@ function renderQuizQuestion() {
   host.innerHTML = `
     <div class="stack-head">
       <button class="stitch-btn secondary" data-nav="quiz">
-        <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Quiz center
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Quiz center
       </button>
       <h2 class="screen-title" style="margin-top:16px">${escapeHtml(topic ? topic.title : session.topicId)}</h2>
       <p class="screen-subtitle">Question ${session.index + 1} of ${total} &middot; Score ${session.score}</p>
@@ -82,13 +82,13 @@ function renderQuizQuestion() {
       <h3 class="quiz-question">${escapeHtml(question.question)}</h3>
       <div class="quiz-options" id="quiz-options">
         ${question.options.map((option, index) => `
-          <button class="quiz-option" data-option="${index}" ${session.answered ? 'disabled' : ''}>
+          <button class="quiz-option" data-option="${index}" aria-pressed="false" ${session.answered ? 'disabled' : ''}>
             <span class="key">${String.fromCharCode(65 + index)}</span>
             <span class="label">${escapeHtml(option)}</span>
-            <span class="material-symbols-outlined" style="font-size:18px"></span>
+            <span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px"></span>
           </button>`).join('')}
       </div>
-      <div id="quiz-feedback"></div>
+      <div id="quiz-feedback" role="status" aria-live="polite"></div>
       <div class="button-row">
         <button class="stitch-btn" id="quiz-check" ${session.answered ? 'disabled' : ''}>Check answer</button>
         <button class="stitch-btn secondary" id="quiz-next" style="display:none">
@@ -104,8 +104,9 @@ function renderQuizQuestion() {
     button.addEventListener('click', () => {
       if (session.answered) return;
       session.selected = Number(button.getAttribute('data-option'));
-      optionButtons.forEach((b) => b.classList.remove('selected'));
+      optionButtons.forEach((b) => { b.classList.remove('selected'); b.setAttribute('aria-pressed', 'false'); });
       button.classList.add('selected');
+      button.setAttribute('aria-pressed', 'true');
     });
   });
 
@@ -145,7 +146,9 @@ function renderQuizQuestion() {
       </div>`;
 
     document.getElementById('quiz-check').disabled = true;
-    document.getElementById('quiz-next').style.display = 'inline-flex';
+    const nextButton = document.getElementById('quiz-next');
+    nextButton.style.display = 'inline-flex';
+    nextButton.focus(); // the options just became disabled; keep keyboard focus somewhere useful
   });
 
   document.getElementById('quiz-next').addEventListener('click', () => {
@@ -169,26 +172,35 @@ function renderQuizResult() {
   const percentage = Math.round((session.score / total) * 100);
   const passed = percentage >= 70;
 
-  AppState.quizScores[session.topicId] = { score: session.score, total, percentage };
+  // XP only on the first pass of a topic; a worse retake never overwrites the best score.
+  const prior = AppState.quizScores[session.topicId];
+  const alreadyPassed = !!prior && prior.percentage >= 70;
+  if (!prior || percentage >= prior.percentage) AppState.quizScores[session.topicId] = { score: session.score, total, percentage };
   if (passed) markTopicComplete(session.topicId);
   else saveState();
 
-  addXP(passed ? 20 : 5);
+  const firstPass = passed && !alreadyPassed;
+  if (firstPass) addXP(20);
   syncChrome();
+  const xpNote = firstPass ? '+20 XP'
+    : passed ? 'Already passed: no extra XP'
+    : alreadyPassed ? 'No XP: you already passed this quiz'
+    : 'No XP yet: score 70% or more to earn it';
+  const bestNote = prior && prior.percentage > percentage ? ` &middot; Best score kept: ${prior.percentage}%` : '';
 
   const wrong = session.answers.filter((answer) => !answer.isCorrect);
 
   host.innerHTML = `
     <div class="stitch-card result-card">
-      <span class="material-symbols-outlined" style="font-size:44px;color:${passed ? '#67df70' : '#ff6b6b'}">
+      <span aria-hidden="true" class="material-symbols-outlined" style="font-size:44px;color:${passed ? '#67df70' : '#ff6b6b'}">
         ${passed ? 'emoji_events' : 'school'}
       </span>
       <h2 class="screen-title" style="margin-top:8px">${passed ? 'Passed' : 'Keep practising'}</h2>
       <div class="result-score">${session.score}/${total}</div>
-      <p class="muted">${percentage}% &middot; ${passed ? '+20 XP' : '+5 XP'}</p>
+      <p class="muted">${percentage}% &middot; ${xpNote}${bestNote}</p>
       <div class="button-row" style="justify-content:center">
         <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(session.topicId)}">
-          <span class="material-symbols-outlined" style="font-size:16px">refresh</span> Retry quiz
+          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">refresh</span> Retry quiz
         </button>
         <button class="stitch-btn secondary" data-nav="lesson/${escapeHtml(session.topicId)}">Review lesson</button>
         <button class="stitch-btn secondary" data-nav="progress">View progress</button>

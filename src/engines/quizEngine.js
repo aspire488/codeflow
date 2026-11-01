@@ -4,7 +4,7 @@
 
 function getQuizForTopic(topicKey) {
   if (typeof QUIZ_DB === 'undefined') return [];
-  return QUIZ_DB[topicKey] || [];
+  return Object.prototype.hasOwnProperty.call(QUIZ_DB, topicKey) ? QUIZ_DB[topicKey] : [];
 }
 
 function calculateQuizScore(answers, correctAnswers) {

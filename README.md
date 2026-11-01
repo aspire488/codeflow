@@ -30,7 +30,7 @@ No framework, no runtime build step, no API keys, no tracking. Progress stays in
 | Loop trace | Working | The loop runs; the table shows each iteration, condition and output |
 | Logic Quest | Working (vertical slice) | Chapter map, XP, unlock chain, persistence; one execution-order challenge plus prediction levels |
 | Logic Analyzer | Working within scope | Heuristic static analysis. Not a compiler or interpreter |
-| AI Assistant | Working, rule-based | Curated knowledge base. No model, no credentials |
+| Study Assistant | Working, rule-based | Curated knowledge base. No model, no credentials |
 | Adaptive practice | Working | Recommendations from recorded right and wrong answers |
 | Progress dashboard | Working | Per-subject progress, quiz history, XP, reset |
 | PWA | Working | Service worker precaches the real tree, network-first navigation, real PNG icons |

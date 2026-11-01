@@ -11,7 +11,7 @@
     "build": "node scripts/build-static.cjs",
     "preview": "vite preview",
     "serve": "node tests/static-server.cjs 4173",
-    "test": "node --test tests/smoke.test.cjs tests/unit.test.cjs tests/highlighter.test.cjs",
+    "test": "node --test tests/smoke.test.cjs tests/unit.test.cjs tests/highlighter.test.cjs tests/regression.test.cjs",
     "test:e2e": "playwright test",
     "test:qa": "playwright test --project=qa"
   },

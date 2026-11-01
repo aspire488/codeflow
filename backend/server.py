@@ -32,8 +32,11 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 
 # ============= CONFIGURATION =============
-SECRET_KEY = os.environ.get("SECRET_KEY", "codeflow-secret-key-change-in-production")
-JWT_SECRET = os.environ.get("JWT_SECRET", "jwt-secret-change-in-production")
+# No fallback secrets: refuse to start without them (KeyError names the missing variable).
+SECRET_KEY = os.environ["SECRET_KEY"]
+JWT_SECRET = os.environ["JWT_SECRET"]
+# Credentials require explicit origins; "*" is not allowed with them.
+CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:4173").split(",") if o.strip()]
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -193,7 +196,7 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

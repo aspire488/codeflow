@@ -4,14 +4,14 @@
 
 const ROUTES = {
   dashboard: { screen: 'dashboard-screen', title: 'Dashboard', render: () => renderDashboard() },
-  topics:    { screen: 'topics-screen',    title: 'Explore Topics', render: () => renderTopicExplorer() },
+  topics:    { screen: 'topics-screen',    title: 'Explore Topics', render: (p) => renderTopicExplorer(p) },
   lesson:    { screen: 'lesson-screen',    title: 'Lessons', render: (p) => renderLesson(p) },
   quiz:      { screen: 'quiz-screen',      title: 'Quiz Center', render: (p) => renderQuiz(p) },
   predict:   { screen: 'predict-screen',   title: 'Output Prediction', render: (p) => renderOutputPrediction(p) },
   visualize: { screen: 'visualize-screen', title: 'Visualization', render: (p) => renderVisualizer(p) },
   game:      { screen: 'game-screen',      title: 'Logic Quest', render: () => renderLogicQuestMap() },
   logic:     { screen: 'logic-screen',     title: 'Logic Analyzer', render: () => renderLogicAnalyzer() },
-  chatbot:   { screen: 'chatbot-screen',   title: 'AI Assistant', render: () => renderChatbot() },
+  chatbot:   { screen: 'chatbot-screen',   title: 'Study Assistant', render: () => renderChatbot() },
   practice:  { screen: 'practice-screen',  title: 'Adaptive Practice', render: () => renderAdaptivePractice() },
   progress:  { screen: 'progress-screen',  title: 'Progress', render: () => renderProgressDashboard() }
 };
@@ -23,7 +23,13 @@ let currentParam = null;
 function parseHashRoute() {
   const raw = (window.location.hash || '').replace(/^#\/?/, '');
   if (!raw) return { route: 'dashboard', param: null };
-  const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
+  let parts;
+  try {
+    parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
+  } catch (_) {
+    // Malformed %-escape: treat as an unknown route (falls back to the dashboard).
+    return { route: 'invalid', param: null };
+  }
   return { route: parts[0] || 'dashboard', param: parts.length > 1 ? parts.slice(1).join('/') : null };
 }
 
@@ -48,7 +54,10 @@ function showScreen(route) {
   document.title = `${(definition || ROUTES.dashboard).title} - CodeFlow`;
 
   document.querySelectorAll('.nav-item').forEach((item) => {
-    item.classList.toggle('active', item.getAttribute('data-nav') === route);
+    const isActive = item.getAttribute('data-nav') === route;
+    item.classList.toggle('active', isActive);
+    if (isActive) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
   });
 
   closeMobileSidebar();
@@ -90,11 +99,17 @@ function handleRouteChange() {
 
   if (typeof syncChrome === 'function') syncChrome();
 
-  // Move focus to the screen for keyboard and screen-reader users.
+  // Visualizer tabs are plain buttons, so expose the active mode with aria-pressed.
+  document.querySelectorAll('.viz-tab').forEach((tab) => {
+    tab.setAttribute('aria-pressed', tab.classList.contains('active') ? 'true' : 'false');
+  });
+
+  // Move focus to the screen heading so screen readers announce where they landed.
   const screen = document.getElementById(ROUTES[resolvedRoute].screen);
-  if (screen) {
-    screen.setAttribute('tabindex', '-1');
-    screen.focus({ preventScroll: true });
+  const focusTarget = (screen && screen.querySelector('h2')) || screen;
+  if (focusTarget) {
+    focusTarget.setAttribute('tabindex', '-1');
+    focusTarget.focus({ preventScroll: true });
   }
 }
 
@@ -109,8 +124,4 @@ function initRouter() {
 
 function getCurrentRoute() {
   return currentRoute;
-}
-
-function getRouteParam() {
-  return currentParam;
 }

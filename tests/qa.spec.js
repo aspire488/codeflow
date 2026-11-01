@@ -120,7 +120,8 @@ test('persona 1 beginner can go from dashboard to a finished quiz on a phone', a
 
   const saved = await state(page);
   expect(saved.quizScores[topicId]).toBeTruthy();
-  expect(await xp(page)).toBeGreaterThan(0);
+  // Wrong first answer on a short quiz fails it; a failed attempt no longer pays XP (that was farmable).
+  expect(await xp(page)).toBe(0);
 
   const metrics = await clipping(page);
   expect(metrics.viewportOverflow, 'no horizontal scroll on 375px').toBeLessThanOrEqual(0);

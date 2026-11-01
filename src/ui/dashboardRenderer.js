@@ -35,7 +35,7 @@ function topicCardMarkup(topic) {
     <article class="stitch-card topic-card" data-topic="${escapeHtml(topic.id)}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div class="card-icon-row">
-          <span class="material-symbols-outlined">${escapeHtml(topic.icon || 'code')}</span>
+          <span aria-hidden="true" class="material-symbols-outlined">${escapeHtml(topic.icon || 'code')}</span>
           <h3>${escapeHtml(topic.title)}</h3>
         </div>
         ${done ? '<span class="badge success">Done</span>' : `<span class="badge muted-badge">${escapeHtml(subjectLabel(topic.subject))}</span>`}
@@ -43,10 +43,10 @@ function topicCardMarkup(topic) {
       <p>${escapeHtml(summary)}</p>
       <div class="button-row" style="margin-top:auto">
         <button class="stitch-btn secondary" data-action="visualize" data-topic="${escapeHtml(topic.id)}">
-          <span class="material-symbols-outlined" style="font-size:16px">terminal</span> Visualize
+          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">terminal</span> Visualize
         </button>
         <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(topic.id)}">
-          <span class="material-symbols-outlined" style="font-size:16px">quiz</span> Quiz
+          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">quiz</span> Quiz
         </button>
       </div>
     </article>`;
@@ -60,20 +60,21 @@ function renderDashboard() {
   const completed = AppState.completedTopics.length;
   const percentage = all.length ? Math.round((completed / all.length) * 100) : 0;
   const subjectsCovered = new Set(all.filter((t) => AppState.completedTopics.includes(t.id)).map((t) => t.subject));
-  const resumeId = AppState.currentTopic && TOPICS_DB[AppState.currentTopic]
-    ? AppState.currentTopic
-    : (all.find((t) => !AppState.completedTopics.includes(t.id)) || all[0] || {}).id;
+  // Course order: the first topic not yet completed (never one just finished).
+  const nextTopic = all.find((t) => !AppState.completedTopics.includes(t.id));
+  const allDone = all.length > 0 && !nextTopic;
 
   host.innerHTML = `
     <div class="stitch-card hero-card">
       <h2 class="hero-title">Welcome to CodeFlow</h2>
       <p class="hero-sub">Execution-first learning for C, HTML, CSS and JavaScript. Read a lesson, watch the program state change, predict the output, then lock it in with a quiz.</p>
       <div class="button-row" style="margin-top:0">
-        ${resumeId ? `<button class="stitch-btn" data-nav="lesson/${escapeHtml(resumeId)}">
-          <span class="material-symbols-outlined" style="font-size:16px">play_arrow</span> Continue learning
+        ${nextTopic ? `<button class="stitch-btn" data-nav="lesson/${escapeHtml(nextTopic.id)}">
+          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">play_arrow</span> Continue learning
         </button>` : ''}
-        <button class="stitch-btn secondary" data-nav="topics"><span class="material-symbols-outlined" style="font-size:16px">explore</span> Explore topics</button>
-        <button class="stitch-btn secondary" data-nav="visualize"><span class="material-symbols-outlined" style="font-size:16px">terminal</span> Open visualizer</button>
+        ${allDone ? '<span class="badge success">All topics completed</span>' : ''}
+        <button class="stitch-btn secondary" data-nav="topics"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">explore</span> Explore topics</button>
+        <button class="stitch-btn secondary" data-nav="visualize"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">terminal</span> Open visualizer</button>
       </div>
       <div class="stat-grid">
         <div class="stat"><div class="stat-value">${completed}</div><div class="stat-label">Topics completed</div></div>
@@ -92,15 +93,15 @@ function renderDashboard() {
     <h3 class="card-title" style="margin-top:32px">Practice and explore</h3>
     <div class="topic-grid">
       <article class="stitch-card topic-card" data-nav="predict">
-        <div class="card-icon-row"><span class="material-symbols-outlined">psychology</span><h3>Output prediction</h3></div>
+        <div class="card-icon-row"><span aria-hidden="true" class="material-symbols-outlined">psychology</span><h3>Output prediction</h3></div>
         <p>${typeof outputPredictionDB !== 'undefined' ? outputPredictionDB.length : 0} KTU-style questions: predict what the program prints.</p>
       </article>
       <article class="stitch-card topic-card" data-nav="game">
-        <div class="card-icon-row"><span class="material-symbols-outlined">sports_esports</span><h3>Logic Quest</h3></div>
+        <div class="card-icon-row"><span aria-hidden="true" class="material-symbols-outlined">sports_esports</span><h3>Logic Quest</h3></div>
         <p>Play from START to the final boss, executing code one action at a time.</p>
       </article>
       <article class="stitch-card topic-card" data-nav="practice">
-        <div class="card-icon-row"><span class="material-symbols-outlined">auto_awesome</span><h3>Adaptive practice</h3></div>
+        <div class="card-icon-row"><span aria-hidden="true" class="material-symbols-outlined">auto_awesome</span><h3>Adaptive practice</h3></div>
         <p>Practice is generated from the topics you actually get wrong.</p>
       </article>
     </div>
@@ -125,7 +126,7 @@ function renderTopicExplorer(routeParam) {
     <div class="filter-row">
       ${SUBJECTS.map((s) => `
         <button class="filter-chip ${activeSubject === s.id ? 'active' : ''}" data-nav="${s.id === 'all' ? 'topics' : 'topics/' + s.id}">
-          ${escapeHtml(s.label)} <span style="opacity:.6">(${counts[s.id] || 0})</span>
+          ${escapeHtml(s.label)} <span>(${counts[s.id] || 0})</span>
         </button>`).join('')}
     </div>
     ${topics.length
@@ -162,7 +163,7 @@ function renderAdaptivePractice() {
             : 'Answer some quiz questions and this screen will build a plan for you.'}</p>
         </div>
         ${next
-          ? `<button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(next.topicKey)}"><span class="material-symbols-outlined" style="font-size:16px">play_arrow</span> Start practice quiz</button>`
+          ? `<button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(next.topicKey)}"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">play_arrow</span> Start practice quiz</button>`
           : '<button class="stitch-btn" disabled>Start practice quiz</button>'}
       </div>
     </div>

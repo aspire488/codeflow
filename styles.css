@@ -26,7 +26,7 @@
   --purple: #bc8cff;
   --text: #e6edf3;
   --text-muted: #9aa7b4;
-  --text-faint: #6e7b8a;
+  --text-faint: #8795a5; /* >=4.5:1 on #10141a, #161b22, #1c2026 and #232a33 */
 
   /* Type */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -585,7 +585,7 @@ a:hover { text-decoration: underline; }
 
 .viz-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
 .viz-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-4); min-width: 0; }
-.viz-panel h4 {
+.viz-panel h3 {
   font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
   color: var(--text-faint); margin: 0 0 var(--s-3);
 }
@@ -679,7 +679,7 @@ a:hover { text-decoration: underline; }
   transition: border-color var(--ease), background var(--ease);
 }
 .quest-node:hover:not(:disabled) { border-color: var(--accent); background: var(--surface-3); }
-.quest-node:disabled { cursor: not-allowed; opacity: 0.45; }
+.quest-node:disabled { cursor: not-allowed; opacity: 0.7; }
 .quest-node.done { border-color: rgba(63,185,80,0.45); background: rgba(63,185,80,0.06); }
 .quest-node .quest-name { font-weight: 600; }
 .quest-node .quest-foot { display: flex; justify-content: space-between; gap: var(--s-2); font-size: var(--fs-11); color: var(--text-faint); }
@@ -700,7 +700,7 @@ a:hover { text-decoration: underline; }
   transition: border-color var(--ease), background var(--ease);
 }
 .action-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(88, 166, 255, 0.08); }
-.action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.action-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 .trace-log {
   background: #0b0f14; border: 1px solid var(--line); border-radius: var(--r-sm);
   padding: var(--s-3); font-family: var(--font-mono); font-size: var(--fs-12);
@@ -795,7 +795,7 @@ a:hover { text-decoration: underline; }
   opacity: 0; visibility: hidden; pointer-events: none;
   transition: opacity var(--ease), visibility var(--ease);
 }
-.modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
+.modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity var(--ease); } /* visible at once so focus() on open works */
 .modal-content {
   width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--line-strong);

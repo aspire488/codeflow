@@ -1,5 +1,5 @@
 // service-worker.js - CodeFlow PWA service worker
-const CACHE_VERSION = 'codeflow-v4';
+const CACHE_VERSION = 'codeflow-v5';
 
 const PRECACHE = [
   '/',
@@ -66,8 +66,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       try {
         const fresh = await fetch(request);
-        const cache = await caches.open(CACHE_VERSION);
-        cache.put('/index.html', fresh.clone());
+        if (fresh.ok) {
+          const cache = await caches.open(CACHE_VERSION);
+          cache.put('/index.html', fresh.clone());
+        }
         return fresh;
       } catch (error) {
         const cached = await caches.match('/index.html');

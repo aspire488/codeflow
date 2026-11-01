@@ -15,6 +15,7 @@ module.exports = defineConfig({
   projects: [
     { name: 'desktop-chromium', testMatch: 'e2e.spec.js', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
     { name: 'mobile-chromium', testMatch: 'e2e.spec.js', use: { ...devices['Pixel 5'] } },
+    { name: 'regression', testMatch: 'regression.spec.js', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
     { name: 'qa', testMatch: 'qa.spec.js', use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } } }
   ],
   webServer: {

@@ -77,21 +77,12 @@ function analyzeCode() {
   }
 
   const nodes = Array.isArray(analysis.nodes) ? analysis.nodes : [];
-  const issues = Array.isArray(analysis.issues) ? analysis.issues : [];
 
   results.innerHTML = `
     <div class="stat-grid" style="margin:0 0 12px">
       <div class="stat">
-        <div class="stat-value" style="font-size:18px">${escapeHtml(analysis.complexity || 'n/a')}</div>
-        <div class="stat-label">Complexity</div>
-      </div>
-      <div class="stat">
         <div class="stat-value" style="font-size:18px">${nodes.length}</div>
         <div class="stat-label">Logical nodes</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value" style="font-size:18px">${issues.length}</div>
-        <div class="stat-label">Findings</div>
       </div>
     </div>
     <div id="analysis-body" class="viz-panel"></div>

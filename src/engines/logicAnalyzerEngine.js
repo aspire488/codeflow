@@ -1,12 +1,15 @@
 // logicAnalyzerEngine.js - Multi-Language Logic Analyzer
 
+// Several scanners below are quadratic in input length; keep the cap low enough to stay under ~1s.
+const ANALYZER_MAX_CHARS = 10000;
+
 function analyzeCodeLogic(code, language) {
   if (!code || typeof code !== 'string') {
     return { error: 'No code provided', nodes: [] };
   }
   
-  if (code.length > 50000) {
-    return { error: 'Code too long for analysis', nodes: [] };
+  if (code.length > ANALYZER_MAX_CHARS) {
+    return { error: `Code is too long to analyze (${code.length.toLocaleString()} characters). The limit is ${ANALYZER_MAX_CHARS.toLocaleString()}; paste a smaller excerpt.`, nodes: [] };
   }
   
   language = (language || 'c').toLowerCase();
@@ -31,8 +34,36 @@ function analyzeCodeLogic(code, language) {
   }
 }
 
+// Blank out comments and string/char contents (same length, newlines kept) so
+// keyword matching cannot fire on text that is not code.
+function maskCSource(code) {
+  let out = '';
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i];
+    const next = code[i + 1];
+    if (ch === '/' && next === '/') {
+      while (i < code.length && code[i] !== '\n') { out += ' '; i++; }
+      i--;
+    } else if (ch === '/' && next === '*') {
+      out += '  '; i += 2;
+      while (i < code.length && !(code[i] === '*' && code[i + 1] === '/')) { out += code[i] === '\n' ? '\n' : ' '; i++; }
+      if (i < code.length) { out += '  '; i++; }
+    } else if (ch === '"' || ch === "'") {
+      out += ch; i++;
+      while (i < code.length && code[i] !== ch && code[i] !== '\n') {
+        if (code[i] === '\\' && i + 1 < code.length && code[i + 1] !== '\n') { out += '  '; i += 2; } else { out += ' '; i++; }
+      }
+      if (i < code.length && code[i] === ch) out += ch; else if (i < code.length) out += '\n';
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 function analyzeCLike(code) {
   const lines = code.split('\n');
+  const masked = maskCSource(code).split('\n');
   const nodes = [];
   let nodeId = 0;
   
@@ -51,8 +82,9 @@ function analyzeCLike(code) {
   let conditionType = '';
   
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line || line.startsWith('//')) continue;
+    const original = lines[i].trim();
+    const line = (masked[i] || '').trim();
+    if (!line) continue;
     
     if (line.match(/^(int|void|char|float|double|long|short)\s+\w+\s*\(/)) {
       const match = line.match(/^(int|void|char|float|double|long|short)\s+(\w+)/);
@@ -62,59 +94,59 @@ function analyzeCLike(code) {
       continue;
     }
     
-    if (line.includes('for(') || line.startsWith('for')) {
+    if (/^(\}\s*)?for\s*\(/.test(line)) {
       inLoop = true;
       loopType = 'for';
       addNode('loop-start', 'For Loop', 'Iteration start');
       continue;
     }
     
-    if (line.includes('while(') || line.startsWith('while')) {
+    if (/^(\}\s*)?while\s*\(/.test(line)) {
       inLoop = true;
       loopType = 'while';
       addNode('loop-start', 'While Loop', 'Condition check');
       continue;
     }
     
-    if (line.includes('if(') || line.startsWith('if')) {
+    if (/^(\}\s*)?else\s+if\b/.test(line)) {
+      addNode('condition', 'Else If', 'Alternative branch');
+      continue;
+    }
+    
+    if (/^(\}\s*)?if\s*\(/.test(line)) {
       inCondition = true;
       conditionType = 'if';
       addNode('condition', 'If Statement', 'Branch check');
       continue;
     }
     
-    if (line.includes('else if') || line.startsWith('else if')) {
-      addNode('condition', 'Else If', 'Alternative branch');
-      continue;
-    }
-    
-    if (line.startsWith('else')) {
+    if (/^(\}\s*)?else\b/.test(line)) {
       addNode('condition', 'Else', 'Default branch');
       continue;
     }
     
-    if (line.includes('printf(')) {
-      const match = line.match(/printf\s*\(\s*"([^"]*)"/);
+    if (/\bprintf\s*\(/.test(line)) {
+      const match = original.match(/printf\s*\(\s*"([^"]*)"/);
       const content = match ? match[1] : 'output';
       addNode('output', 'printf', content.substring(0, 30));
       continue;
     }
     
-    if (line.includes('scanf(')) {
+    if (/\bscanf\s*\(/.test(line)) {
       addNode('input', 'scanf', 'User input');
       continue;
     }
     
-    if (line.includes('return') && !line.includes('//')) {
-      const match = line.match(/return\s*([^;]+)/);
+    if (/\breturn\b/.test(line)) {
+      const match = original.match(/return\s*([^;]+)/);
       const value = match ? match[1].trim() : '';
       addNode('return', 'Return', value || 'value');
       continue;
     }
     
     if (line.includes('=') && !line.includes('==') && !line.includes('!=') && !line.includes('<=') && !line.includes('>=')) {
-      const match = line.match(/(\w+)\s*=\s*([^;]+)/);
-      if (match && !line.includes('==')) {
+      const match = original.match(/(\w+)\s*=\s*([^;]+)/);
+      if (match) {
         addNode('assignment', `${match[1]} =`, match[2].trim().substring(0, 20));
       }
       continue;
@@ -317,7 +349,7 @@ function analyzeCSS(code) {
   
   addNode('start', 'CSS Rules', 'Stylesheet');
   
-  const ruleRegex = /([^{}]+)\s*\{([^}]*)\}/g;
+  const ruleRegex = /([^{}]+)\{([^}]*)\}/g;
   let match;
   
   while ((match = ruleRegex.exec(code)) !== null) {
@@ -398,7 +430,7 @@ function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
   if (!container) return '<div class="text-error">Container not found</div>';
   
   if (result.error) {
-    return `<div class="p-4 bg-error/20 rounded-lg text-error">${result.error}</div>`;
+    return `<div class="p-4 bg-error/20 rounded-lg text-error">${escapeHtml(result.error)}</div>`;
   }
   
   const langColors = {
@@ -434,7 +466,7 @@ function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
     <div class="bg-surface-container rounded-xl border border-outline-variant/20 overflow-hidden">
       <div class="px-4 py-3 bg-surface-container-high border-b border-outline-variant/20 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary">psychology</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-primary">psychology</span>
           <span class="font-semibold text-on-surface">Logic Analysis</span>
         </div>
         <span class="px-2 py-1 rounded ${colors.bg} ${colors.text} text-xs font-bold uppercase">${lang}</span>
@@ -448,9 +480,9 @@ function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
       const indent = node.depth * 24;
       html += `
         <div class="flex items-center gap-2 py-1" style="padding-left: ${indent}px">
-          <span class="material-symbols-outlined text-sm text-outline">chevron_right</span>
-          <span class="px-2 py-1 rounded ${nodeColor.bg} border ${nodeColor.border} text-xs font-mono">${node.label}</span>
-          ${node.detail ? `<span class="text-xs text-outline ml-2">${node.detail}</span>` : ''}
+          <span aria-hidden="true" class="material-symbols-outlined text-sm text-outline">chevron_right</span>
+          <span class="px-2 py-1 rounded ${nodeColor.bg} border ${nodeColor.border} text-xs font-mono">${escapeHtml(node.label)}</span>
+          ${node.detail ? `<span class="text-xs text-outline ml-2">${escapeHtml(node.detail)}</span>` : ''}
         </div>
       `;
     });
@@ -462,10 +494,10 @@ function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
       const nodeColor = nodeColors[node.type] || nodeColors.operation;
       html += `
         <div class="flex items-center gap-2 p-2 rounded ${nodeColor.bg} border ${nodeColor.border}">
-          <span class="material-symbols-outlined text-sm">${nodeColor.icon}</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-sm">${nodeColor.icon}</span>
           <div class="flex-1 min-w-0">
-            <span class="text-xs font-bold block truncate">${node.label}</span>
-            ${node.detail ? `<span class="text-[10px] text-outline block truncate">${node.detail}</span>` : ''}
+            <span class="text-xs font-bold block truncate">${escapeHtml(node.label)}</span>
+            ${node.detail ? `<span class="text-[10px] text-outline block truncate">${escapeHtml(node.detail)}</span>` : ''}
           </div>
         </div>
       `;

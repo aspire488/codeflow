@@ -130,6 +130,12 @@ ipcMain.handle('get-app-version', () => {
 });
 
 ipcMain.handle('open-external', (event, url) => {
+  // Only https: links may leave the app (blocks file:, javascript:, custom protocol handlers).
+  try {
+    if (new URL(url).protocol !== 'https:') return false;
+  } catch (_) {
+    return false;
+  }
   return shell.openExternal(url);
 });
 

@@ -109,23 +109,11 @@ function createLoopExecution() {
 
 const executionChallenges = {};
 
-function executionFor(levelId) {
-  return executionChallenges[levelId] || null;
-}
-
 function beginExecution(levelId) {
   if (levelId !== 'loops-1') return null;
   const state = createLoopExecution();
   executionChallenges[levelId] = state;
   return state;
-}
-
-function expectedActions(state) {
-  if (state.finished) return ['finish'];
-  if (state.phase === 'check') return ['check', state.i < 3 ? 'body' : 'exit'];
-  if (state.phase === 'body') return ['body', 'increment'];
-  if (state.phase === 'increment') return ['increment', 'check'];
-  return [];
 }
 
 function applyExecutionAction(state, action) {
@@ -272,7 +260,7 @@ function renderPredictionChallenge(level) {
 
   host.innerHTML = `
     <div class="screen-heading">
-      <button class="stitch-btn secondary" data-nav="game"><span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Map</button>
+      <button class="stitch-btn secondary" data-nav="game"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Map</button>
       <h2 class="screen-title" style="margin-top:16px">${escapeHtml(level.name)}</h2>
       <p class="screen-subtitle">${escapeHtml(level.topic)} &middot; ${escapeHtml(level.difficulty)} &middot; +${level.xp} XP</p>
     </div>
@@ -332,7 +320,7 @@ function renderExecutionChallenge(state, level) {
 
   host.innerHTML = `
     <div class="screen-heading">
-      <button class="stitch-btn secondary" data-nav="game"><span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Map</button>
+      <button class="stitch-btn secondary" data-nav="game"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Map</button>
       <h2 class="screen-title" style="margin-top:16px">${escapeHtml(level.name)} &mdash; execution order</h2>
       <p class="screen-subtitle">${escapeHtml(state.goal)}</p>
     </div>
@@ -417,15 +405,4 @@ function completeQuestLevel(level) {
     addXP(level.xp);
   }
   saveLogicQuestProgress();
-}
-
-// Kept for backwards compatibility with older callers/tests.
-function checkLogicQuestAnswer(selectedIndex) {
-  const level = window.currentQuestLevel;
-  if (!level) return;
-  const correct = selectedIndex === level.correct;
-  const feedback = document.getElementById('quest-feedback');
-  if (!feedback) return;
-  if (correct) completeQuestLevel(level);
-  feedback.innerHTML = `<div class="feedback ${correct ? 'ok' : 'bad'}"><strong>${correct ? 'Correct' : 'Not yet'}</strong>${escapeHtml(correct ? level.explanation : level.hint)}</div>`;
 }
