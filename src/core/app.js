@@ -261,7 +261,7 @@ function trapModalFocus(event) {
   const last = focusable[focusable.length - 1];
   const active = document.activeElement;
 
-  if (event.shiftKey && (active === first || !panel.contains(active))) {
+  if (event.shiftKey && (active === first || active === panel || !panel.contains(active))) {
     event.preventDefault();
     last.focus();
   } else if (!event.shiftKey && (active === last || !panel.contains(active))) {

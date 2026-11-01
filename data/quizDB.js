@@ -11,9 +11,9 @@ const QUIZ_DB = {
     },
     {
       question: "Which of the following is the correct main function signature?",
-      options: ["int main()", "void main()", "main()", "int main(void)"],
+      options: ["string main()", "void main()", "main()", "int main(void)"],
       correct: 3,
-      explanation: "int main(void) is the most standard and correct signature for the main function."
+      explanation: "int main(void) is the standard signature: main returns an int. int main() also works in practice, but string main() is never valid because main must return int."
     },
     {
       question: "What does return 0; indicate in the main function?",

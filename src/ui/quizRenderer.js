@@ -174,8 +174,7 @@ function renderQuizQuestion() {
       segment.querySelector('.sr-only').textContent = `Question ${session.index + 1}: ${isCorrect ? 'answered correctly' : 'answered incorrectly'}`;
     }
 
-    check.disabled = true;
-    check.classList.add('secondary');
+    check.hidden = true; // answered: only "Next question" remains
     const nextButton = document.getElementById('quiz-next');
     nextButton.hidden = false;
     nextButton.focus(); // the options just became disabled; keep keyboard focus somewhere useful

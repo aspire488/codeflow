@@ -363,28 +363,16 @@ function renderProgressDashboard() {
     return { id: s.id, label: s.label, done, total: list.length, percentage: list.length ? Math.round((done / list.length) * 100) : 0 };
   }).filter((s) => s.total > 0);
 
-  // Only real, non-zero numbers get a place in the strip.
-  const stats = [
-    completed.length > 0 && [completed.length, 'Topics completed'],
-    quizzes.length > 0 && [`${average}%`, 'Average quiz score'],
-    AppState.xp > 0 && [AppState.xp, 'XP'],
-    quizzes.length > 0 && [quizzes.length, 'Quizzes taken']
-  ].filter(Boolean);
   const hasProgress = completed.length > 0 || quizzes.length > 0 || AppState.xp > 0;
   const next = nextUpTopic();
-
-  const strip = stats.length
-    ? `<dl class="stat-strip">${stats.map(([value, label]) => `<div class="stat"><dt class="stat-label">${label}</dt><dd class="stat-value">${value}</dd></div>`).join('')}</dl>`
-    : '';
-  const empty = hasProgress ? '' : `
-    <section class="quiet-empty">
-      <h3 class="next-title">No progress yet</h3>
-      <p class="next-meta">Finish a lesson or pass a quiz and your numbers will show up here.</p>
-      <div class="next-actions">
-        ${next ? `<a class="stitch-btn" href="#lesson/${escapeHtml(next.id)}">Start lesson</a>` : ''}
-        <a class="text-btn" href="#quiz">Open quiz center</a>
-      </div>
-    </section>`;
+  const overall = all.length ? Math.round((completed.length / all.length) * 100) : 0;
+  const nextPosition = next ? lessonPosition(next) : null;
+  const stats = [
+    [completed.length, 'Topics completed', `${all.length} in the library`],
+    [quizzes.length ? `${average}%` : '—', 'Average quiz score', quizzes.length ? `${pluralize(quizzes.length, 'quiz')} recorded` : 'No scores recorded'],
+    [quizzes.length, 'Quizzes taken', 'Best score kept per topic'],
+    [AppState.xp, 'XP earned', 'From completed learning']
+  ];
   const scores = quizzes.length ? `
     <section class="progress-sec">
       <h3 class="section-title">Quiz scores</h3>
@@ -403,31 +391,85 @@ function renderProgressDashboard() {
       </div>
     </section>` : '';
 
+  const subjectIcons = { c: 'terminal', html: 'code', css: 'palette', js: 'data_object' };
+  const courses = bySubject.map((s) => {
+    const upcoming = topicsOf(s.id).find((topic) => !AppState.completedTopics.includes(topic.id));
+    return `<li class="course-progress-card">
+      <a class="course-progress-link" href="#topics/${escapeHtml(s.id)}">
+      <span class="course-mark" aria-hidden="true"><span class="material-symbols-outlined" aria-hidden="true">${subjectIcons[s.id] || 'code'}</span></span>
+        <span class="course-card-copy"><strong>${escapeHtml(s.label)}</strong><span>${s.done} of ${s.total} topics</span></span>
+        <span class="course-percent">${s.percentage}%</span>
+        <span class="course-track" role="progressbar" aria-label="${escapeHtml(s.label)} completion" aria-valuemin="0" aria-valuemax="${s.total}" aria-valuenow="${s.done}"><span style="width:${s.percentage}%"></span></span>
+        <span class="course-next">${upcoming ? `Next: ${escapeHtml(upcoming.title)}` : 'Course complete'}</span>
+      </a>
+    </li>`;
+  }).join('');
+
+  const nextPanel = next
+    ? `<section class="progress-card progress-next-card">
+        <div class="progress-card-heading"><span class="eyebrow">YOUR NEXT STEP</span><span class="material-symbols-outlined" aria-hidden="true">north_east</span></div>
+        <p class="progress-next-subject">${escapeHtml(subjectLabel(next.subject))} · Lesson ${nextPosition.number} of ${nextPosition.total}</p>
+        <h3>${escapeHtml(next.title)}</h3>
+        <p class="section-note">Pick up the learning path where you left off.</p>
+        <a class="stitch-btn" href="#lesson/${escapeHtml(next.id)}">${hasProgress ? 'Continue learning' : 'Start your first lesson'}</a>
+        <a class="progress-quiet-link" href="#quiz/${escapeHtml(next.id)}">Take this topic’s quiz</a>
+      </section>`
+    : `<section class="progress-card progress-next-card">
+        <div class="progress-card-heading"><span class="eyebrow">LEARNING PATH</span><span class="material-symbols-outlined" aria-hidden="true">check_circle</span></div>
+        <h3>All topics complete</h3>
+        <p class="section-note">You’ve worked through all ${all.length} topics. Revisit a lesson or use practice to keep building confidence.</p>
+        <a class="stitch-btn secondary" href="#practice">Review adaptive practice</a>
+      </section>`;
+
+  const quizPanel = quizzes.length
+    ? `<section class="progress-card progress-history">
+        <div class="progress-card-heading"><div><span class="eyebrow">ASSESSMENTS</span><h3>Quiz history</h3></div><a class="text-btn" href="#quiz">Quiz center</a></div>
+        <p class="section-note">Best saved result for each topic you’ve attempted.</p>
+        <div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">Topic</th><th scope="col">Best score</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>
+          ${quizzes.slice().reverse().map(([topic, score]) => `<tr>
+            <td><a href="#lesson/${escapeHtml(topic)}">${escapeHtml(TOPICS_DB[topic].title)}</a></td>
+            <td class="num">${escapeHtml(score.score)}/${escapeHtml(score.total)} · ${escapeHtml(score.percentage)}%</td>
+            <td class="act"><button class="text-btn" data-action="start-quiz" data-topic="${escapeHtml(topic)}">Retake<span class="sr-only">: ${escapeHtml(TOPICS_DB[topic].title)}</span></button></td>
+          </tr>`).join('')}
+        </tbody></table></div>
+      </section>`
+    : `<section class="progress-card progress-history progress-empty-history">
+        <div class="progress-card-heading"><div><span class="eyebrow">ASSESSMENTS</span><h3>No quiz scores yet</h3></div><span class="material-symbols-outlined" aria-hidden="true">fact_check</span></div>
+        <p class="section-note">Your best result for each topic will appear here after you submit a quiz.</p>
+        <a class="text-btn" href="#quiz">Browse quizzes</a>
+      </section>`;
+
   host.innerHTML = `
-    <div class="screen-heading">
-      <div>
-        <h2 class="screen-title">Your progress</h2>
-        <p class="screen-subtitle">Stored locally in this browser. Nothing is sent to a server.</p>
+    <header class="progress-page-head">
+      <div><span class="eyebrow">LEARNING RECORD</span><h2 class="screen-title">Your progress</h2><p class="screen-subtitle">A clear view of what you’ve learned and what to tackle next.</p></div>
+      <p class="privacy-note"><span class="material-symbols-outlined" aria-hidden="true">lock</span> Saved only in this browser</p>
+    </header>
+    <section class="progress-hero">
+      <div class="progress-hero-copy">
+        <span class="eyebrow">COURSE COMPLETION</span>
+        <h3>${hasProgress ? 'Keep your learning moving.' : 'Your learning record starts here.'}</h3>
+        <p>${hasProgress ? 'Every finished lesson and quiz gives you a more useful picture of your progress.' : 'Finish a lesson or try a quiz. Your real results will build this overview as you go.'}</p>
+        <div class="progress-hero-actions">
+          ${next ? `<a class="stitch-btn" href="#lesson/${escapeHtml(next.id)}">${hasProgress ? 'Continue learning' : 'Start your first lesson'}</a>` : '<a class="stitch-btn" href="#topics">Review topics</a>'}
+          <a class="text-btn" href="#topics">Explore all topics</a>
+        </div>
       </div>
-    </div>
-    ${strip}
-    ${empty}
-    <section class="progress-sec">
-      <h3 class="section-title">Progress by subject</h3>
-      <ul class="subject-list">
-        ${bySubject.map((s) => `
-          <li class="subject-row">
-            <a class="subject-name" href="#topics/${escapeHtml(s.id)}">${escapeHtml(s.label)}</a>
-            <span class="subject-count">${s.done}/${s.total} topics</span>
-            <div class="progress-bar" aria-hidden="true"><div class="progress-fill" style="width:${s.percentage}%"></div></div>
-          </li>`).join('')}
-      </ul>
+      <div class="progress-overall">
+        <div class="progress-ring" role="progressbar" aria-label="Overall topic completion" aria-valuemin="0" aria-valuemax="${all.length}" aria-valuenow="${completed.length}" style="--progress:${overall}%">
+          <div><strong>${overall}%</strong><span>complete</span></div>
+        </div>
+        <p><strong>${completed.length} of ${all.length}</strong><span>topics completed</span></p>
+      </div>
     </section>
-    ${scores}
-    <section class="danger-zone">
-      <h3 class="section-title">Reset</h3>
-      <p class="section-note">Clears XP, completed topics, quiz scores and practice history in this browser.</p>
-      <button class="text-btn danger" data-action="reset-progress">Reset all progress</button>
+    <dl class="progress-stats stat-strip">${stats.map(([value, label, note], index) => `<div class="stat progress-stat"><dt class="stat-label"><span class="stat-icon" aria-hidden="true"><span class="material-symbols-outlined" aria-hidden="true">${['task_alt', 'analytics', 'quiz', 'bolt'][index]}</span></span>${label}</dt><dd class="stat-value">${escapeHtml(value)}</dd><dd class="stat-note">${escapeHtml(note)}</dd></div>`).join('')}</dl>
+    <section class="progress-courses">
+      <div class="section-heading-row"><div><span class="eyebrow">SUBJECTS</span><h3 class="section-title">Progress by subject</h3></div><a class="text-btn" href="#topics">Browse the topic library</a></div>
+      <ul class="course-progress-grid">${courses}</ul>
     </section>
+    <div class="progress-detail-grid">${quizPanel}${nextPanel}</div>
+    <details class="danger-zone progress-settings">
+      <summary><span><span class="material-symbols-outlined" aria-hidden="true">settings</span><span><strong>Progress data settings</strong><small>Manage the learning data saved in this browser</small></span></span><span class="settings-chevron material-symbols-outlined" aria-hidden="true">expand_more</span></summary>
+      <div class="danger-zone-body"><div><h3>Reset learning data</h3><p>This clears XP, completed topics, quiz scores and practice history from this browser.</p></div><button class="text-btn danger" data-action="reset-progress">Reset all progress</button></div>
+    </details>
   `;
 }

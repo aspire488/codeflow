@@ -159,6 +159,7 @@ test('quiz: feedback is a live region, options expose state, focus moves to Next
   await expect(option).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#quiz-check').click();
   await expect(page.locator('#quiz-next')).toBeFocused();
+  await expect(page.locator('#quiz-check')).toBeHidden();
 });
 
 test('chrome: active nav item has aria-current, icons are hidden from names, heading receives focus', async ({ page }) => {
@@ -169,6 +170,16 @@ test('chrome: active nav item has aria-current, icons are hidden from names, hea
   await expect(page.getByRole('button', { name: 'Study assistant', exact: true })).toBeVisible();
   await expect(page.locator('#progress-content h2')).toBeFocused();
   expect(await page.locator('#viz-tabs [role="tab"]').count()).toBe(0);
+});
+
+test('modal: Shift+Tab from the initially focused panel stays inside the dialog', async ({ page }) => {
+  await page.goto('/#dashboard');
+  await page.locator('#help-btn').click();
+  const panel = page.locator('#app-modal-panel');
+  await expect(panel).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.locator('#app-modal-actions button').last()).toBeFocused();
+  expect(await page.evaluate(() => document.getElementById('app-modal-panel').contains(document.activeElement))).toBe(true);
 });
 
 test('mobile drawer: focus goes in, page is inert, Escape restores focus to the menu button', async ({ browser }) => {
@@ -318,11 +329,14 @@ test('visualizer: the program counter highlights the current line and moves with
   for (let i = 1; i < trace.rows; i += 1) await page.locator('#viz-next').click();
   await expect(active).toHaveAttribute('data-line', String(trace.header)); // the failed condition sits on the loop header
 
-  // An authored walkthrough has no line data: say so instead of faking a highlight.
+  // An authored walkthrough carries hand-checked line data: step 1 sits on the for header, step 2 on its printf.
   await page.goto('/#visualize/code/loops');
-  await expect(page.locator('.viz-line.active')).toHaveCount(0);
-  await expect(page.locator('#viz-line-status')).toHaveText('No line data');
-  await expect(page.locator('#visualize-content')).toContainText('no line data');
+  await expect(page.locator('.viz-line.active')).toHaveAttribute('data-line', '5');
+  await expect(page.locator('#viz-line-status')).toHaveText('Line 5');
+  await expect(page.locator('#visualize-content')).not.toContainText('no line data');
+  await page.locator('#viz-next').click();
+  await expect(page.locator('.viz-line.active')).toHaveAttribute('data-line', '6');
+  await expect(page.locator('#viz-console')).toHaveText('1');
 });
 
 test('visualizer: arrow keys and R work in pointer and recursion modes', async ({ page }) => {
@@ -407,4 +421,33 @@ test('no horizontal overflow from 320 to 1920 on any screen, with progress seede
       expect(overflow, `${route} at ${width}px`).toEqual({ page: 0, screen: 0 });
     }
   }
+});
+
+test('mobile: progress stats sit in a 2x2 grid and the icon-only Reset keeps its accessible name', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  await page.goto('/');
+  const first = (await topicIds(page))[0];
+  await seedState(page, { xp: 120, completedTopics: [first], quizScores: { [first]: { score: 1, total: 2 } } });
+  await page.goto('/#progress');
+  const boxes = await page.locator('.stat-strip .stat').evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }));
+  expect(boxes).toHaveLength(4);
+  expect(new Set(boxes.map((b) => b[1])).size, 'two rows').toBe(2);
+  expect(new Set(boxes.map((b) => b[0])).size, 'two columns').toBe(2);
+
+  await page.goto('/#visualize/code/loops');
+  await expect(page.locator('.transport-text')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Reset to the first step' })).toBeVisible();
+  await context.close();
+});
+
+test('analyzer: tree nests blocks and shows no redundant kind text', async ({ page }) => {
+  await page.goto('/#logic');
+  await page.locator('#analyzer-language').selectOption('javascript');
+  await page.locator('#analyzer-code').fill('function f(a) {\n  for (const x of a) {\n    if (x) {\n      console.log(x);\n    }\n  }\n}');
+  await page.locator('#analyze-btn').click();
+  const depths = await page.locator('.atree-node').evaluateAll((els) => els.map((el) => el.style.getPropertyValue('--d')));
+  expect(depths).toEqual(['0', '0', '1', '2', '3', '0']);
+  await expect(page.locator('.atree-kind')).toHaveCount(0);
+  await expect(page.locator('.atree-icon').first()).toHaveAttribute('title', 'start');
 });

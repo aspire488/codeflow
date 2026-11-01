@@ -61,14 +61,33 @@ function maskCSource(code) {
   return out;
 }
 
+// Cut long detail text with an ellipsis so a clipped value never looks complete.
+function clip(text, max) {
+  return text.length > max ? text.substring(0, max - 1).trimEnd() + '\u2026' : text;
+}
+
+// Nesting depth of every line from the braces of the masked source. A line that opens with }
+// (such as "} else {") sits at the depth of the block it closes.
+function braceDepths(masked) {
+  let depth = 0;
+  return masked.map((line) => {
+    const lead = (line.trim().match(/^\}+/) || [''])[0].length;
+    const at = Math.max(0, depth - lead);
+    depth = Math.max(0, depth + (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length);
+    return at;
+  });
+}
+
 function analyzeCLike(code) {
   const lines = code.split('\n');
   const masked = maskCSource(code).split('\n');
+  const depths = braceDepths(masked);
   const nodes = [];
   let nodeId = 0;
+  let depth = 0;
   
   const addNode = (type, label, detail = '') => {
-    nodes.push({ id: nodeId++, type, label, detail });
+    nodes.push({ id: nodeId++, type, label, detail, depth });
   };
   
   addNode('start', 'Program Start', 'Entry point');
@@ -85,6 +104,7 @@ function analyzeCLike(code) {
     const original = lines[i].trim();
     const line = (masked[i] || '').trim();
     if (!line) continue;
+    depth = depths[i];
     
     if (line.match(/^(int|void|char|float|double|long|short)\s+\w+\s*\(/)) {
       const match = line.match(/^(int|void|char|float|double|long|short)\s+(\w+)/);
@@ -128,7 +148,7 @@ function analyzeCLike(code) {
     if (/\bprintf\s*\(/.test(line)) {
       const match = original.match(/printf\s*\(\s*"([^"]*)"/);
       const content = match ? match[1] : 'output';
-      addNode('output', 'printf', content.substring(0, 30));
+      addNode('output', 'printf', clip(content, 30));
       continue;
     }
     
@@ -147,7 +167,7 @@ function analyzeCLike(code) {
     if (line.includes('=') && !line.includes('==') && !line.includes('!=') && !line.includes('<=') && !line.includes('>=')) {
       const match = original.match(/(\w+)\s*=\s*([^;]+)/);
       if (match) {
-        addNode('assignment', `${match[1]} =`, match[2].trim().substring(0, 20));
+        addNode('assignment', `${match[1]} =`, clip(match[2].trim(), 20));
       }
       continue;
     }
@@ -166,6 +186,7 @@ function analyzeCLike(code) {
     addNode('operation', 'Operations', 'Code operations');
   }
   
+  depth = 0;
   addNode('end', 'Program End', 'Termination');
   
   return {
@@ -177,11 +198,13 @@ function analyzeCLike(code) {
 
 function analyzeJavaScript(code) {
   const lines = code.split('\n');
+  const depths = braceDepths(maskCSource(code).split('\n'));
   const nodes = [];
   let nodeId = 0;
+  let depth = 0;
   
   const addNode = (type, label, detail = '') => {
-    nodes.push({ id: nodeId++, type, label, detail });
+    nodes.push({ id: nodeId++, type, label, detail, depth });
   };
   
   addNode('start', 'Script Start', 'Entry point');
@@ -194,6 +217,7 @@ function analyzeJavaScript(code) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line || line.startsWith('//') || line.startsWith('/*')) continue;
+    depth = depths[i];
     
     if (line.match(/^function\s+\w+/) || line.match(/^\w+\s*=\s*function/) || line.match(/^const\s+\w+\s*=\s*\(/)) {
       const match = line.match(/function\s+(\w+)/) || line.match(/^(\w+)\s*=/);
@@ -231,7 +255,7 @@ function analyzeJavaScript(code) {
     if (line.includes('console.log')) {
       const match = line.match(/console\.log\s*\(\s*(.+?)\s*\)/);
       const content = match ? match[1].trim() : 'output';
-      addNode('output', 'console.log', content.substring(0, 25));
+      addNode('output', 'console.log', clip(content, 25));
       continue;
     }
     
@@ -275,6 +299,7 @@ function analyzeJavaScript(code) {
     addNode('operation', 'Operations', 'JavaScript operations');
   }
   
+  depth = 0;
   addNode('end', 'Script End', 'Completion');
   
   return {
@@ -364,7 +389,7 @@ function analyzeCSS(code) {
     propLines.forEach(prop => {
       const [key, ...valueParts] = prop.split(':');
       if (key && valueParts.length > 0) {
-        addNode('property', key.trim(), valueParts.join(':').trim().substring(0, 30), 1);
+        addNode('property', key.trim(), clip(valueParts.join(':').trim(), 30), 1);
       }
     });
   }
@@ -377,7 +402,7 @@ function analyzeCSS(code) {
         const key = line.substring(0, colonIndex).trim();
         const value = line.substring(colonIndex + 1).trim();
         if (key) {
-          addNode('property', key, value.substring(0, 40));
+          addNode('property', key, clip(value, 40));
         }
       }
     });
@@ -434,8 +459,8 @@ const ANALYZER_KINDS = {
   property: ['tune', 'property'], dom: ['web', 'DOM'], event: ['touch_app', 'event'], root: ['account_tree', 'root']
 };
 
-// Indented structure tree. Indentation uses the depth the engine reports (HTML elements, CSS properties);
-// C and JavaScript results are flat because those scanners do not report nesting.
+// Indented structure tree. Indentation uses the depth the engine reports (block nesting for C and
+// JavaScript, element nesting for HTML, properties under CSS rules).
 function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
   const container = document.getElementById(containerId);
   if (!container) return '<div class="feedback bad">Container not found</div>';
@@ -450,9 +475,8 @@ function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
     const [icon, kind] = ANALYZER_KINDS[node.type] || ANALYZER_KINDS.operation;
     const depth = Number.isFinite(node.depth) ? Math.max(0, Math.min(node.depth, 8)) : 0;
     return `<li class="atree-node" style="--d:${depth}">
-      <span aria-hidden="true" class="material-symbols-outlined atree-icon">${icon}</span>
+      <span aria-hidden="true" class="material-symbols-outlined atree-icon" title="${escapeHtml(kind)}">${icon}</span>
       <span class="atree-label">${escapeHtml(node.label)}</span>
-      <span class="atree-kind">${escapeHtml(kind)}</span>
       ${node.detail ? `<span class="atree-detail">${escapeHtml(node.detail)}</span>` : ''}
     </li>`;
   }).join('');

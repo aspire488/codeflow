@@ -30,7 +30,7 @@ const KNOWLEDGE_BASE = {
         pointers: [
           "Pointers in C store memory addresses. Use & to get an address and * to dereference. They're powerful but can be tricky!",
           "A pointer variable holds the address of another variable. int *ptr = &x; means ptr points to integer x.",
-          "Common pointer mistake: forgetting to allocate memory with malloc() before using pointers."
+          "Common pointer mistake: using a pointer that is NULL, uninitialised or already freed. Make it point at valid memory first, either the address of a variable (&x) or memory from malloc(), and check for NULL before dereferencing."
         ],
         memory: [
           "Dynamic memory in C uses malloc(), calloc(), realloc(), and free(). Always free() what you malloc()!",
@@ -38,7 +38,7 @@ const KNOWLEDGE_BASE = {
           "Stack memory is automatic, heap memory (malloc) needs manual management."
         ],
         functions: [
-          "Functions in C should have a clear purpose and return type. Use void for functions that don't return values.",
+          "A function is a named, reusable block of code that takes parameters and can return a value. In C, give it a clear purpose and a return type, and use void for functions that don't return a value.",
           "C always passes arguments by value. To modify the caller's data, pass a pointer (the pointer is copied, but it still points at the original). Arrays are passed as a pointer to their first element.",
           "Function prototypes help the compiler know about functions before they're defined."
         ]
@@ -155,8 +155,7 @@ const KNOWLEDGE_BASE = {
     ],
 
     var: [
-      "let vs var in JavaScript: var is function-scoped and hoisted (initialised to undefined); let is block-scoped and cannot be used before its declaration (temporal dead zone). Prefer let, or const when the value never changes.",
-      "Also, a var declared in a loop leaks out of the loop block, while a block-scoped let stays inside it."
+      "let vs var in JavaScript: var is function-scoped and hoisted (initialised to undefined); let is block-scoped and cannot be used before its declaration (temporal dead zone). Prefer let, or const when the value never changes. A var declared in a loop also leaks out of the loop block, while a block-scoped let stays inside it."
     ]
   },
 
@@ -218,6 +217,10 @@ const KNOWLEDGE_BASE = {
   getResponse: function(userInput) {
     const input = userInput.toLowerCase();
 
+    // "Explain X" / "What is X" / bare "X": the concept's definition, always the same one.
+    const defined = this.defineTerm(input);
+    if (defined) return defined;
+
     // Check for greetings
     if (this.isGreeting(input)) {
       return this.getRandomResponse(this.greetings);
@@ -274,6 +277,24 @@ const KNOWLEDGE_BASE = {
   // Whole-word match of a plain-text term (optional plural s/es) so "hi" does not hit "this".
   has: function(input, term) {
     return new RegExp('(^|[^a-z0-9])' + term + '(e?s)?($|[^a-z0-9])').test(input);
+  },
+
+  // The first entry of every concept / topic list is its definition. Returns null unless the whole
+  // input is just a short term (optionally after "explain", "what is", "define"...).
+  defineTerm: function(input) {
+    const m = /^\s*(?:(?:explain|define|describe|tell me about|what(?:'s|\s+is|\s+are))\s+)?(?:(?:an?|the)\s+)?([a-z]+(?: [a-z]+){0,2})\s*[?.!]*\s*$/.exec(input);
+    if (!m) return null;
+    const stem = (w) => w.replace(/s$/, '');
+    const term = stem(m[1]);
+    const key = Object.keys(this.concepts).find(k => stem(k) === term);
+    if (key) return this.concepts[key][0];
+    const err = Object.keys(this.errors).find(k => stem(k) === term);
+    if (err) return this.errors[err][0];
+    for (const data of Object.values(this.subjects)) {
+      const topic = Object.keys(data.responses).find(k => k !== 'basics' && stem(k) === term);
+      if (topic) return data.responses[topic][0];
+    }
+    return null;
   },
 
   isGreeting: function(input) {

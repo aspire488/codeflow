@@ -12,10 +12,7 @@
     <link rel="manifest" href="manifest.json"/>
     <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png"/>
     <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet"/>
+    <script src="src/core/theme.js"></script>
     <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
@@ -64,6 +61,7 @@
                     <h1 class="page-title" id="page-title">Dashboard</h1>
                 </div>
                 <div class="row">
+                    <button class="icon-button" id="theme-toggle" aria-label="Switch to light mode" title="Switch to light mode"><span aria-hidden="true" class="material-symbols-outlined">light_mode</span></button>
                     <span class="xp-chip" id="xp-chip">0 XP</span>
                     <button class="icon-button" id="help-btn" aria-label="Keyboard help"><span aria-hidden="true" class="material-symbols-outlined">help</span></button>
                 </div>
@@ -126,6 +124,7 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <label class="sr-only" for="analyzer-code">Code to analyze</label>
                                     <textarea id="analyzer-code" class="code-textarea" spellcheck="false" maxlength="10000" aria-describedby="analyzer-limit" placeholder="Paste your code here..."></textarea>
                                     <div class="pane-foot">
                                         <p class="faint" id="analyzer-limit"><span id="analyzer-count">0</span> of 10,000 characters</p>

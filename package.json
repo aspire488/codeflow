@@ -1,7 +1,7 @@
 {
   "name": "codeflow",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.1.0",
   "description": "CodeFlow - execution-first programming learning platform for C, HTML, CSS and JavaScript",
   "engines": {
     "node": ">=20.19.0"
@@ -13,6 +13,7 @@
     "serve": "node tests/static-server.cjs 4173",
     "test": "node --test tests/smoke.test.cjs tests/unit.test.cjs tests/highlighter.test.cjs tests/regression.test.cjs",
     "test:e2e": "playwright test",
+    "test:e2e:production": "playwright test --config=playwright.production.cjs",
     "test:qa": "playwright test --project=qa"
   },
   "devDependencies": {

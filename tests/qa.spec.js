@@ -249,7 +249,7 @@ test('persona 5 cannot double-score, double-advance or land on a stale screen', 
   const correct = await page.evaluate(() => quizSession.questions[0].correct);
   await page.locator(`.quiz-option[data-option="${correct}"]`).click();
   await page.locator('#quiz-check').click();
-  await page.locator('#quiz-check').click({ force: true });
+  await expect(page.locator('#quiz-check')).toBeHidden(); // no second Check once answered
   const scoreAfterDouble = await page.evaluate(() => quizSession.score);
   expect(scoreAfterDouble).toBe(1);
   await expect(page.locator('#quiz-feedback .feedback')).toHaveCount(1);

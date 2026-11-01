@@ -30,7 +30,7 @@ No framework, no runtime build step, no API keys, no tracking. Progress stays in
 | Loop trace | Working | The loop runs; the table shows each iteration, condition and output |
 | Logic Quest | Working (vertical slice) | Chapter map, XP, unlock chain, persistence; one execution-order challenge plus prediction levels |
 | Logic Analyzer | Working within scope | Heuristic static analysis. Not a compiler or interpreter |
-| Study Assistant | Working, rule-based | Curated knowledge base. No model, no credentials |
+| Study assistant | Working, rule-based | Curated knowledge base. No model, no credentials |
 | Adaptive practice | Working | Recommendations from recorded right and wrong answers |
 | Progress dashboard | Working | Per-subject progress, quiz history, XP, reset |
 | PWA | Working | Service worker precaches the real tree, network-first navigation, real PNG icons |
@@ -39,8 +39,8 @@ No framework, no runtime build step, no API keys, no tracking. Progress stays in
 ## What it is not
 
 - **Not a C interpreter.** The visualizer covers a documented subset (a `for` loop with a `printf` body, factorial recursion, one pointer demo). Everything else replays authored step data.
-- **Not an LLM assistant.** The chatbot matches keywords against a knowledge base and makes no network calls.
-- **Not a compiler.** The analyzer reports structure, a complexity estimate and heuristics.
+- **Not an LLM.** The Study assistant matches keywords against a knowledge base and makes no network calls.
+- **Not a compiler.** The analyzer explains structure with heuristics and does not check for bugs.
 - `backend/` (Python) and `electron/` are not part of the hosted product and are not covered by the tests.
 
 ## Run locally
@@ -56,7 +56,7 @@ npm run serve      # or: static server on http://127.0.0.1:4173
 ```bash
 npm test           # structural + unit checks (node:test)
 npx playwright install chromium
-npm run test:e2e   # 34 browser tests: desktop 1280x800 and Pixel 5
+npm run test:e2e   # browser tests: desktop 1280x800 and Pixel 5
 npm run build      # static build; fails if a referenced script is missing
 ```
 
@@ -72,7 +72,7 @@ Use **Install** in Chrome or Edge, or *Add to Home Screen* on iOS. The service w
 - Only one Logic Quest level is a full execution challenge; the rest are prediction challenges.
 - The analyzer is pattern-based and cannot prove correctness.
 - The assistant is keyword-driven and says so when it has no answer.
-- Accessibility had a focused pass but no formal audit.
+- Accessibility is checked by automated tests only. This is not a WCAG conformance claim.
 - Performance was not benchmarked beyond build output and browser test runs.
 
 ## Contributing
@@ -93,8 +93,8 @@ MIT. See [LICENSE](LICENSE).
 ## Design system
 
 `styles.css` is a single token layer - colour, typography, spacing, radius, elevation and motion are
-declared once at the top - followed by one component vocabulary (`.stitch-btn`, `.stitch-card`,
-`.badge`, `.filter-chip`, `.viz-panel`, `.quiz-option`, ...). Every screen is composed from those
+declared once at the top - followed by one component vocabulary (`.stitch-btn`, `.stitch-header`,
+`.badge`, `.filter-chip`, `.quiz-option`, `.rail` list rows, ...). Every screen is composed from those
 primitives rather than from per-screen overrides.
 
 The palette keeps the original Stitch identity: `#0d1117` canvas, `#58a6ff` accent, `#1c2026`

@@ -106,8 +106,24 @@ test('headers: vercel.json ships the CSP and index.html has no inline script or 
 
 test('service worker: navigation responses are cached only when ok; cache name bumped', () => {
   const worker = read('service-worker.js');
-  assert.match(worker, /codeflow-v7/);
+  assert.match(worker, /codeflow-v10/);
+  assert.match(worker, /\/src\/core\/theme\.js/);
+  assert.match(worker, /\/assets\/fonts\/material-symbols-outlined\.woff2/);
   assert.match(worker, /if \(fresh\.ok\)[\s\S]*cache\.put\('\/index\.html'/);
+});
+
+test('appearance: theme boot script is external, shipped and applied before styles', () => {
+  const html = read('index.html');
+  assert.match(html, /<script src="src\/core\/theme\.js"><\/script>\s*<link rel="stylesheet" href="styles\.css"/);
+  assert.match(html, /id="theme-toggle"/);
+  assert.doesNotMatch(html, /fonts\.googleapis\.com|fonts\.gstatic\.com/);
+  assert.match(read('styles.css'), /assets\/fonts\/material-symbols-outlined\.woff2/);
+  assert.match(read('vercel.json'), /font-src 'self'/);
+  assert.match(read('src/core/theme.js'), /localStorage\.getItem\(KEY\)/);
+  assert.ok(fs.existsSync(path.join(root, 'src/core/theme.js')));
+  for (const font of ['assets/fonts/inter-latin.woff2', 'assets/fonts/inter-latin-ext.woff2', 'assets/fonts/material-symbols-outlined.woff2']) {
+    assert.ok(fs.existsSync(path.join(root, font)), `${font} is present`);
+  }
 });
 
 test('every .material-symbols-outlined span in markup is aria-hidden (except the data-driven viz/predict engines)', () => {

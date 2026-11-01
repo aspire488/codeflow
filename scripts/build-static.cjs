@@ -16,7 +16,7 @@ const FILES = [
   'service-worker.js'
 ];
 
-const DIRECTORIES = ['data', 'src', 'icons'];
+const DIRECTORIES = ['data', 'src', 'icons', 'assets'];
 
 function copyFile(relative) {
   const from = path.join(root, relative);

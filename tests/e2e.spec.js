@@ -48,6 +48,22 @@ test('application boots with no console errors and renders the dashboard', async
   expect(errors, `console errors: ${errors.join(' | ')}`).toEqual([]);
 });
 
+test('appearance: theme toggle updates the page and persists the selection', async ({ page }) => {
+  const root = page.locator('html');
+  const toggle = page.locator('#theme-toggle');
+  await expect(root).toHaveAttribute('data-theme', 'dark');
+  await expect(toggle).toHaveAttribute('aria-label', 'Switch to light mode');
+  await toggle.click();
+  await expect(root).toHaveAttribute('data-theme', 'light');
+  await expect(toggle).toHaveAttribute('aria-label', 'Switch to dark mode');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f8fafc');
+  await page.reload();
+  await expect(root).toHaveAttribute('data-theme', 'light');
+  await toggle.click();
+  await expect(root).toHaveAttribute('data-theme', 'dark');
+  expect(await page.evaluate(() => localStorage.getItem('codeflow_theme'))).toBe('dark');
+});
+
 test('every screen is reachable from the sidebar with a matching active state', async ({ page }) => {
   await page.goto('/');
   for (const [route, heading] of ROUTES) {

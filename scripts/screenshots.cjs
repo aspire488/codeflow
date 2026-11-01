@@ -75,7 +75,15 @@ async function main() {
     const page = await context.newPage();
     page.on('console', (message) => { if (message.type() === 'error') errors.push(`${label}: ${message.text()}`); });
     page.on('pageerror', (error) => errors.push(`${label}: ${error.message}`));
-    const snap = async (name) => { await page.waitForTimeout(250); await page.screenshot({ path: path.join(outDir, `${name}-${suffix}.png`), fullPage: false }); count += 1; };
+    const snap = async (name) => {
+      await page.evaluate(() => {
+        const active = document.querySelector('.screen.active .screen-scroll');
+        if (active) active.scrollTop = 0;
+      });
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: path.join(outDir, `${name}-${suffix}.png`), fullPage: false });
+      count += 1;
+    };
 
     for (const [name, hash] of SHOTS) {
       await page.goto(`${base}/${hash}`, { waitUntil: 'networkidle' });
@@ -144,11 +152,25 @@ async function main() {
 
     // Dialogs.
     await page.goto(`${base}/#progress`, { waitUntil: 'networkidle' });
+    await page.locator('.progress-settings summary').click();
     await page.locator('[data-action="reset-progress"]').click();
     await snap('s-modal-reset');
-    await page.keyboard.press('Escape');
+    await page.locator('#app-modal-close').click();
+    await page.locator('#app-modal').waitFor({ state: 'hidden' });
     await page.locator('#help-btn').click();
     await snap('s-modal-help');
+    await page.locator('#app-modal-close').click();
+    await page.locator('#app-modal').waitFor({ state: 'hidden' });
+
+    // Theme variants across the primary learning surfaces.
+    await page.goto(`${base}/#progress`, { waitUntil: 'networkidle' });
+    await page.locator('#theme-toggle').click();
+    await snap('progress-light');
+    await page.goto(`${base}/#dashboard`, { waitUntil: 'networkidle' });
+    await snap('dashboard-light');
+    await page.goto(`${base}/#visualize/code/loops`, { waitUntil: 'networkidle' });
+    await snap('visualizer-light');
+    await page.locator('#theme-toggle').click();
 
     await context.close();
   }

@@ -464,7 +464,7 @@ function markVizLine(line) {
     else element.removeAttribute('aria-current');
   });
   const status = vizEl('viz-line-status');
-  if (status) status.textContent = line ? `Line ${line}` : (VizState.steps.length ? 'No line data' : '');
+  if (status) status.textContent = line ? `Line ${line}` : (VizState.steps.length ? 'No line for this step' : '');
   if (target) {
     const top = target.offsetTop;
     if (top < host.scrollTop || top + target.offsetHeight > host.scrollTop + host.clientHeight) {
@@ -506,6 +506,7 @@ function renderVizTransport() {
   controls.innerHTML = `
     <div class="transport-progress">
       <span class="viz-step-label" id="viz-step-label"></span>
+      <span class="sr-only" id="viz-step-announcement" role="status" aria-live="polite" aria-atomic="true"></span>
       <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="viz-progress"></div></div>
     </div>
     <div class="transport-buttons">
@@ -524,6 +525,13 @@ function paintVizTransport() {
   const total = VizState.steps.length;
   const label = vizEl('viz-step-label');
   if (label) label.textContent = `Step ${VizState.index + 1} of ${total}`;
+  const announcement = vizEl('viz-step-announcement');
+  if (announcement) {
+    const current = VizState.steps[VizState.index];
+    announcement.textContent = current
+      ? `Step ${VizState.index + 1} of ${total}. ${current.description || ''}`
+      : '';
+  }
   const bar = vizEl('viz-progress');
   if (bar) bar.style.width = `${total > 1 ? Math.round((VizState.index / (total - 1)) * 100) : 100}%`;
   const next = vizEl('viz-next');
@@ -766,4 +774,3 @@ function renderLoopMode() {
     });
   });
 }
-

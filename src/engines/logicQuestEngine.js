@@ -217,7 +217,7 @@ function questStepMarkup(level, index, path) {
   const status = done
     ? '<span class="quest-status"><span aria-hidden="true" class="material-symbols-outlined">check_circle</span>Cleared<span class="sr-only">. Select to play again.</span></span>'
     : isCurrent
-      ? '<span class="quest-status quest-play">Play</span>'
+      ? '<span class="quest-status quest-start-cta">Play</span>'
       : `<span class="quest-status"><span aria-hidden="true" class="material-symbols-outlined">lock</span>Finish ${escapeHtml(previous ? previous.name : 'the previous level')} to unlock</span>`;
 
   return `
@@ -347,7 +347,7 @@ function renderPredictionChallenge(level) {
 
   host.innerHTML = `
     ${questPlayHead(level, 'Read the code and pick what it prints.')}
-    <section class="quest-play">
+    <section class="quest-challenge-panel">
       ${questCodeMarkup(level.code, `${level.id}.c`)}
       <h3 class="quiz-question" id="quest-q">${escapeHtml(level.question)}</h3>
       <div class="quiz-options" id="quest-options" role="group" aria-labelledby="quest-q">
@@ -412,7 +412,7 @@ function renderExecutionChallenge(state, level) {
 
   host.innerHTML = `
     ${questPlayHead(level, 'Choose each action the program takes, in order.')}
-    <section class="quest-play">
+    <section class="quest-challenge-panel">
       <p class="quest-goal">${escapeHtml(state.goal)}</p>
       ${questCodeMarkup(state.code, `${level.id}.c`)}
       <dl class="exec-state">

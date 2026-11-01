@@ -1,10 +1,13 @@
 // service-worker.js - CodeFlow PWA service worker
-const CACHE_VERSION = 'codeflow-v7';
+const CACHE_VERSION = 'codeflow-v10';
 
 const PRECACHE = [
   '/',
   '/index.html',
   '/styles.css',
+  '/assets/fonts/inter-latin.woff2',
+  '/assets/fonts/inter-latin-ext.woff2',
+  '/assets/fonts/material-symbols-outlined.woff2',
   '/manifest.json',
   '/data/topicsDB.js',
   '/data/quizDB.js',
@@ -13,6 +16,7 @@ const PRECACHE = [
   '/data/knowledgeBase.js',
   '/src/core/syntaxHighlighter.js',
   '/src/core/router.js',
+  '/src/core/theme.js',
   '/src/core/app.js',
   '/src/engines/visualizationEngine.js',
   '/src/engines/outputPredictionEngine.js',

@@ -9,7 +9,7 @@ module.exports = defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: 'http://127.0.0.1:4179',
     trace: 'retain-on-failure'
   },
   projects: [
@@ -19,9 +19,9 @@ module.exports = defineConfig({
     { name: 'qa', testMatch: 'qa.spec.js', use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } } }
   ],
   webServer: {
-    command: 'node tests/static-server.cjs 4173',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: true,
+    command: 'node tests/static-server.cjs 4179',
+    url: 'http://127.0.0.1:4179',
+    reuseExistingServer: false,
     timeout: 20000
   }
 });
