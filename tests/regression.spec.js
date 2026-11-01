@@ -293,3 +293,118 @@ test('lesson: reading width, labelled scrollable code region, end-of-lesson next
   await expect(page.locator('.pager-link.prev .pager-title')).toHaveText(prevTitle);
   await expect(page.locator('.pager-link.next .pager-title')).toHaveText(nextTitle);
 });
+
+// ---------- art-direction pass 2 ----------
+
+test('chat: suggestion chips send the question, get an answer, then hide', async ({ page }) => {
+  await page.goto('/#chatbot');
+  const chip = page.locator('#chat-suggestions .suggest-chip').first();
+  const question = await chip.innerText();
+  const before = await page.locator('#chat-messages .chat-bubble').count();
+  await chip.click();
+  await expect(page.locator('#chat-messages .chat-bubble.user').last()).toContainText(question);
+  await expect(page.locator('#chat-messages .chat-bubble')).toHaveCount(before + 2);
+  await expect(page.locator('#chat-suggestions')).toBeHidden();
+  await expect(page.locator('#chat-input')).toHaveValue('');
+});
+
+test('visualizer: the program counter highlights the current line and moves with the step', async ({ page }) => {
+  await page.goto('/#visualize/loops/loops');
+  const trace = await page.evaluate(() => { const t = traceLoop(TOPICS_DB.loops.code); return { header: t.headerLine, body: t.bodyLine, rows: t.rows.length }; });
+  const active = page.locator('.viz-line.active');
+  await expect(active).toHaveCount(1);
+  await expect(active).toHaveAttribute('data-line', String(trace.body));
+  await expect(active.locator('.pc')).toBeVisible();
+  for (let i = 1; i < trace.rows; i += 1) await page.locator('#viz-next').click();
+  await expect(active).toHaveAttribute('data-line', String(trace.header)); // the failed condition sits on the loop header
+
+  // An authored walkthrough has no line data: say so instead of faking a highlight.
+  await page.goto('/#visualize/code/loops');
+  await expect(page.locator('.viz-line.active')).toHaveCount(0);
+  await expect(page.locator('#viz-line-status')).toHaveText('No line data');
+  await expect(page.locator('#visualize-content')).toContainText('no line data');
+});
+
+test('visualizer: arrow keys and R work in pointer and recursion modes', async ({ page }) => {
+  for (const route of ['pointers/loops', 'recursion/recursion']) {
+    await page.goto(`/#visualize/${route}`);
+    const label = page.locator('#viz-step-label');
+    await expect(label).toContainText('Step 1 of');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(label).toContainText('Step 3 of');
+    await page.keyboard.press('ArrowLeft');
+    await expect(label).toContainText('Step 2 of');
+    await page.keyboard.press('r');
+    await expect(label).toContainText('Step 1 of');
+    await expect(page.locator('.viz-line.active')).toHaveCount(1);
+  }
+});
+
+test('visualizer: autoplay stops when the route changes', async ({ page }) => {
+  await page.goto('/#visualize/code/loops');
+  await page.locator('#viz-play').click();
+  expect(await page.evaluate(() => Boolean(VizState.timer && VizState.playing))).toBe(true);
+  await page.evaluate(() => { window.location.hash = '#dashboard'; });
+  await expect(page.locator('#dashboard-screen')).toHaveClass(/active/);
+  expect(await page.evaluate(() => ({ timer: VizState.timer, playing: VizState.playing }))).toEqual({ timer: null, playing: false });
+  const index = await page.evaluate(() => VizState.index);
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => VizState.index)).toBe(index);
+});
+
+test('visualizer on a 375x667 phone: transport is reachable, 44px, and never covers content', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  await page.goto('/#visualize/code/loops');
+  const next = page.locator('#viz-next');
+  const box = await next.boundingBox();
+  expect(box.y + box.height).toBeLessThanOrEqual(667);
+  expect(box.height).toBeGreaterThanOrEqual(43.5);
+  await next.tap();
+  await expect(page.locator('#viz-step-label')).toContainText('Step 2 of');
+
+  // Scrolled to the very end, the last panel still ends above the transport and the bar has not moved.
+  await page.evaluate(() => { const s = document.querySelector('#visualize-screen .screen-scroll'); s.scrollTop = s.scrollHeight; });
+  const geometry = await page.evaluate(() => ({
+    last: document.querySelector('.viz-right').lastElementChild.getBoundingClientRect().bottom,
+    bar: document.getElementById('viz-controls').getBoundingClientRect().top
+  }));
+  expect(geometry.last).toBeLessThanOrEqual(geometry.bar + 0.5);
+  expect(geometry.bar).toBeLessThan(667);
+  await context.close();
+});
+
+test('quest: chapters follow the unlock path, Loops is reachable, locked levels say what unlocks them', async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem('codeflow_logic_quest', JSON.stringify({ completedLevels: ['loops-1'], totalXP: 10, attempts: 0 })));
+  await page.goto('/#game');
+  await page.reload();
+  const chapter = (name) => page.locator('.quest-chapter', { has: page.getByRole('heading', { name, exact: true }) });
+  await expect(chapter('Start').locator('[data-level]')).toHaveCount(1);
+  await expect(chapter('Loops').locator('[data-level]')).toHaveCount(2);
+  await expect(chapter('Loops').locator('[data-level="loops-2"]')).toBeEnabled();
+  await expect(chapter('Loops').locator('[data-level="loops-2"]')).toContainText('Play');
+  await expect(chapter('Loops').locator('[data-level="nested-loops-1"]')).toBeDisabled();
+  await expect(chapter('Loops').locator('[data-level="nested-loops-1"]')).toContainText('Finish While Loop to unlock');
+  await expect(page.locator('.quest-standing')).toHaveText('Level 2 of 12');
+  await expect(page.locator('#game-content')).toContainText('10 XP earned');
+  expect(await page.locator('.quest-chapter [data-level]').count()).toBe(12);
+});
+
+test('no horizontal overflow from 320 to 1920 on any screen, with progress seeded', async ({ page }) => {
+  await seedState(page, { xp: 150, completedTopics: ['c-basics', 'loops'], quizScores: { 'c-basics': { score: 4, total: 5, percentage: 80 } }, currentTopic: 'loops' });
+  await page.evaluate(() => localStorage.setItem('codeflow_adaptive_state', JSON.stringify({ loops: { correct: 1, wrong: 2, streak: 0, mastered: false } })));
+  const routes = ['dashboard', 'topics', 'lesson/loops', 'quiz', 'quiz/loops', 'predict', 'visualize/code/loops', 'visualize/flow/loops', 'visualize/pointers/loops', 'visualize/recursion/recursion', 'visualize/loops/loops', 'visualize/code/html-basics', 'game', 'logic', 'chatbot', 'practice', 'progress'];
+  for (const width of [320, 768, 1920]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const route of routes) {
+      await page.goto('/#dashboard');
+      await page.goto(`/#${route}`);
+      const overflow = await page.evaluate(() => {
+        const screen = document.querySelector('.screen.active .screen-scroll') || document.querySelector('.screen.active');
+        return { page: document.documentElement.scrollWidth - document.documentElement.clientWidth, screen: screen.scrollWidth - screen.clientWidth };
+      });
+      expect(overflow, `${route} at ${width}px`).toEqual({ page: 0, screen: 0 });
+    }
+  }
+});

@@ -161,9 +161,9 @@ test('persona 3 verifies every visualization against the engine data', async ({ 
 
   await page.goto(`${BASE}/#visualize/code/loops`, { waitUntil: 'networkidle' });
   const authored = await page.evaluate(() => TOPICS_DB.loops.visualizationSteps.length);
-  await expect(page.locator('#viz-step-label')).toContainText(`1 / ${authored}`);
+  await expect(page.locator('#viz-step-label')).toContainText(`Step 1 of ${authored}`);
   await expect(page.locator('#viz-console')).toContainText('(no output yet)');
-  await expect(page.locator('#visualize-content')).toContainText('authored walkthrough');
+  await expect(page.locator('#visualize-content')).toContainText('Authored walkthrough');
 
   // Every step must expose a different variable state from the data.
   const firstVars = await page.locator('#viz-variables').innerText();
@@ -179,6 +179,8 @@ test('persona 3 verifies every visualization against the engine data', async ({ 
     return { rows: result.rows.length, output: result.output, iterations: result.iterations };
   });
   await expect(page.locator('.viz-table tbody tr')).toHaveCount(trace.rows);
+  // The trace is stepped now: walk to the last iteration, where the output is complete.
+  for (let step = 1; step < trace.rows; step += 1) await page.locator('#viz-next').click();
   await expect(page.locator('.console').last()).toContainText(trace.output);
 
   // Recursion: base case must return before the outer call.
@@ -497,7 +499,7 @@ test('persona 12 checks that displayed scores, XP and claims are real', async ({
   await expect(page.locator('#progress-content')).toContainText('100%');
 
   await page.goto(`${BASE}/#chatbot`, { waitUntil: 'networkidle' });
-  await expect(page.locator('.chat-head')).toContainText('Not an LLM');
+  await expect(page.locator('.chat-head')).toContainText(/not an LLM/i);
   await page.locator('#chat-input').fill('explain pointers');
   await page.locator('#chat-send').click();
   await expect(page.locator('#chat-messages')).toContainText(/pointer/i);
@@ -506,7 +508,7 @@ test('persona 12 checks that displayed scores, XP and claims are real', async ({
   await expect(page.locator('#logic-screen')).toContainText('not a compiler');
 
   await page.goto(`${BASE}/#visualize/code/pointers`, { waitUntil: 'networkidle' });
-  await expect(page.locator('#visualize-content')).toContainText('authored walkthrough');
+  await expect(page.locator('#visualize-content')).toContainText('Authored walkthrough');
 
   expect(errors).toEqual([]);
   await closeUser(user);

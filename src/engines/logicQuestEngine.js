@@ -10,15 +10,19 @@
 
 const QUEST_STORAGE_KEY = 'codeflow_logic_quest';
 
+// Chapters in path order. `start` holds only the execution challenge (loops-1); every other
+// level joins the chapter that lists its topic, so loops-2 and nested-loops-1 land in `loops`.
 const QUEST_CHAPTERS = [
-  { id: 'start', title: 'START', blurb: 'Read what a loop does before it runs.', topics: ['loops'] },
-  { id: 'conditions', title: 'CONDITIONS', blurb: 'Decide which branch executes.', topics: ['conditionals'] },
-  { id: 'loops', title: 'LOOPS', blurb: 'Repeat, count and exit correctly.', topics: ['loops'] },
-  { id: 'arrays', title: 'ARRAYS', blurb: 'Walk indexed data without going out of bounds.', topics: ['arrays', 'strings'] },
-  { id: 'pointers', title: 'POINTERS', blurb: 'Follow addresses, not values.', topics: ['pointers'] },
-  { id: 'recursion', title: 'RECURSION', blurb: 'Unwind the call stack in the right order.', topics: ['recursion'] },
-  { id: 'boss', title: 'FINAL BOSS', blurb: 'Combine everything at speed.', topics: ['boss'] }
+  { id: 'start', title: 'Start', blurb: 'Run a loop one action at a time.', topics: [] },
+  { id: 'loops', title: 'Loops', blurb: 'Repeat, count and exit correctly.', topics: ['loops'] },
+  { id: 'conditions', title: 'Conditions', blurb: 'Decide which branch runs.', topics: ['conditionals'] },
+  { id: 'arrays', title: 'Arrays and strings', blurb: 'Walk indexed data without going out of bounds.', topics: ['arrays', 'strings'] },
+  { id: 'pointers', title: 'Pointers', blurb: 'Follow addresses, not values.', topics: ['pointers'] },
+  { id: 'recursion', title: 'Recursion', blurb: 'Unwind the call stack in the right order.', topics: ['recursion'] },
+  { id: 'boss', title: 'Final boss', blurb: 'Combine everything.', topics: [] }
 ];
+
+const QUEST_EXECUTION_LEVEL = 'loops-1';
 
 let logicQuestProgress = {
   completedLevels: [],
@@ -79,9 +83,34 @@ function isLevelUnlocked(levelId) {
 }
 
 function chapterForLevel(level) {
+  if (level.id === QUEST_EXECUTION_LEVEL) return 'start';
   if (level.difficulty === 'boss') return 'boss';
-  const chapter = QUEST_CHAPTERS.find((c) => c.id !== 'boss' && c.topics.includes(level.topic));
+  const chapter = QUEST_CHAPTERS.find((c) => c.topics.includes(level.topic));
   return chapter ? chapter.id : 'start';
+}
+
+// Levels in unlock order, following the `requires` chain from the root.
+function questPath() {
+  const map = questMap();
+  const ordered = [];
+  const seen = new Set();
+  let node = map.find((entry) => !entry.requires);
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id);
+    const level = questLevelById(node.id);
+    if (level) ordered.push(level);
+    node = map.find((entry) => entry.requires === ordered[ordered.length - 1]?.id);
+  }
+  return ordered;
+}
+
+// The first level that is unlocked and not yet cleared; null when the quest is finished.
+function currentQuestLevel() {
+  return questPath().find((level) => !logicQuestProgress.completedLevels.includes(level.id) && isLevelUnlocked(level.id)) || null;
+}
+
+function questChallengeType(level) {
+  return level.id === QUEST_EXECUTION_LEVEL ? 'Execution challenge' : 'Prediction challenge';
 }
 
 function nextLevelAfter(levelId) {
@@ -174,61 +203,87 @@ function applyExecutionAction(state, action) {
 
 // ---------- rendering ----------
 
+function questStepMarkup(level, index, path) {
+  const done = logicQuestProgress.completedLevels.includes(level.id);
+  const unlocked = isLevelUnlocked(level.id);
+  const current = currentQuestLevel();
+  const isCurrent = Boolean(current) && current.id === level.id;
+  const state = done ? 'done' : (isCurrent ? 'current' : 'locked');
+  const previous = index > 0 ? path[index - 1] : null;
+  const id = escapeHtml(level.id);
+
+  const nodeIcon = done ? '<span aria-hidden="true" class="material-symbols-outlined">check</span>'
+    : (isCurrent ? '' : '<span aria-hidden="true" class="material-symbols-outlined">lock</span>');
+  const status = done
+    ? '<span class="quest-status"><span aria-hidden="true" class="material-symbols-outlined">check_circle</span>Cleared<span class="sr-only">. Select to play again.</span></span>'
+    : isCurrent
+      ? '<span class="quest-status quest-play">Play</span>'
+      : `<span class="quest-status"><span aria-hidden="true" class="material-symbols-outlined">lock</span>Finish ${escapeHtml(previous ? previous.name : 'the previous level')} to unlock</span>`;
+
+  return `
+    <li class="quest-step ${state}">
+      <span class="quest-node-mark ${state}" aria-hidden="true">${nodeIcon}</span>
+      <button class="quest-node ${state}" data-action="play-level" data-level="${id}" ${unlocked ? '' : 'disabled'}${isCurrent ? ' aria-current="step"' : ''}>
+        <span class="quest-name">${escapeHtml(level.name)}</span>
+        <span class="quest-meta">${questChallengeType(level)} &middot; +${level.xp} XP</span>
+        ${status}
+      </button>
+    </li>`;
+}
+
 function renderLogicQuestMap() {
   const host = document.getElementById('game-content');
   if (!host) return;
   loadLogicQuestProgress();
 
-  const levels = questLevels();
-  if (!levels.length) {
+  const path = questPath();
+  if (!path.length) {
     host.innerHTML = emptyState('Quest data missing', 'The Logic Quest level data did not load.', 'Back to dashboard', 'dashboard');
     return;
   }
 
-  const completed = logicQuestProgress.completedLevels.length;
-  const percentage = Math.round((completed / levels.length) * 100);
+  const current = currentQuestLevel();
+  const position = current ? path.findIndex((level) => level.id === current.id) + 1 : path.length;
+  const standing = current ? `Level ${position} of ${path.length}` : `All ${path.length} levels cleared`;
 
   host.innerHTML = `
-    <div class="quest-header">
+    <div class="screen-heading quest-head">
       <div>
-        <h2 class="screen-title" style="margin:0">Logic Quest</h2>
-        <p class="screen-subtitle">${completed} of ${levels.length} levels complete &middot; ${logicQuestProgress.totalXP} XP</p>
+        <h2 class="screen-title">Logic Quest</h2>
+        <p class="screen-subtitle"><strong class="quest-standing">${standing}</strong> &middot; ${logicQuestProgress.totalXP} XP earned from the quest</p>
       </div>
-      <div class="progress-bar" style="width:160px"><div class="progress-fill" style="width:${percentage}%"></div></div>
     </div>
 
-    <div class="quest-map">
-      ${QUEST_CHAPTERS.map((chapter) => {
-        const chapterLevels = levels.filter((level) => chapterForLevel(level) === chapter.id);
-        if (!chapterLevels.length) return '';
-        return `
-          <section class="quest-chapter">
-            <h4>${escapeHtml(chapter.title)}</h4>
-            <p>${escapeHtml(chapter.blurb)}</p>
-            <div class="quest-levels">
-              ${chapterLevels.map((level) => {
-                const unlocked = isLevelUnlocked(level.id);
-                const done = logicQuestProgress.completedLevels.includes(level.id);
-                return `
-                  <button class="quest-node ${done ? 'done' : ''}" data-action="play-level" data-level="${escapeHtml(level.id)}"
-                    ${unlocked ? '' : 'disabled'}>
-                    <span class="quest-name">${escapeHtml(level.name)}</span>
-                    <span class="quest-foot">
-                      <span>${done ? 'Completed' : unlocked ? 'Play' : 'Locked'}</span>
-                      <span>+${level.xp} XP</span>
-                    </span>
-                  </button>`;
-              }).join('')}
-            </div>
-          </section>`;
-      }).join('')}
-    </div>
+    <div class="quest-layout">
+      <div class="quest-map">
+        ${QUEST_CHAPTERS.map((chapter) => {
+          const levels = path.filter((level) => chapterForLevel(level) === chapter.id);
+          if (!levels.length) return '';
+          const done = levels.filter((level) => logicQuestProgress.completedLevels.includes(level.id)).length;
+          return `
+            <section class="quest-chapter" aria-labelledby="quest-ch-${chapter.id}">
+              <div class="quest-chapter-head">
+                <h3 id="quest-ch-${chapter.id}">${escapeHtml(chapter.title)}</h3>
+                <span class="quest-chapter-count">${done} of ${levels.length} cleared</span>
+              </div>
+              <p class="quest-blurb">${escapeHtml(chapter.blurb)}</p>
+              <ol class="quest-levels">
+                ${levels.map((level) => questStepMarkup(level, path.indexOf(level), path)).join('')}
+              </ol>
+            </section>`;
+        }).join('')}
+      </div>
 
-    <div class="stitch-card pad-lg" style="margin-top:20px">
-      <h3 class="card-title">How it works</h3>
-      <p class="muted">The START chapter is an execution-order challenge: you choose the next action the program performs, and the runtime tracks the real variable state and output. Every other node is a prediction challenge. Levels unlock in order and progress is saved in this browser.</p>
+      <aside class="quest-aside" aria-label="About the quest">
+        <h3 class="section-title">How the quest works</h3>
+        <p>Levels unlock in order, one after another. Progress is saved in this browser.</p>
+        <p><strong>Execution challenge.</strong> Only the first level. You choose each action the program takes, and the stepper tracks the real variable and output.</p>
+        <p><strong>Prediction challenge.</strong> The other ${path.length - 1} levels. You read the code and pick its output. They check your answer; they do not run an interactive stepper.</p>
+      </aside>
     </div>
   `;
+  // On a phone the current level can start below the fold; bring it into view.
+  host.querySelector('.quest-step.current')?.scrollIntoView({ block: 'nearest' });
 }
 
 function startLogicQuestLevel(levelId) {
@@ -241,17 +296,49 @@ function startLogicQuestLevel(levelId) {
     openModal({
       title: 'Level locked',
       body: '<p class="muted">Complete the previous level on the path to unlock this one.</p>',
-      actions: '<button class="stitch-btn" id="modal-back">Back to map</button>'
+      actions: '<button class="stitch-btn" id="modal-back">Back to quest map</button>'
     });
     document.getElementById('modal-back')?.addEventListener('click', () => { closeModal(); navigateTo('game'); });
     return;
   }
 
-  if (levelId === 'loops-1') {
+  if (levelId === QUEST_EXECUTION_LEVEL) {
     renderExecutionChallenge(beginExecution(levelId), level);
   } else {
     renderPredictionChallenge(level);
   }
+  const heading = document.querySelector('#game-content h2');
+  if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+  const scroller = document.querySelector('#game-screen .screen-scroll');
+  if (scroller) scroller.scrollTop = 0;
+}
+
+// Shared top of every level screen.
+function questPlayHead(level, intro) {
+  const path = questPath();
+  const position = path.findIndex((entry) => entry.id === level.id) + 1;
+  const chapter = QUEST_CHAPTERS.find((c) => c.id === chapterForLevel(level));
+  return `
+    <div class="quest-play-head">
+      <button class="text-btn quiz-back" data-nav="game"><span aria-hidden="true" class="material-symbols-outlined">arrow_back</span>Quest map</button>
+      <p class="quest-kicker">Level ${position} of ${path.length}${chapter ? ` &middot; ${escapeHtml(chapter.title)}` : ''}</p>
+      <h2 class="screen-title">${escapeHtml(level.name)}</h2>
+      <p class="quest-challenge"><span class="badge">${questChallengeType(level)}</span><span>${escapeHtml(intro)} +${level.xp} XP the first time.</span></p>
+    </div>`;
+}
+
+function questCodeMarkup(code, name) {
+  return `<div class="code-panel quest-code">
+    <div class="code-panel-bar">${escapeHtml(name)}</div>
+    <div class="code-scroll" tabindex="0" role="region" aria-label="Code for this level"><pre><code>${highlightCode(code, 'c')}</code></pre></div>
+  </div>`;
+}
+
+function questNextMarkup(level) {
+  const next = nextLevelAfter(level.id);
+  return next
+    ? `<div class="button-row"><button class="stitch-btn" data-action="play-level" data-level="${escapeHtml(next)}">Next level</button><button class="text-btn" data-nav="game">Quest map</button></div>`
+    : '<div class="button-row"><button class="stitch-btn" data-nav="game">Back to quest map</button></div>';
 }
 
 function renderPredictionChallenge(level) {
@@ -259,54 +346,59 @@ function renderPredictionChallenge(level) {
   if (!host) return;
 
   host.innerHTML = `
-    <div class="screen-heading">
-      <button class="stitch-btn secondary" data-nav="game"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Map</button>
-      <h2 class="screen-title" style="margin-top:16px">${escapeHtml(level.name)}</h2>
-      <p class="screen-subtitle">${escapeHtml(level.topic)} &middot; ${escapeHtml(level.difficulty)} &middot; +${level.xp} XP</p>
-    </div>
-    <div class="stitch-card quest-panel">
-      <pre class="quest-code">${escapeHtml(level.code)}</pre>
-      <p style="font-weight:600;margin:0 0 10px">${escapeHtml(level.question)}</p>
-      <div class="action-grid" id="quest-options">
+    ${questPlayHead(level, 'Read the code and pick what it prints.')}
+    <section class="quest-play">
+      ${questCodeMarkup(level.code, `${level.id}.c`)}
+      <h3 class="quiz-question" id="quest-q">${escapeHtml(level.question)}</h3>
+      <div class="quiz-options" id="quest-options" role="group" aria-labelledby="quest-q">
         ${level.options.map((option, index) => `
-          <button class="action-btn" data-quest-option="${index}">${escapeHtml(option)}</button>
-        `).join('')}
+          <button class="quiz-option" data-quest-option="${index}">
+            <span class="key" aria-hidden="true">${String.fromCharCode(65 + index)}</span>
+            <span class="label">${escapeHtml(option)}</span>
+            <span class="state"><span aria-hidden="true" class="material-symbols-outlined"></span><span class="state-text"></span></span>
+          </button>`).join('')}
       </div>
-      <div id="quest-feedback"></div>
-      <div class="button-row">
-        <button class="stitch-btn secondary" id="quest-hint">Hint</button>
-      </div>
-    </div>
+      <div id="quest-feedback" role="status" aria-live="polite"></div>
+      <div class="button-row quest-tools"><button class="text-btn" id="quest-hint">Show a hint</button></div>
+    </section>
   `;
 
-  host.querySelectorAll('[data-quest-option]').forEach((button) => {
+  const buttons = Array.from(host.querySelectorAll('[data-quest-option]'));
+  const markState = (button, className, icon, text) => {
+    button.classList.add(className);
+    button.querySelector('.material-symbols-outlined').textContent = icon;
+    button.querySelector('.state-text').textContent = text;
+  };
+
+  buttons.forEach((button) => {
     button.addEventListener('click', () => {
       const index = Number(button.getAttribute('data-quest-option'));
-      const correct = index === level.correct;
       const feedback = document.getElementById('quest-feedback');
 
-      if (!correct) {
+      if (index !== level.correct) {
         logicQuestProgress.attempts += 1;
         saveLogicQuestProgress();
-        feedback.innerHTML = `<div class="feedback bad"><strong>Not yet</strong>${escapeHtml(level.hint || 'Trace the code line by line.')}</div>`;
+        markState(button, 'wrong', 'cancel', 'Not this one');
+        button.disabled = true;
+        feedback.innerHTML = `<div class="feedback bad"><strong><span aria-hidden="true" class="material-symbols-outlined">info</span>Not yet</strong>${escapeHtml(level.hint || 'Trace the code line by line.')}</div>`;
         return;
       }
 
+      const firstTime = !logicQuestProgress.completedLevels.includes(level.id);
       completeQuestLevel(level);
+      buttons.forEach((b) => { b.disabled = true; });
+      markState(button, 'correct', 'check_circle', 'Correct');
       feedback.innerHTML = `
         <div class="feedback ok">
-          <strong>Correct &mdash; +${level.xp} XP</strong>
+          <strong><span aria-hidden="true" class="material-symbols-outlined">check_circle</span>Correct${firstTime ? ` &mdash; +${level.xp} XP` : ' &mdash; already cleared, no extra XP'}</strong>
           ${escapeHtml(level.explanation || '')}
-        </div>`;
-      host.querySelectorAll('[data-quest-option]').forEach((b) => { b.disabled = true; });
-      const next = nextLevelAfter(level.id);
-      if (next) feedback.innerHTML += `<div class="button-row"><button class="stitch-btn" data-action="play-level" data-level="${escapeHtml(next)}">Next level</button></div>`;
+        </div>${questNextMarkup(level)}`;
     });
   });
 
   document.getElementById('quest-hint').addEventListener('click', () => {
     document.getElementById('quest-feedback').innerHTML =
-      `<div class="callout"><strong>Hint:</strong> ${escapeHtml(level.hint || 'Trace the variables after each iteration.')}</div>`;
+      `<div class="callout"><strong>Hint</strong>${escapeHtml(level.hint || 'Trace the variables after each iteration.')}</div>`;
   });
 }
 
@@ -314,38 +406,33 @@ function renderExecutionChallenge(state, level) {
   const host = document.getElementById('game-content');
   if (!host) return;
   if (!state) {
-    host.innerHTML = emptyState('Challenge unavailable', 'This execution challenge could not start.', 'Back to map', 'game');
+    host.innerHTML = emptyState('Challenge unavailable', 'This execution challenge could not start.', 'Back to quest map', 'game');
     return;
   }
 
   host.innerHTML = `
-    <div class="screen-heading">
-      <button class="stitch-btn secondary" data-nav="game"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Map</button>
-      <h2 class="screen-title" style="margin-top:16px">${escapeHtml(level.name)} &mdash; execution order</h2>
-      <p class="screen-subtitle">${escapeHtml(state.goal)}</p>
-    </div>
-    <div class="stitch-card quest-panel">
-      <pre class="quest-code">${escapeHtml(state.code)}</pre>
-      <div class="stat-grid" style="margin:0 0 12px">
-        <div class="stat"><div class="stat-value" id="exec-i">${state.i}</div><div class="stat-label">i</div></div>
-        <div class="stat"><div class="stat-value" id="exec-output" style="font-family:ui-monospace,monospace">${state.output || '-'}</div><div class="stat-label">Output</div></div>
-        <div class="stat"><div class="stat-value" id="exec-mistakes">${state.mistakes}</div><div class="stat-label">Mistakes</div></div>
-      </div>
-      <p class="muted" style="margin:0 0 8px">What does the program do next?</p>
-      <div class="action-grid" id="exec-actions">
+    ${questPlayHead(level, 'Choose each action the program takes, in order.')}
+    <section class="quest-play">
+      <p class="quest-goal">${escapeHtml(state.goal)}</p>
+      ${questCodeMarkup(state.code, `${level.id}.c`)}
+      <dl class="exec-state">
+        <div><dt>i</dt><dd id="exec-i">${state.i}</dd></div>
+        <div><dt>Output</dt><dd id="exec-output">${state.output || '-'}</dd></div>
+        <div><dt>Wrong steps</dt><dd id="exec-mistakes">${state.mistakes}</dd></div>
+      </dl>
+      <h3 class="quiz-question" id="exec-q">What does the program do next?</h3>
+      <div class="action-grid" id="exec-actions" role="group" aria-labelledby="exec-q">
         <button class="action-btn" data-exec-action="check">Evaluate i &lt; 3</button>
         <button class="action-btn" data-exec-action="body">Execute the loop body</button>
         <button class="action-btn" data-exec-action="increment">Run i++</button>
         <button class="action-btn" data-exec-action="exit">Exit the loop</button>
         <button class="action-btn" data-exec-action="finish">Finish the program</button>
       </div>
-      <div id="exec-feedback"></div>
-      <h4 class="card-title" style="margin-top:16px">Execution log</h4>
-      <div class="trace-log" id="exec-log"></div>
-      <div class="button-row">
-        <button class="stitch-btn secondary" id="exec-reset">Reset run</button>
-      </div>
-    </div>
+      <div id="exec-feedback" role="status" aria-live="polite"></div>
+      <h3 class="section-title exec-log-title">Execution log</h3>
+      <div class="terminal"><div class="terminal-bar"><span aria-hidden="true" class="material-symbols-outlined">terminal</span>Log</div><pre class="console" id="exec-log"></pre></div>
+      <div class="button-row quest-tools"><button class="text-btn" id="exec-reset">Reset run</button></div>
+    </section>
   `;
 
   const paint = () => {
@@ -371,20 +458,19 @@ function renderExecutionChallenge(state, level) {
         state.log.push(`Correct: ${action}. ${result.message}`);
       }
 
-      feedback.innerHTML = `<div class="feedback ${result.ok ? 'ok' : 'bad'}"><strong>${result.ok ? 'Correct step' : 'Not this one'}</strong>${escapeHtml(result.message)}</div>`;
+      feedback.innerHTML = `<div class="feedback ${result.ok ? 'ok' : 'bad'}"><strong><span aria-hidden="true" class="material-symbols-outlined">${result.ok ? 'check_circle' : 'cancel'}</span>${result.ok ? 'Correct step' : 'Not this one'}</strong>${escapeHtml(result.message)}</div>`;
       paint();
 
       if (result.finished) {
         if (result.success) {
+          const firstTime = !logicQuestProgress.completedLevels.includes(level.id);
           completeQuestLevel(level);
-          const next = nextLevelAfter(level.id);
           feedback.innerHTML = `<div class="feedback ok">
-            <strong>Level complete &mdash; +${level.xp} XP</strong>
+            <strong><span aria-hidden="true" class="material-symbols-outlined">check_circle</span>Level complete${firstTime ? ` &mdash; +${level.xp} XP` : ' &mdash; already cleared, no extra XP'}</strong>
             Output ${escapeHtml(state.output)} matches. Execution order was correct with ${state.mistakes} wrong step(s).
-            ${next ? `<div class="button-row"><button class="stitch-btn" data-action="play-level" data-level="${escapeHtml(next)}">Next level</button></div>` : ''}
-          </div>`;
+          </div>${questNextMarkup(level)}`;
         } else {
-          feedback.innerHTML = `<div class="feedback bad"><strong>Run finished with the wrong output</strong>Expected "${escapeHtml(state.expectedOutput)}" but got "${escapeHtml(state.output)}". Reset and try again.</div>`;
+          feedback.innerHTML = `<div class="feedback bad"><strong><span aria-hidden="true" class="material-symbols-outlined">cancel</span>Run finished with the wrong output</strong>Expected "${escapeHtml(state.expectedOutput)}" but got "${escapeHtml(state.output)}". Reset and try again.</div>`;
         }
         document.querySelectorAll('[data-exec-action]').forEach((b) => { b.disabled = true; });
       }

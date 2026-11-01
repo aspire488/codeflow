@@ -364,7 +364,7 @@ function analyzeCSS(code) {
     propLines.forEach(prop => {
       const [key, ...valueParts] = prop.split(':');
       if (key && valueParts.length > 0) {
-        addNode('property', key.trim(), valueParts.join(':').trim().substring(0, 30), '   ');
+        addNode('property', key.trim(), valueParts.join(':').trim().substring(0, 30), 1);
       }
     });
   }
@@ -425,94 +425,39 @@ function generateTreeConnections(nodes) {
   return connections;
 }
 
+// Node kinds map to a Material Symbol and a short plain-language kind label.
+const ANALYZER_KINDS = {
+  start: ['play_arrow', 'start'], end: ['stop', 'end'], function: ['functions', 'function'],
+  'loop-start': ['loop', 'repeats'], condition: ['call_split', 'decision'], output: ['output', 'output'],
+  input: ['input', 'input'], return: ['reply', 'return'], assignment: ['arrow_forward', 'assignment'],
+  operation: ['settings', 'operation'], element: ['code', 'element'], rule: ['style', 'rule'],
+  property: ['tune', 'property'], dom: ['web', 'DOM'], event: ['touch_app', 'event'], root: ['account_tree', 'root']
+};
+
+// Indented structure tree. Indentation uses the depth the engine reports (HTML elements, CSS properties);
+// C and JavaScript results are flat because those scanners do not report nesting.
 function renderLogicAnalysis(result, containerId = 'logicAnalysisContainer') {
   const container = document.getElementById(containerId);
-  if (!container) return '<div class="text-error">Container not found</div>';
-  
+  if (!container) return '<div class="feedback bad">Container not found</div>';
+
   if (result.error) {
-    return `<div class="p-4 bg-error/20 rounded-lg text-error">${escapeHtml(result.error)}</div>`;
+    const html = `<div class="feedback bad"><strong>Could not analyze</strong>${escapeHtml(result.error)}</div>`;
+    container.innerHTML = html;
+    return html;
   }
-  
-  const langColors = {
-    c: { bg: 'bg-primary-container', text: 'text-on-primary-container' },
-    javascript: { bg: 'bg-tertiary-container', text: 'text-on-tertiary-container' },
-    html: { bg: 'bg-secondary-container', text: 'text-on-secondary-container' },
-    css: { bg: 'bg-error-container', text: 'text-on-error-container' }
-  };
-  
-  const nodeColors = {
-    start: { bg: 'bg-tertiary/30', border: 'border-tertiary', icon: 'play_arrow' },
-    end: { bg: 'bg-error/30', border: 'border-error', icon: 'stop' },
-    function: { bg: 'bg-primary/30', border: 'border-primary', icon: 'functions' },
-    'loop-start': { bg: 'bg-secondary/30', border: 'border-secondary', icon: 'loop' },
-    condition: { bg: 'bg-tertiary/30', border: 'border-tertiary', icon: 'call_split' },
-    output: { bg: 'bg-tertiary-container/30', border: 'border-tertiary-container', icon: 'output' },
-    input: { bg: 'bg-surface-container-high/30', border: 'border-surface-container-high', icon: 'input' },
-    return: { bg: 'bg-primary-container/30', border: 'border-primary-container', icon: 'reply' },
-    assignment: { bg: 'bg-surface-container/30', border: 'border-surface-container', icon: 'arrow_forward' },
-    operation: { bg: 'bg-surface-container-high/30', border: 'border-surface-container-high', icon: 'settings' },
-    element: { bg: 'bg-secondary/30', border: 'border-secondary', icon: 'code' },
-    rule: { bg: 'bg-error/30', border: 'border-error', icon: 'style' },
-    property: { bg: 'bg-surface-container-low/30', border: 'border-surface-container-low', icon: 'tune' },
-    dom: { bg: 'bg-primary/30', border: 'border-primary', icon: 'web' },
-    event: { bg: 'bg-tertiary/30', border: 'border-tertiary', icon: 'touch_app' }
-  };
-  
-  const lang = result.language || 'c';
-  const colors = langColors[lang] || langColors.c;
-  const isTree = result.tree;
-  
-  let html = `
-    <div class="bg-surface-container rounded-xl border border-outline-variant/20 overflow-hidden">
-      <div class="px-4 py-3 bg-surface-container-high border-b border-outline-variant/20 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span aria-hidden="true" class="material-symbols-outlined text-primary">psychology</span>
-          <span class="font-semibold text-on-surface">Logic Analysis</span>
-        </div>
-        <span class="px-2 py-1 rounded ${colors.bg} ${colors.text} text-xs font-bold uppercase">${lang}</span>
-      </div>
-      <div class="p-4 max-h-[500px] overflow-y-auto">
-  `;
-  
-  if (isTree) {
-    result.nodes.forEach(node => {
-      const nodeColor = nodeColors[node.type] || nodeColors.operation;
-      const indent = node.depth * 24;
-      html += `
-        <div class="flex items-center gap-2 py-1" style="padding-left: ${indent}px">
-          <span aria-hidden="true" class="material-symbols-outlined text-sm text-outline">chevron_right</span>
-          <span class="px-2 py-1 rounded ${nodeColor.bg} border ${nodeColor.border} text-xs font-mono">${escapeHtml(node.label)}</span>
-          ${node.detail ? `<span class="text-xs text-outline ml-2">${escapeHtml(node.detail)}</span>` : ''}
-        </div>
-      `;
-    });
-  } else {
-    const cols = result.nodes.length > 6 ? Math.ceil(result.nodes.length / 3) : 3;
-    html += `<div class="grid grid-cols-1 md:grid-cols-${Math.min(cols, 3)} gap-2">`;
-    
-    result.nodes.forEach(node => {
-      const nodeColor = nodeColors[node.type] || nodeColors.operation;
-      html += `
-        <div class="flex items-center gap-2 p-2 rounded ${nodeColor.bg} border ${nodeColor.border}">
-          <span aria-hidden="true" class="material-symbols-outlined text-sm">${nodeColor.icon}</span>
-          <div class="flex-1 min-w-0">
-            <span class="text-xs font-bold block truncate">${escapeHtml(node.label)}</span>
-            ${node.detail ? `<span class="text-[10px] text-outline block truncate">${escapeHtml(node.detail)}</span>` : ''}
-          </div>
-        </div>
-      `;
-    });
-    html += '</div>';
-  }
-  
-  html += `
-      </div>
-      <div class="px-4 py-2 bg-surface-container-low border-t border-outline-variant/20 text-xs text-outline">
-        ${result.nodes.length} nodes detected
-      </div>
-    </div>
-  `;
-  
+
+  const items = result.nodes.map((node) => {
+    const [icon, kind] = ANALYZER_KINDS[node.type] || ANALYZER_KINDS.operation;
+    const depth = Number.isFinite(node.depth) ? Math.max(0, Math.min(node.depth, 8)) : 0;
+    return `<li class="atree-node" style="--d:${depth}">
+      <span aria-hidden="true" class="material-symbols-outlined atree-icon">${icon}</span>
+      <span class="atree-label">${escapeHtml(node.label)}</span>
+      <span class="atree-kind">${escapeHtml(kind)}</span>
+      ${node.detail ? `<span class="atree-detail">${escapeHtml(node.detail)}</span>` : ''}
+    </li>`;
+  }).join('');
+
+  const html = `<ul class="atree" aria-label="Code structure">${items}</ul>`;
   container.innerHTML = html;
   return html;
 }
@@ -521,7 +466,7 @@ function analyzeAndRender(code, language, containerId) {
   if (!code) {
     const container = document.getElementById(containerId);
     if (container) {
-      container.innerHTML = '<div class="p-4 bg-error/20 rounded-lg text-error">No code provided to analyze</div>';
+      container.innerHTML = '<div class="feedback bad"><strong>Nothing to analyze</strong>Paste some code first.</div>';
     }
     return;
   }

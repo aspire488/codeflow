@@ -69,41 +69,44 @@ function renderOutputPrediction(param) {
 
   const question = pool[Math.floor(Math.random() * pool.length)];
   predictionState = { question, answered: false, revealed: false, topicFilter: filter, index: 0 };
+  const nextRoute = `predict${filter === 'all' ? '' : '/' + filter}`;
 
   host.innerHTML = `
     <div class="screen-heading">
-      <h2 class="screen-title">Output prediction</h2>
-      <p class="screen-subtitle">Read the snippet, type exactly what it prints, then check. Whitespace differences are tolerated.</p>
+      <div>
+        <h2 class="screen-title">Output prediction</h2>
+        <p class="screen-subtitle">Read the snippet and type exactly what it prints. Whitespace differences are tolerated. You earn 5 XP for a correct first answer you did not reveal.</p>
+      </div>
     </div>
 
-    <div class="filter-row">
-      <button class="filter-chip ${filter === 'all' ? 'active' : ''}" data-nav="predict">All topics</button>
+    <div class="filter-row predict-filters" role="group" aria-label="Filter by topic">
+      <button class="filter-chip ${filter === 'all' ? 'active' : ''}" data-nav="predict"${filter === 'all' ? ' aria-current="true"' : ''}>All topics</button>
       ${predictionTopics().map((topic) => `
-        <button class="filter-chip ${filter === topic ? 'active' : ''}" data-nav="predict/${escapeHtml(topic)}">${escapeHtml(topic)}</button>
+        <button class="filter-chip ${filter === topic ? 'active' : ''}" data-nav="predict/${escapeHtml(topic)}"${filter === topic ? ' aria-current="true"' : ''}>${escapeHtml(topic)}</button>
       `).join('')}
     </div>
 
-    <div class="stitch-card pad-lg">
-      <div class="quiz-meta">
-        <span class="badge">${escapeHtml(question.difficulty || 'practice')}</span>
-        <span>${escapeHtml(question.topic)}</span>
-      </div>
-      <div class="code-panel">
-        <div class="code-panel-bar"><span>predict.c</span><span>${escapeHtml(question.id)}</span></div>
-        <pre><code>${highlightCode(question.code, 'c')}</code></pre>
-      </div>
+    <div class="predict-layout">
+      <section class="predict-code" aria-label="Code to predict">
+        <div class="code-panel">
+          <div class="code-panel-bar"><span>predict.c</span><span>${escapeHtml(question.difficulty || 'practice')} &middot; ${escapeHtml(question.topic)}</span></div>
+          <div class="code-scroll" tabindex="0" role="region" aria-label="Code for question ${escapeHtml(question.id)}"><pre><code>${highlightCode(question.code, 'c')}</code></pre></div>
+        </div>
+      </section>
 
-      <label class="field-label" for="prediction-input">Your predicted output</label>
-      <input type="text" id="prediction-input" class="text-input" autocomplete="off" placeholder="e.g. 123" />
-
-      <div class="button-row">
-        <button class="stitch-btn" id="prediction-check">Check answer</button>
-        <button class="stitch-btn secondary" id="prediction-reveal">Reveal answer</button>
-        <button class="stitch-btn secondary" data-nav="predict${filter === 'all' ? '' : '/' + filter}">Next question</button>
-        <button class="stitch-btn secondary" data-nav="lesson/${escapeHtml(question.topic)}">Open the lesson</button>
-      </div>
-
-      <div id="prediction-feedback"></div>
+      <section class="predict-answer" aria-label="Your answer">
+        <label class="field-label" for="prediction-input">What does it print?</label>
+        <input type="text" id="prediction-input" class="text-input mono-input" autocomplete="off" spellcheck="false" placeholder="e.g. 123" />
+        <div class="button-row predict-actions">
+          <button class="stitch-btn" id="prediction-check">Check answer</button>
+          <button class="text-btn" id="prediction-reveal">Reveal answer</button>
+        </div>
+        <div id="prediction-feedback" role="status" aria-live="polite"></div>
+        <div class="button-row predict-next">
+          <button class="stitch-btn secondary" id="prediction-next" data-nav="${nextRoute}">Next question</button>
+          <button class="text-btn" data-nav="lesson/${escapeHtml(question.topic)}">Open the lesson</button>
+        </div>
+      </section>
     </div>
   `;
 
@@ -116,7 +119,30 @@ function renderOutputPrediction(param) {
   });
   document.getElementById('prediction-check').addEventListener('click', checkPredictionAnswer);
   document.getElementById('prediction-reveal').addEventListener('click', revealPredictionAnswer);
-  input.focus();
+  input.focus({ preventScroll: true });
+}
+
+// Expected vs yours, then why. Text and icon carry the verdict, not colour alone.
+function predictionFeedbackMarkup({ ok, headline, yours, question, extra }) {
+  const mono = (text) => `<pre class="compare-out">${escapeHtml(text)}</pre>`;
+  return `
+    <div class="feedback ${ok ? 'ok' : 'bad'}">
+      <strong><span aria-hidden="true" class="material-symbols-outlined">${ok ? 'check_circle' : 'cancel'}</span>${escapeHtml(headline)}</strong>
+      <div class="compare">
+        <div><span class="compare-label">Your output</span>${yours === null ? '<span class="compare-none">Not answered</span>' : mono(yours)}</div>
+        <div><span class="compare-label">Expected output</span>${mono(question.answer)}</div>
+      </div>
+      <p class="compare-why">${escapeHtml(question.explanation || '')}</p>
+      ${extra || ''}
+    </div>`;
+}
+
+// After an answer or a reveal the question is finished: Next becomes the primary action.
+function finishPredictionQuestion() {
+  const check = document.getElementById('prediction-check');
+  const next = document.getElementById('prediction-next');
+  if (check) { check.disabled = true; check.classList.add('secondary'); }
+  if (next) next.classList.remove('secondary');
 }
 
 function checkPredictionAnswer() {
@@ -126,6 +152,10 @@ function checkPredictionAnswer() {
   if (!input || !feedback || !question || predictionState.answered) return;
 
   const result = checkOutputAnswer(input.value, question.answer);
+  if (!input.value.trim()) {
+    feedback.innerHTML = `<div class="feedback bad"><strong>${escapeHtml(result.message)}</strong></div>`;
+    return;
+  }
   predictionState.answered = true;
 
   if (typeof AdaptiveEngine !== 'undefined' && AdaptiveEngine.recordAnswer) {
@@ -139,28 +169,32 @@ function checkPredictionAnswer() {
     } catch (_) { /* storage unavailable: XP still granted once this session */ }
   }
 
-  feedback.innerHTML = `
-    <div class="feedback ${result.correct ? 'ok' : 'bad'}">
-      <strong>${escapeHtml(result.message)}</strong>
-      ${result.correct
-        ? escapeHtml(question.explanation || '')
-        : 'Expected output is hidden - use Reveal answer to check the explanation.'}
-      ${xp.reason ? `<div class="muted" style="margin-top:6px">${escapeHtml(xp.reason)}</div>` : ''}
-    </div>`;
+  feedback.innerHTML = predictionFeedbackMarkup({
+    ok: result.correct,
+    headline: result.correct ? result.message : 'Not correct',
+    yours: input.value,
+    question,
+    extra: xp.reason ? `<p class="compare-xp">${escapeHtml(xp.reason)}</p>` : (result.correct ? '' : '<p class="compare-xp">No XP for an incorrect answer.</p>')
+  });
+  input.disabled = true;
+  finishPredictionQuestion();
 }
 
 function revealPredictionAnswer() {
   const feedback = document.getElementById('prediction-feedback');
   const question = predictionState.question;
-  if (!feedback || !question) return;
+  if (!feedback || !question || predictionState.answered) return;
   predictionState.revealed = true;
+  predictionState.answered = true;
 
-  feedback.innerHTML = `
-    <div class="feedback ok">
-      <strong>Expected output</strong>
-      <pre style="margin:8px 0;font-family:ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(question.answer)}</pre>
-      <p style="margin:0">${escapeHtml(question.explanation || '')}</p>
-      <p class="muted" style="margin:8px 0 0">No XP is awarded for this question after revealing the answer.</p>
-      ${question.hint ? `<p class="muted" style="margin:8px 0 0"><strong>Hint:</strong> ${escapeHtml(question.hint)}</p>` : ''}
-    </div>`;
+  feedback.innerHTML = predictionFeedbackMarkup({
+    ok: true,
+    headline: 'Answer revealed',
+    yours: null,
+    question,
+    extra: `<p class="compare-xp">No XP is awarded for this question after revealing the answer.</p>${question.hint ? `<p class="compare-why"><strong class="inline-strong">Hint:</strong> ${escapeHtml(question.hint)}</p>` : ''}`
+  });
+  const input = document.getElementById('prediction-input');
+  if (input) input.disabled = true;
+  finishPredictionQuestion();
 }

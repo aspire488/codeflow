@@ -106,7 +106,7 @@ test('headers: vercel.json ships the CSP and index.html has no inline script or 
 
 test('service worker: navigation responses are cached only when ok; cache name bumped', () => {
   const worker = read('service-worker.js');
-  assert.match(worker, /codeflow-v6/);
+  assert.match(worker, /codeflow-v7/);
   assert.match(worker, /if \(fresh\.ok\)[\s\S]*cache\.put\('\/index\.html'/);
 });
 

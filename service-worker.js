@@ -1,5 +1,5 @@
 // service-worker.js - CodeFlow PWA service worker
-const CACHE_VERSION = 'codeflow-v6';
+const CACHE_VERSION = 'codeflow-v7';
 
 const PRECACHE = [
   '/',

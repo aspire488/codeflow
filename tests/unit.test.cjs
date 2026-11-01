@@ -269,8 +269,47 @@ test('visualizer ignores prototype-key route params and keyboard works outside c
   assert.equal(engine.vizHasTopic('loops'), true);
   assert.equal(engine.vizHasTopic('__proto__'), false);
   assert.equal(engine.vizHasTopic('constructor'), false);
-  assert.match(src, /pointers: \[pointerStep/);
-  assert.match(src, /recursion: \[recursionStep/);
+  assert.match(src, /VIZ_STEPPED = \['code', 'pointers', 'recursion', 'loops'\]/);
   assert.match(src, /addEventListener\('hashchange'/);
   assert.doesNotMatch(src, /<h4>|role="tab"|aria-selected/);
+});
+
+test('quest map: every level has a chapter, loops levels reach Loops, chapters are contiguous on the unlock path', () => {
+  const { LOGIC_QUEST_LEVELS, LOGIC_QUEST_MAP } = require('../data/logicQuestDB.js');
+  const engine = loadEngine('src/engines/logicQuestEngine.js', { LOGIC_QUEST_LEVELS, LOGIC_QUEST_MAP });
+  const questPath = engine.questPath();
+  assert.equal(questPath.length, LOGIC_QUEST_LEVELS.length, 'the requires chain reaches every level');
+
+  const chapterIds = vm.runInContext('QUEST_CHAPTERS.map((c) => c.id)', engine);
+  const chapterOf = (id) => engine.chapterForLevel(LOGIC_QUEST_LEVELS.find((l) => l.id === id));
+  assert.equal(chapterOf('loops-1'), 'start');
+  assert.equal(chapterOf('loops-2'), 'loops', 'was unreachable: loops levels used to land in START');
+  assert.equal(chapterOf('nested-loops-1'), 'loops');
+  assert.equal(chapterOf('boss-pointer'), 'boss');
+
+  const runs = questPath.map((level) => engine.chapterForLevel(level)).filter((c, i, all) => i === 0 || c !== all[i - 1]);
+  assert.equal(new Set(runs).size, runs.length, 'each chapter is one unbroken run of the path');
+  assert.deepEqual(runs, chapterIds.filter((id) => runs.includes(id)), 'chapters appear in declared order');
+  chapterIds.forEach((id) => assert.ok(runs.includes(id), `chapter ${id} has levels`));
+});
+
+test('traceLoop reports the source line of the loop header and of its printf', () => {
+  const engine = loadEngine('src/engines/visualizationEngine.js');
+  const trace = engine.traceLoop(topicsDB.loops.code);
+  const lines = topicsDB.loops.code.split('\n');
+  assert.match(lines[trace.headerLine - 1], /for \(int i = 1/);
+  assert.match(lines[trace.bodyLine - 1], /printf/);
+  assert.equal(topicsDB.loops.visualizationSteps.some((step) => Number.isFinite(step.line)), false, 'authored walkthroughs carry no line data, so the UI must not invent it');
+});
+
+test('lesson inline code: numeric returns and bare directives only, prose is untouched', () => {
+  const src = readFileSync(path.resolve(__dirname, '..', 'src/ui/lessonRenderer.js'), 'utf8');
+  const sandbox = { escapeHtml: (t) => t };
+  vm.createContext(sandbox);
+  vm.runInContext(src.slice(0, src.indexOf('function lessonPoint')), sandbox);
+  const render = (text) => sandbox.lessonInlineCode(text);
+  assert.equal(render('return 0 from main()'), '<code>return 0</code> from <code>main()</code>');
+  assert.equal(render('#include brings headers'), '<code>#include</code> brings headers');
+  assert.equal(render('return value in real programs'), 'return value in real programs');
+  assert.equal(render('returns 0 if strings equal'), 'returns 0 if strings equal');
 });

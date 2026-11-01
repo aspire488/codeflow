@@ -2,9 +2,10 @@
 // LESSON RENDERER - a reading environment
 // ============================================
 
-// Wrap call-like tokens (main(), printf("x"), #include <stdio.h>) in <code>.
+// Wrap call-like tokens (main(), printf("x"), #include <stdio.h>, bare #include / #define, `return 0`) in <code>.
+// Deliberately narrow: `return` is only matched before a number, so prose such as "return value" is untouched.
 // Each piece is escaped on its own, so nothing from the data reaches the DOM raw.
-const LESSON_CODE_TOKEN = /(#include\s*<[^>\s]+>|\b[A-Za-z_][\w.]*\([^()]*\))/;
+const LESSON_CODE_TOKEN = /(#include\s*<[^>\s]+>|#(?:include|define)\b|\breturn\s+-?\d+\b|\b[A-Za-z_][\w.]*\([^()]*\))/;
 
 function lessonInlineCode(text) {
   return String(text).split(LESSON_CODE_TOKEN)

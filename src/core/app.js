@@ -349,12 +349,13 @@ function initEventDelegation() {
   document.getElementById('help-btn')?.addEventListener('click', () => {
     openModal({
       title: 'Keyboard & navigation',
-      body: `<ul class="modal-list">
-        <li><strong>Esc</strong> closes any dialog and the mobile menu.</li>
-        <li><strong>&larr; / &rarr;</strong> step backwards and forwards in the visualizer.</li>
-        <li><strong>R</strong> resets the visualizer to the first step.</li>
-        <li>Every screen has a stable URL hash, so browser back and forward work.</li>
-      </ul>`,
+      body: `<dl class="key-list">
+        <div><dt><kbd>Esc</kbd></dt><dd>Close a dialog or the mobile menu.</dd></div>
+        <div><dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Step back and forward in the visualizer.</dd></div>
+        <div><dt><kbd>R</kbd></dt><dd>Reset the visualizer to its first step.</dd></div>
+        <div><dt><kbd>Ctrl</kbd> <kbd>Enter</kbd></dt><dd>Run the Logic Analyzer.</dd></div>
+      </dl>
+      <p class="modal-note">Every screen has its own address, so the browser back and forward buttons work.</p>`,
       actions: '<button class="stitch-btn" id="modal-ok">Got it</button>'
     });
     document.getElementById('modal-ok')?.addEventListener('click', closeModal);
@@ -404,7 +405,7 @@ function handleAction(action, element) {
     case 'reset-progress':
       openModal({
         title: 'Reset all progress?',
-        body: '<p class="muted">This clears XP, completed topics, quiz scores and practice history stored in this browser. It cannot be undone.</p>',
+        body: '<p>This clears XP, completed topics, quiz scores, practice history and Logic Quest progress stored in this browser. It cannot be undone.</p>',
         actions: `<button class="stitch-btn secondary" id="cancel-reset">Cancel</button>
                   <button class="stitch-btn danger" id="confirm-reset">Reset progress</button>`
       });

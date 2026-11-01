@@ -46,13 +46,13 @@ function topicSummary(topic) {
 
 // One row of the program-counter rail. State comes from real progress only.
 // Topic-explorer rows pass a description and actions; the link stays separate from the buttons.
-function railRowMarkup(topic, nextId, extraClass, description, actions) {
+function railRowMarkup(topic, nextId, extraClass, description, actions, route = 'lesson') {
   const id = escapeHtml(topic.id);
   const done = AppState.completedTopics.includes(topic.id);
   const current = topic.id === nextId;
   const state = done ? 'done' : (current ? 'current' : '');
   const cue = done ? 'Completed: ' : (current ? 'Next: ' : '');
-  const link = `<a class="rail-link${description === undefined ? '' : ' topic-link'}" href="#lesson/${id}"${current ? ' aria-current="step"' : ''}>${cue ? `<span class="sr-only">${cue}</span>` : ''}${escapeHtml(topic.title)}</a>`;
+  const link = `<a class="rail-link${description === undefined ? '' : ' topic-link'}" href="#${route}/${id}"${current ? ' aria-current="step"' : ''}>${cue ? `<span class="sr-only">${cue}</span>` : ''}${escapeHtml(topic.title)}</a>`;
   const body = description === undefined
     ? link
     : `<div class="topic-main">${link}<p class="topic-desc">${escapeHtml(description)}</p></div>${actions}`;
@@ -296,51 +296,54 @@ function renderAdaptivePractice() {
   }
   if (engine.init) engine.init();
 
-  const weak = engine.getWeakTopics();
-  const attempted = weak.filter((t) => t.totalAttempts > 0);
+  // Only topics with at least one wrong answer on record, and not yet mastered, need practice.
+  const weak = engine.getWeakTopics().filter((t) => t.wrong > 0 && !t.mastered && hasTopic(t.topicKey));
+  const titleOf = (key) => (TOPICS_DB[key] && TOPICS_DB[key].title) || key;
   const next = weak[0];
 
-  host.innerHTML = `
+  const heading = `
     <div class="screen-heading">
-      <h2 class="screen-title">Adaptive practice</h2>
-      <p class="screen-subtitle">Recommendations come from your recorded quiz answers, not a fixed list.</p>
-    </div>
-    <div class="stitch-card pad-lg" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <div>
-          <h3 class="card-title">${next ? 'Practice next' : 'Nothing to practise yet'}</h3>
-          <p class="muted">${next
-            ? escapeHtml((TOPICS_DB[next.topicKey] && TOPICS_DB[next.topicKey].title) || next.topicKey)
-            : 'Answer some quiz questions and this screen will build a plan for you.'}</p>
-        </div>
-        ${next
-          ? `<button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(next.topicKey)}"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:16px">play_arrow</span> Start practice quiz</button>`
-          : '<button class="stitch-btn" disabled>Start practice quiz</button>'}
+      <div>
+        <h2 class="screen-title">Adaptive practice</h2>
+        <p class="screen-subtitle">Practice comes from the questions you get wrong in quizzes and output prediction, stored in this browser.</p>
       </div>
-    </div>
-    ${attempted.length ? `
-      <h3 class="card-title">Weakest topics first</h3>
-      <div class="topic-grid">
-        ${attempted.slice(0, 8).map((t) => {
-          const progress = engine.getMasteryProgress(t.topicKey);
-          const title = (TOPICS_DB[t.topicKey] && TOPICS_DB[t.topicKey].title) || t.topicKey;
-          return `
-            <article class="stitch-card pad-lg">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                <h3 style="font-size:15px;font-weight:600;margin:0">${escapeHtml(title)}</h3>
-                <span class="badge ${progress.status === 'Mastered' ? 'success' : 'muted-badge'}">${escapeHtml(progress.status)}</span>
-              </div>
-              <div class="progress-bar" style="margin-top:12px"><div class="progress-fill" style="width:${progress.percentage}%"></div></div>
-              <p class="muted" style="margin-top:8px">${progress.correct} correct &middot; ${progress.wrong} wrong &middot; ${progress.percentage}% accuracy</p>
-              <div class="button-row">
-                <button class="stitch-btn secondary" data-nav="lesson/${escapeHtml(t.topicKey)}">Review lesson</button>
-                <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(t.topicKey)}">Practise</button>
-              </div>
-            </article>`;
-        }).join('')}
-      </div>`
-      : emptyState('No practice history yet', 'Complete a quiz and the weakest topics will appear here automatically.', 'Open quiz center', 'quiz')}
-  `;
+    </div>`;
+
+  if (!next) {
+    host.innerHTML = `${heading}
+      <section class="quiet-empty">
+        <h3 class="next-title">Nothing to practise yet</h3>
+        <p class="next-meta">Take a quiz first; practice comes from questions you get wrong.</p>
+        <div class="next-actions">
+          <button class="stitch-btn" data-nav="quiz">Take a quiz</button>
+          <a class="text-btn" href="#predict">Try output prediction</a>
+        </div>
+      </section>`;
+    return;
+  }
+
+  host.innerHTML = `${heading}
+    <section class="practice-next">
+      <h3 class="eyebrow">Practice next</h3>
+      <p class="next-title">${escapeHtml(titleOf(next.topicKey))}</p>
+      <p class="next-meta">${pluralize(next.wrong, 'wrong answer')} and ${pluralize(next.correct, 'correct answer')} recorded.</p>
+      <div class="next-actions">
+        <button class="stitch-btn" data-action="start-quiz" data-topic="${escapeHtml(next.topicKey)}"><span aria-hidden="true" class="material-symbols-outlined">play_arrow</span>Start practice quiz</button>
+        <a class="text-btn" href="#lesson/${escapeHtml(next.topicKey)}">Review the lesson</a>
+      </div>
+    </section>
+    <section class="progress-sec">
+      <h3 class="section-title">Topics to practise</h3>
+      <p class="section-note">Most wrong answers first.</p>
+      <ul class="plain-list">
+        ${weak.slice(0, 10).map((t) => `
+          <li class="plain-row">
+            <div class="plain-main"><a class="plain-link" href="#lesson/${escapeHtml(t.topicKey)}">${escapeHtml(titleOf(t.topicKey))}</a>
+              <span class="plain-meta">${t.wrong} wrong, ${t.correct} correct</span></div>
+            <button class="text-btn" data-action="start-quiz" data-topic="${escapeHtml(t.topicKey)}">Practise<span class="sr-only">: ${escapeHtml(titleOf(t.topicKey))}</span></button>
+          </li>`).join('')}
+      </ul>
+    </section>`;
 }
 
 function renderProgressDashboard() {
@@ -349,7 +352,7 @@ function renderProgressDashboard() {
 
   const all = topicsOf('all');
   const completed = all.filter((t) => AppState.completedTopics.includes(t.id));
-  const quizzes = Object.entries(AppState.quizScores);
+  const quizzes = Object.entries(AppState.quizScores).filter(([topic]) => hasTopic(topic));
   const average = quizzes.length
     ? Math.round(quizzes.reduce((sum, entry) => sum + (entry[1].percentage || 0), 0) / quizzes.length)
     : 0;
@@ -357,52 +360,74 @@ function renderProgressDashboard() {
   const bySubject = SUBJECTS.slice(1).map((s) => {
     const list = topicsOf(s.id);
     const done = list.filter((t) => AppState.completedTopics.includes(t.id)).length;
-    return { label: s.label, done, total: list.length, percentage: list.length ? Math.round((done / list.length) * 100) : 0 };
-  });
+    return { id: s.id, label: s.label, done, total: list.length, percentage: list.length ? Math.round((done / list.length) * 100) : 0 };
+  }).filter((s) => s.total > 0);
+
+  // Only real, non-zero numbers get a place in the strip.
+  const stats = [
+    completed.length > 0 && [completed.length, 'Topics completed'],
+    quizzes.length > 0 && [`${average}%`, 'Average quiz score'],
+    AppState.xp > 0 && [AppState.xp, 'XP'],
+    quizzes.length > 0 && [quizzes.length, 'Quizzes taken']
+  ].filter(Boolean);
+  const hasProgress = completed.length > 0 || quizzes.length > 0 || AppState.xp > 0;
+  const next = nextUpTopic();
+
+  const strip = stats.length
+    ? `<dl class="stat-strip">${stats.map(([value, label]) => `<div class="stat"><dt class="stat-label">${label}</dt><dd class="stat-value">${value}</dd></div>`).join('')}</dl>`
+    : '';
+  const empty = hasProgress ? '' : `
+    <section class="quiet-empty">
+      <h3 class="next-title">No progress yet</h3>
+      <p class="next-meta">Finish a lesson or pass a quiz and your numbers will show up here.</p>
+      <div class="next-actions">
+        ${next ? `<a class="stitch-btn" href="#lesson/${escapeHtml(next.id)}">Start lesson</a>` : ''}
+        <a class="text-btn" href="#quiz">Open quiz center</a>
+      </div>
+    </section>`;
+  const scores = quizzes.length ? `
+    <section class="progress-sec">
+      <h3 class="section-title">Quiz scores</h3>
+      <p class="section-note">Your best score for each quiz you have taken.</p>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th scope="col">Topic</th><th scope="col">Best score</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
+          <tbody>
+            ${quizzes.slice().reverse().map(([topic, score]) => `<tr>
+              <td><a href="#lesson/${escapeHtml(topic)}">${escapeHtml(TOPICS_DB[topic].title)}</a></td>
+              <td class="num">${escapeHtml(score.score)}/${escapeHtml(score.total)} &middot; ${escapeHtml(score.percentage)}%</td>
+              <td class="act"><button class="text-btn" data-action="start-quiz" data-topic="${escapeHtml(topic)}">Retake<span class="sr-only">: ${escapeHtml(TOPICS_DB[topic].title)}</span></button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </section>` : '';
 
   host.innerHTML = `
     <div class="screen-heading">
-      <h2 class="screen-title">Your progress</h2>
-      <p class="screen-subtitle">Stored locally in this browser. Nothing is sent to a server.</p>
+      <div>
+        <h2 class="screen-title">Your progress</h2>
+        <p class="screen-subtitle">Stored locally in this browser. Nothing is sent to a server.</p>
+      </div>
     </div>
-    <div class="stat-grid" style="margin-bottom:24px">
-      <div class="stat"><div class="stat-value">${completed.length}</div><div class="stat-label">Topics completed</div></div>
-      <div class="stat"><div class="stat-value">${average}%</div><div class="stat-label">Average quiz score</div></div>
-      <div class="stat"><div class="stat-value">${AppState.xp}</div><div class="stat-label">XP</div></div>
-      <div class="stat"><div class="stat-value">${quizzes.length}</div><div class="stat-label">Quizzes taken</div></div>
-    </div>
-    <h3 class="card-title">Progress by subject</h3>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      ${bySubject.map((s) => `
-        <div class="stitch-card pad-lg">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <strong style="font-size:14px">${escapeHtml(s.label)}</strong>
-            <span class="muted">${s.done}/${s.total}</span>
-          </div>
-          <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${s.percentage}%"></div></div>
-        </div>`).join('')}
-    </div>
-    <h3 class="card-title" style="margin-top:32px">Recent quiz scores</h3>
-    ${quizzes.length ? `
-      <div class="viz-panel" style="overflow-x:auto">
-        <table class="viz-table">
-          <thead><tr><th>Topic</th><th>Score</th><th>Percent</th><th></th></tr></thead>
-          <tbody>
-            ${quizzes.map((entry) => {
-              const topic = entry[0]; const score = entry[1];
-              return `<tr>
-                <td>${escapeHtml((TOPICS_DB[topic] && TOPICS_DB[topic].title) || topic)}</td>
-                <td>${score.score}/${score.total}</td>
-                <td>${score.percentage}%</td>
-                <td><button class="stitch-btn secondary" data-action="start-quiz" data-topic="${escapeHtml(topic)}">Retry</button></td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>`
-      : emptyState('No quiz results yet', 'Take a quiz and your scores will be listed here.', 'Open quiz center', 'quiz')}
-    <div class="button-row" style="margin-top:32px">
-      <button class="stitch-btn danger" data-action="reset-progress">Reset all progress</button>
-    </div>
+    ${strip}
+    ${empty}
+    <section class="progress-sec">
+      <h3 class="section-title">Progress by subject</h3>
+      <ul class="subject-list">
+        ${bySubject.map((s) => `
+          <li class="subject-row">
+            <a class="subject-name" href="#topics/${escapeHtml(s.id)}">${escapeHtml(s.label)}</a>
+            <span class="subject-count">${s.done}/${s.total} topics</span>
+            <div class="progress-bar" aria-hidden="true"><div class="progress-fill" style="width:${s.percentage}%"></div></div>
+          </li>`).join('')}
+      </ul>
+    </section>
+    ${scores}
+    <section class="danger-zone">
+      <h3 class="section-title">Reset</h3>
+      <p class="section-note">Clears XP, completed topics, quiz scores and practice history in this browser.</p>
+      <button class="text-btn danger" data-action="reset-progress">Reset all progress</button>
+    </section>
   `;
 }

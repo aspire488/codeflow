@@ -17,6 +17,7 @@ const VizState = {
   index: 0,
   playing: false,
   timer: null,
+  paint: null,
   keyboardBound: false
 };
 
@@ -128,7 +129,13 @@ function traceLoop(source) {
     output
   });
 
-  return { variable, rows, output, iterations: guard };
+  // 1-based source lines, so the visualizer can place the program counter honestly.
+  const lines = text.split('\n');
+  const headerLine = text.slice(0, loopMatch.index).split('\n').length;
+  const printfOffset = lines.slice(headerLine - 1).findIndex((line) => /printf\s*\(/.test(line));
+  const bodyLine = printfOffset < 0 ? null : headerLine + printfOffset;
+
+  return { variable, rows, output, iterations: guard, headerLine, bodyLine };
 }
 
 // Records every call and return of a recursive factorial.
@@ -140,6 +147,7 @@ function traceRecursion(n, functionName = 'fact') {
     calls.push(`${functionName}(${value})`);
     steps.push({
       depth,
+      value,
       call: `${functionName}(${value})`,
       description: value <= 1
         ? `n = ${value}, base case returns 1`
@@ -157,6 +165,7 @@ function traceRecursion(n, functionName = 'fact') {
     calls.pop();
     steps.push({
       depth,
+      value,
       call: `${functionName}(${value})`,
       description: value <= 1
         ? 'base case returns 1'
@@ -247,6 +256,7 @@ function pointerDemo() {
 }
 
 // ---------- step construction ----------
+// Every step: { line (1-based or null), description, variables, console, ... }.
 
 function buildAuthoredSteps(topicKey) {
   const topic = TOPICS_DB[topicKey];
@@ -263,32 +273,54 @@ function buildAuthoredSteps(topicKey) {
   }));
 }
 
-function buildStepsForTopic(topicKey) {
-  const authored = buildAuthoredSteps(topicKey);
-  if (authored.length) return authored;
-
-  const topic = TOPICS_DB[topicKey];
-  if (!topic || !topic.code) return [];
-
-  const trace = traceLoop(topic.code);
-  if (!trace) {
-    return [{
-      line: null,
-      description: 'This topic has no authored execution steps. Open Loop trace for a computed example, or pick a loop topic.',
-      variables: {},
-      console: ''
-    }];
-  }
-
-  return trace.rows.map((row) => ({
-    line: null,
-    description: row.condition,
+// A computed loop trace as steps. Iterations sit on the printf line; the final
+// failed condition sits on the loop header.
+function loopTraceSteps(trace) {
+  return trace.rows.map((row, index) => ({
+    line: index === trace.rows.length - 1 ? trace.headerLine : (trace.bodyLine || trace.headerLine),
+    description: `Iteration ${row.iteration}: ${row.condition}`,
     variables: { [trace.variable]: row[trace.variable] },
-    console: row.output
+    console: row.output,
+    row: index
   }));
 }
 
+// { kind: 'authored' | 'computed' | 'unsupported', steps }
+function buildStepsForTopic(topicKey) {
+  const authored = buildAuthoredSteps(topicKey);
+  if (authored.length) return { kind: 'authored', steps: authored };
+
+  const topic = TOPICS_DB[topicKey];
+  const trace = topic && topic.code ? traceLoop(topic.code) : null;
+  if (trace) return { kind: 'computed', steps: loopTraceSteps(trace), trace };
+  return { kind: 'unsupported', steps: [] };
+}
+
+const RECURSION_DEMO_N = 4;
+const RECURSION_CODE = 'int fact(int n) {\n    if (n <= 1) return 1;\n    return n * fact(n - 1);\n}\n\nprintf("%d", fact(' + RECURSION_DEMO_N + '));';
+
+// Each traced event is placed on the line of RECURSION_CODE where it happens.
+function recursionSteps() {
+  return traceRecursion(RECURSION_DEMO_N).steps.map((step) => ({
+    ...step,
+    line: step.value <= 1 ? 2 : 3,
+    console: ''
+  }));
+}
+
+function pointerSteps() {
+  return pointerDemo().steps.map((step, index) => ({ ...step, line: index + 1, console: step.output }));
+}
+
 // ---------- rendering ----------
+
+const VIZ_STEPPED = ['code', 'pointers', 'recursion', 'loops'];
+
+function vizEl(id) { return document.getElementById(id); }
+
+function vizFileName(language) {
+  return `${VizState.topicKey}.${language === 'javascript' ? 'js' : language}`;
+}
 
 function renderVisualizer(param) {
   let mode = 'code';
@@ -307,6 +339,8 @@ function renderVisualizer(param) {
   VizState.mode = mode;
   VizState.topicKey = vizHasTopic(topicKey) ? topicKey : defaultVizTopic();
   VizState.index = 0;
+  VizState.steps = [];
+  VizState.paint = null;
   stopAutoPlay();
 
   document.querySelectorAll('.viz-tab').forEach((tab) => {
@@ -317,22 +351,21 @@ function renderVisualizer(param) {
   });
 
   if (!VizState.topicKey) {
-    document.getElementById('visualize-content').innerHTML =
+    vizEl('viz-example').innerHTML = '';
+    vizEl('visualize-content').innerHTML =
       emptyState('No code to visualize', 'The topic database did not load.', 'Back to dashboard', 'dashboard');
-    document.getElementById('viz-controls').innerHTML = '';
     return;
   }
 
   bindVizTabs();
   bindVizKeyboard();
+  renderVizExample();
 
   if (mode === 'code') renderCodeMode();
   else if (mode === 'flow') renderFlowMode();
   else if (mode === 'pointers') renderPointerMode();
   else if (mode === 'recursion') renderRecursionMode();
   else renderLoopMode();
-
-  bindVizTopicSelect();
 }
 
 function bindVizTabs() {
@@ -353,19 +386,13 @@ function bindVizKeyboard() {
     if (getCurrentRoute() !== 'visualize') return;
     const tag = (event.target && event.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
     if (event.target && event.target.isContentEditable) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const steppers = {
-      code: [stepVisualization, resetVizSteps],
-      pointers: [pointerStep, () => { VizState.index = 0; paintPointerStep(); }],
-      recursion: [recursionStep, () => { VizState.index = 0; paintRecursionStep(); }]
-    }[VizState.mode];
-    if (!steppers) return;
+    if (!VIZ_STEPPED.includes(VizState.mode) || !VizState.steps.length) return;
 
-    if (event.key === 'ArrowRight') { event.preventDefault(); steppers[0](1); }
-    else if (event.key === 'ArrowLeft') { event.preventDefault(); steppers[0](-1); }
-    else if (event.key === 'r' || event.key === 'R') { event.preventDefault(); steppers[1](); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); stepVisualization(1); }
+    else if (event.key === 'ArrowLeft') { event.preventDefault(); stepVisualization(-1); }
+    else if (event.key === 'r' || event.key === 'R') { event.preventDefault(); resetVizSteps(); }
   });
   // Stop autoplay when the user navigates away from the visualizer.
   window.addEventListener('hashchange', () => {
@@ -385,144 +412,180 @@ function vizTopicOptionsMarkup() {
   }).join('');
 }
 
-function topicSelectorMarkup() {
-  const total = Object.keys(TOPICS_DB || {}).length;
-  return `<div class="viz-topic" style="margin-bottom:16px">
-    <label class="field-label" for="viz-topic-select" style="margin:0">Example</label>
-    <select class="select" id="viz-topic-select" aria-label="Choose a code example">${vizTopicOptionsMarkup()}</select>
-    <span class="faint">${total} lessons</span>
-  </div>`;
-}
-
-function bindVizTopicSelect() {
-  const select = document.getElementById('viz-topic-select');
-  if (!select) return;
-  select.addEventListener('change', () => {
-    navigateTo('visualize/' + VizState.mode + '/' + select.value);
+// The example select lives in the single toolbar. Pointer and recursion use fixed built-in examples.
+function renderVizExample() {
+  const host = vizEl('viz-example');
+  if (!host) return;
+  if (VizState.mode === 'pointers' || VizState.mode === 'recursion') {
+    host.innerHTML = '<span class="viz-fixed">Built-in example</span>';
+    return;
+  }
+  host.innerHTML = `
+    <label class="field-label" for="viz-topic-select">Example</label>
+    <select class="select" id="viz-topic-select">${vizTopicOptionsMarkup()}</select>`;
+  vizEl('viz-topic-select').addEventListener('change', (event) => {
+    navigateTo('visualize/' + VizState.mode + '/' + event.target.value);
   });
 }
 
-function renderCodeMode() {
-  const topic = TOPICS_DB[VizState.topicKey];
-  VizState.steps = buildStepsForTopic(VizState.topicKey);
-  VizState.index = 0;
+// ---- shared pieces ----
 
-  document.getElementById('visualize-content').innerHTML = `
-    ${topicSelectorMarkup()}
-    <div class="viz-code" id="viz-code"></div>
-    <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="viz-panel">
-        <h3>Current step</h3>
-        <p id="viz-description" class="muted" style="margin:0"></p>
-      </div>
-      <div class="viz-panel">
-        <h3>Variables</h3>
-        <table class="viz-table"><tbody id="viz-variables"></tbody></table>
-      </div>
-      <div class="viz-panel">
-        <h3>${topic.visualizationSteps ? 'Output (authored walkthrough)' : 'Output'}</h3>
-        <div class="console" id="viz-console"></div>
-      </div>
-    </div>
-  `;
+const VIZ_SOURCE = {
+  authored: { icon: 'menu_book', label: 'Authored walkthrough', note: 'Narration written by hand for this lesson. The code was not run.' },
+  computed: { icon: 'calculate', label: 'Computed trace', note: 'Evaluated step by step by a small interpreter for this simple shape of code.' },
+  structural: { icon: 'account_tree', label: 'Structural view', note: 'Statements parsed from the source. Nothing was run.' }
+};
 
-  renderVizControls({ stepped: true, total: VizState.steps.length });
-  paintCodeStep();
+function vizSourceMarkup(kind, extra) {
+  const source = VIZ_SOURCE[kind];
+  return `<p class="viz-source"><span class="viz-source-label"><span aria-hidden="true" class="material-symbols-outlined">${source.icon}</span>${source.label}</span><span class="viz-source-note">${escapeHtml(extra || source.note)}</span></p>`;
 }
 
-function renderVizControls(options) {
-  const controls = document.getElementById('viz-controls');
-  const total = options.total || 1;
-  const stepControls = options.stepped
-    ? `<button class="stitch-btn secondary" id="viz-prev"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">skip_previous</span> Back</button>
-       <span class="viz-step-label" id="viz-step-label">Step 1 / ${total}</span>
-       <button class="stitch-btn" id="viz-next"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">skip_next</span> Next</button>`
-    : `<span class="viz-step-label">${escapeHtml(options.note || '')}</span>`;
+function vizCodeMarkup(code, language, name) {
+  const lines = String(code || '').split('\n');
+  return `
+    <div class="viz-codewrap">
+      <div class="viz-code-bar"><span>${escapeHtml(name)}</span><span id="viz-line-status" class="viz-line-status"></span></div>
+      <div class="viz-code" id="viz-code" tabindex="0" role="region" aria-label="Code with line numbers">
+        ${lines.map((line, index) => `<div class="viz-line" data-line="${index + 1}"><span class="pc" aria-hidden="true"></span><span class="ln" aria-hidden="true">${index + 1}</span><span class="code">${highlightCode(line, language) || ' '}</span></div>`).join('')}
+      </div>
+    </div>`;
+}
 
+// The program counter: highlight one line and keep it visible inside the code panel.
+function markVizLine(line) {
+  const host = vizEl('viz-code');
+  if (!host) return;
+  let target = null;
+  host.querySelectorAll('.viz-line').forEach((element) => {
+    const on = Number(element.getAttribute('data-line')) === line;
+    element.classList.toggle('active', on);
+    if (on) { element.setAttribute('aria-current', 'step'); target = element; }
+    else element.removeAttribute('aria-current');
+  });
+  const status = vizEl('viz-line-status');
+  if (status) status.textContent = line ? `Line ${line}` : (VizState.steps.length ? 'No line data' : '');
+  if (target) {
+    const top = target.offsetTop;
+    if (top < host.scrollTop || top + target.offsetHeight > host.scrollTop + host.clientHeight) {
+      host.scrollTop = Math.max(0, top - host.clientHeight / 2);
+    }
+  }
+}
+
+function vizTerminalMarkup(id, title) {
+  return `<div class="terminal"><div class="terminal-bar"><span aria-hidden="true" class="material-symbols-outlined">terminal</span>${escapeHtml(title)}</div><pre class="console" id="${id}"></pre></div>`;
+}
+
+function vizWorkspace(left, right, options) {
+  const hasTransport = Boolean(options && options.transport);
+  vizEl('visualize-content').innerHTML = `
+    <div class="viz-workspace ${hasTransport ? 'has-transport' : ''}">
+      <div class="viz-left">
+        ${left}
+        <div id="viz-controls" class="viz-transport" ${hasTransport ? '' : 'hidden'}></div>
+      </div>
+      <div class="viz-right">${right}</div>
+    </div>`;
+}
+
+function unsupportedMarkup(title, message, actions) {
+  return `<div class="viz-unsupported">
+    <h3><span aria-hidden="true" class="material-symbols-outlined">info</span>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(message)}</p>
+    <div class="button-row">${actions}</div>
+  </div>`;
+}
+
+// ---- transport: Reset, Back, Step n of m with progress, Next, Play ----
+
+function renderVizTransport() {
+  const controls = vizEl('viz-controls');
+  if (!controls) return;
+  const icon = (name) => `<span aria-hidden="true" class="material-symbols-outlined">${name}</span>`;
   controls.innerHTML = `
-    <button class="stitch-btn secondary" id="viz-reset"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">restart_alt</span> Reset</button>
-    ${stepControls}
-    ${options.stepped ? '<button class="stitch-btn secondary" id="viz-play"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">play_arrow</span> Play</button>' : ''}
-  `;
-
-  if (!options.stepped) return;
-
-  document.getElementById('viz-prev').addEventListener('click', () => stepVisualization(-1));
-  document.getElementById('viz-next').addEventListener('click', () => stepVisualization(1));
-  document.getElementById('viz-play').addEventListener('click', toggleAutoPlay);
-  document.getElementById('viz-reset')?.addEventListener('click', resetVizSteps);
+    <div class="transport-progress">
+      <span class="viz-step-label" id="viz-step-label"></span>
+      <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="viz-progress"></div></div>
+    </div>
+    <div class="transport-buttons">
+      <button class="stitch-btn secondary transport-reset" id="viz-reset" aria-label="Reset to the first step">${icon('restart_alt')}<span class="transport-text">Reset</span></button>
+      <button class="stitch-btn secondary" id="viz-prev">${icon('skip_previous')}Back</button>
+      <button class="stitch-btn" id="viz-next">Next${icon('skip_next')}</button>
+      <button class="stitch-btn secondary" id="viz-play">${icon('play_arrow')}<span id="viz-play-text">Play</span></button>
+    </div>`;
+  vizEl('viz-prev').addEventListener('click', () => stepVisualization(-1));
+  vizEl('viz-next').addEventListener('click', () => stepVisualization(1));
+  vizEl('viz-play').addEventListener('click', toggleAutoPlay);
+  vizEl('viz-reset').addEventListener('click', resetVizSteps);
 }
 
-function paintCodeStep() {
-  const topic = TOPICS_DB[VizState.topicKey];
-  const step = VizState.steps[VizState.index];
-  if (!topic || !step) return;
-
-  const codeHost = document.getElementById('viz-code');
-  if (codeHost) {
-    const lines = String(topic.code || '').split('\n');
-    codeHost.innerHTML = lines.map((line, index) => `
-      <div class="viz-line ${step.line && step.line === index + 1 ? 'active' : ''}">
-        <span class="ln">${index + 1}</span>
-        <span class="code">${highlightCode(line, languageForSubject(topic.subject))}</span>
-      </div>`).join('');
-  }
-
-  const description = document.getElementById('viz-description');
-  if (description) description.textContent = step.description;
-
-  const variables = document.getElementById('viz-variables');
-  if (variables) {
-    const entries = Object.entries(step.variables || {});
-    variables.innerHTML = entries.length
-      ? entries.map(([name, value]) => `<tr><td class="var-name">${escapeHtml(name)}</td><td>${escapeHtml(String(value))}</td></tr>`).join('')
-      : '<tr><td class="muted">No variables in scope at this step</td></tr>';
-  }
-
-  const consoleHost = document.getElementById('viz-console');
-  if (consoleHost) consoleHost.textContent = step.console || '(no output yet)';
-
-  const label = document.getElementById('viz-step-label');
-  if (label) label.textContent = `Step ${VizState.index + 1} / ${VizState.steps.length}`;
-
-  const next = document.getElementById('viz-next');
-  if (next) next.disabled = VizState.index >= VizState.steps.length - 1;
-  const previous = document.getElementById('viz-prev');
+function paintVizTransport() {
+  const total = VizState.steps.length;
+  const label = vizEl('viz-step-label');
+  if (label) label.textContent = `Step ${VizState.index + 1} of ${total}`;
+  const bar = vizEl('viz-progress');
+  if (bar) bar.style.width = `${total > 1 ? Math.round((VizState.index / (total - 1)) * 100) : 100}%`;
+  const next = vizEl('viz-next');
+  if (next) next.disabled = VizState.index >= total - 1;
+  const previous = vizEl('viz-prev');
   if (previous) previous.disabled = VizState.index <= 0;
 }
 
+// Install steps and a per-mode painter, then paint step 1.
+function startVizPlayer(steps, paint) {
+  VizState.steps = steps;
+  VizState.index = 0;
+  VizState.paint = paint;
+  renderVizTransport();
+  paintViz();
+}
+
+function paintViz() {
+  const step = VizState.steps[VizState.index];
+  if (!step) return;
+  markVizLine(step.line);
+  if (VizState.paint) VizState.paint(step);
+  paintVizTransport();
+}
+
 function stepVisualization(delta) {
-  if (VizState.mode !== 'code' || !VizState.steps.length) return;
+  if (!VIZ_STEPPED.includes(VizState.mode) || !VizState.steps.length) return;
   const next = VizState.index + delta;
   if (next < 0 || next >= VizState.steps.length) return;
   VizState.index = next;
-  paintCodeStep();
+  paintViz();
 }
 
 function resetVizSteps() {
-  if (VizState.mode !== 'code') return;
+  if (!VIZ_STEPPED.includes(VizState.mode) || !VizState.steps.length) return;
   stopAutoPlay();
   VizState.index = 0;
-  paintCodeStep();
+  paintViz();
+}
+
+function setPlayButton(playing) {
+  const button = vizEl('viz-play');
+  if (!button) return;
+  button.querySelector('.material-symbols-outlined').textContent = playing ? 'pause' : 'play_arrow';
+  vizEl('viz-play-text').textContent = playing ? 'Pause' : 'Play';
 }
 
 function toggleAutoPlay() {
-  if (VizState.playing) {
-    stopAutoPlay();
-    return;
-  }
+  if (VizState.playing) { stopAutoPlay(); return; }
   if (!VizState.steps.length) return;
+  if (VizState.index >= VizState.steps.length - 1) VizState.index = 0;
   VizState.playing = true;
-  const button = document.getElementById('viz-play');
-  if (button) button.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">pause</span> Pause';
-
+  setPlayButton(true);
+  paintViz();
   VizState.timer = setInterval(() => {
-    if (VizState.index >= VizState.steps.length - 1) {
+    if (getCurrentRoute() !== 'visualize' || VizState.index >= VizState.steps.length - 1) {
       stopAutoPlay();
       return;
     }
     VizState.index += 1;
-    paintCodeStep();
+    paintViz();
+    if (VizState.index >= VizState.steps.length - 1) stopAutoPlay();
   }, 1200);
 }
 
@@ -532,288 +595,175 @@ function stopAutoPlay() {
     clearInterval(VizState.timer);
     VizState.timer = null;
   }
-  const button = document.getElementById('viz-play');
-  if (button) button.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined" style="font-size:18px">play_arrow</span> Play';
+  setPlayButton(false);
+}
+
+// ---- right-column painters ----
+
+function paintVariables(step) {
+  const variables = vizEl('viz-variables');
+  if (!variables) return;
+  const entries = Object.entries(step.variables || {});
+  variables.innerHTML = entries.length
+    ? entries.map(([name, value]) => `<tr><th scope="row" class="var-name">${escapeHtml(name)}</th><td>${escapeHtml(String(value))}</td></tr>`).join('')
+    : '<tr><td class="muted">No variables in scope at this step</td></tr>';
+}
+
+function paintStepText(id, step) {
+  const host = vizEl(id);
+  if (host) host.textContent = step.description;
+}
+
+function paintConsole(id, text, empty) {
+  const host = vizEl(id);
+  if (host) host.textContent = text || empty || '(no output yet)';
+}
+
+// ---- modes ----
+
+function renderCodeMode() {
+  const topic = TOPICS_DB[VizState.topicKey];
+  const language = languageForSubject(topic.subject);
+  const built = buildStepsForTopic(VizState.topicKey);
+  const left = vizCodeMarkup(topic.code, language, vizFileName(language));
+
+  if (built.kind === 'unsupported') {
+    vizWorkspace(left, unsupportedMarkup(
+      'No step-by-step walkthrough for this lesson',
+      'This lesson has no authored walkthrough, and its code is not a simple loop the trace engine can compute. The code is shown for reference.',
+      `<button class="stitch-btn" data-nav="visualize/flow/${escapeHtml(VizState.topicKey)}">See the flow diagram</button>
+       <button class="text-btn" data-nav="visualize/code/loops">Try the loops walkthrough</button>`
+    ));
+    return;
+  }
+
+  const hasLines = built.steps.some((step) => step.line);
+  const source = VIZ_SOURCE[built.kind].note + (hasLines ? '' : ' It has no line data, so no code line is highlighted.');
+  vizWorkspace(left, `
+    ${vizSourceMarkup(built.kind, source)}
+    <section class="viz-section"><h3>Current step</h3><p id="viz-description" class="viz-step-text"></p></section>
+    <section class="viz-section"><h3>Variables</h3><table class="viz-table"><tbody id="viz-variables"></tbody></table></section>
+    <section class="viz-section"><h3>${built.kind === 'authored' ? 'Output shown by the walkthrough' : 'Output'}</h3>${vizTerminalMarkup('viz-console', 'Output')}</section>
+  `, { transport: true });
+
+  startVizPlayer(built.steps, (step) => {
+    paintStepText('viz-description', step);
+    paintVariables(step);
+    paintConsole('viz-console', step.console);
+  });
 }
 
 function renderFlowMode() {
   const topic = TOPICS_DB[VizState.topicKey];
+  const language = languageForSubject(topic.subject);
   const nodes = buildFlowchart(topic.code || '');
-  const content = document.getElementById('visualize-content');
 
-  content.innerHTML = `
-    ${topicSelectorMarkup()}
-    <div>
-      <div class="viz-panel">
-        <h3>Flow control graph</h3>
-        <div class="flow-chart">
-          ${nodes.length ? nodes.map((node, index) => `
-            <div class="flow-node ${node.type}">${escapeHtml(node.text)}</div>
-            ${index < nodes.length - 1 ? '<div class="flow-arrow">&darr;</div>' : ''}
-          `).join('') : '<p class="muted">No control-flow statements were recognised in this snippet.</p>'}
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="viz-panel">
-        <h3>How to read this</h3>
-        <p class="muted">Nodes are produced by parsing the statements in this lesson's code. Rounded nodes are conditions, green nodes are entry and exit points, and square nodes are executed statements. This is a structural view in source order: decision points are marked, but branches and loop-backs are not drawn and the arrows are not the execution path. It is not a runtime trace.</p>
-      </div>
-      <div class="viz-panel" style="margin-top:16px">
-        <h3>Source</h3>
-        <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode(topic.code || '', languageForSubject(topic.subject))}</pre>
-      </div>
-    </div>
-  `;
-
-  renderVizControls({ stepped: false, note: `${nodes.length} nodes parsed` });
+  vizWorkspace(vizCodeMarkup(topic.code, language, vizFileName(language)), `
+    ${vizSourceMarkup('structural')}
+    <section class="viz-section">
+      <h3>Flow diagram</h3>
+      ${nodes.length ? `<ol class="flow-chart" aria-label="Statements in source order">${nodes.map((node) => `<li class="flow-node ${node.type}">${escapeHtml(node.text)}</li>`).join('')}</ol>`
+        : '<p class="muted">No control-flow statements were recognised in this snippet.</p>'}
+      <p class="viz-note">Source order, top to bottom. Decisions are marked, but branches and loop-backs are not drawn, so the arrows are not the execution path. Rounded nodes are conditions; green nodes are entry and exit points.</p>
+    </section>
+  `);
 }
 
 function renderPointerMode() {
   const demo = pointerDemo();
-  const content = document.getElementById('visualize-content');
-  VizState.steps = demo.steps;
-  VizState.index = 0;
+  vizWorkspace(vizCodeMarkup(demo.code, 'c', 'pointer-demo.c'), `
+    ${vizSourceMarkup('authored', 'A scripted walkthrough of this four-line snippet. Addresses are illustrative: &x stands for "the address of x", not a real memory address.')}
+    <section class="viz-section"><h3>Memory</h3><div id="pointer-memory" class="mem-grid"></div></section>
+    <section class="viz-section"><h3>Current step</h3><p id="pointer-description" class="viz-step-text"></p></section>
+    <section class="viz-section"><h3>Output</h3>${vizTerminalMarkup('pointer-output', 'Output')}</section>
+  `, { transport: true });
 
-  content.innerHTML = `
-    <div class="viz-panel">
-      <h3>Pointer program</h3>
-      <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode(demo.code, 'c')}</pre>
-      <p class="muted" style="margin-top:10px">Authored walkthrough of this snippet: taking an address, then writing through the pointer. No real memory addresses are shown; &amp;x stands for "the address of x".</p>
-    </div>
-    <div>
-      <div class="viz-panel">
-        <h3>Memory and references</h3>
-        <div id="pointer-memory"></div>
-      </div>
-      <div class="viz-panel" style="margin-top:16px">
-        <h3>Step</h3>
-        <p id="pointer-description" class="muted" style="margin:0"></p>
-        <div class="console" id="pointer-output" style="margin-top:10px"></div>
-      </div>
-    </div>
-  `;
-
-  renderVizControls({ stepped: true, total: demo.steps.length });
-  // Reuse the shared stepping machinery for this mode.
-  VizState.mode = 'pointers';
-  document.getElementById('viz-prev').addEventListener('click', () => pointerStep(-1));
-  document.getElementById('viz-next').addEventListener('click', () => pointerStep(1));
-  document.getElementById('viz-play').addEventListener('click', togglePointerPlay);
-  document.getElementById('viz-reset').addEventListener('click', () => {
-    VizState.index = 0;
-    paintPointerStep();
-  });
-
-  paintPointerStep();
-}
-
-function paintPointerStep() {
-  const demo = pointerDemo();
-  const step = demo.steps[VizState.index];
-  if (!step) return;
-
-  const memory = document.getElementById('pointer-memory');
-  if (memory) {
-    memory.innerHTML = demo.variables.map((variable) => {
-      const value = step.variables[variable.name] !== undefined ? step.variables[variable.name] : variable.value;
-      const isPointer = step.pointers[variable.name];
-      return `<div class="pointer-row">
-        <div class="mem-box ${isPointer ? 'pointer' : 'active'}">
-          <span class="mem-name">${escapeHtml(variable.name)}</span>
-          <span class="mem-value">${escapeHtml(variable.type)}</span>
-        </div>
-        <div class="mem-box active">
-          <span class="mem-name">${escapeHtml(String(value))}</span>
-          <span class="mem-value">${isPointer ? 'points to ' + escapeHtml(step.pointers[variable.name]) : 'value'}</span>
-        </div>
+  startVizPlayer(pointerSteps(), (step) => {
+    vizEl('pointer-memory').innerHTML = demo.variables.map((variable) => {
+      const value = step.variables[variable.name];
+      const target = step.pointers[variable.name];
+      return `<div class="mem-row ${value === undefined ? 'is-empty' : ''}">
+        <span class="mem-name">${escapeHtml(variable.name)}</span>
+        <span class="mem-type">${escapeHtml(variable.type)}</span>
+        <span class="mem-value">${value === undefined ? 'not declared yet' : escapeHtml(String(value))}</span>
+        ${target ? `<span class="mem-points"><span aria-hidden="true" class="material-symbols-outlined">arrow_right_alt</span>points to ${escapeHtml(target)}</span>` : ''}
       </div>`;
     }).join('');
-  }
-
-  const description = document.getElementById('pointer-description');
-  if (description) description.textContent = step.description;
-
-  const output = document.getElementById('pointer-output');
-  if (output) output.textContent = step.output || '(no output yet)';
-
-  const label = document.getElementById('viz-step-label');
-  if (label) label.textContent = `Step ${VizState.index + 1} / ${demo.steps.length}`;
-  const previous = document.getElementById('viz-prev');
-  if (previous) previous.disabled = VizState.index <= 0;
-  const next = document.getElementById('viz-next');
-  if (next) next.disabled = VizState.index >= demo.steps.length - 1;
+    paintStepText('pointer-description', step);
+    paintConsole('pointer-output', step.console);
+  });
 }
 
-function pointerStep(delta) {
-  const demo = pointerDemo();
-  const next = VizState.index + delta;
-  if (next < 0 || next >= demo.steps.length) return;
-  VizState.index = next;
-  paintPointerStep();
-}
+// The call stack as a real stack: newest frame on top, the active frame marked.
+function paintRecursionStep(step) {
+  const all = VizState.steps;
+  const returning = step.returnValue !== null;
+  const frames = callStackAt(all, returning ? VizState.index - 1 : VizState.index);
+  vizEl('recursion-stack').innerHTML = frames.length
+    ? frames.slice().reverse().map((frame, position) => {
+      const current = position === 0;
+      const state = current ? (returning ? `returning ${step.returnValue}` : step.description) : `waiting for fact(${frame.value - 1})`;
+      return `<li class="frame ${current ? 'current' : ''}"${current ? ' aria-current="step"' : ''}>
+        <span class="pc" aria-hidden="true"></span>
+        <span class="frame-call">${escapeHtml(frame.call)}</span>
+        <span class="frame-state">${current ? '<span class="sr-only">Current frame: </span>' : ''}${escapeHtml(state)}</span>
+      </li>`;
+    }).join('')
+    : `<li class="frame is-empty">Stack empty: every call has returned.</li>`;
 
-function togglePointerPlay() {
-  if (VizState.timer) {
-    clearInterval(VizState.timer);
-    VizState.timer = null;
-    return;
-  }
-  VizState.timer = setInterval(() => {
-    const demo = pointerDemo();
-    if (VizState.index >= demo.steps.length - 1) {
-      clearInterval(VizState.timer);
-      VizState.timer = null;
-      return;
-    }
-    VizState.index += 1;
-    paintPointerStep();
-  }, 1200);
+  const returns = all.slice(0, VizState.index + 1).filter((s) => s.returnValue !== null);
+  paintConsole('recursion-output', returns.map((s) => `${s.call} returned ${s.returnValue}`).join('\n'), 'Nothing has returned yet');
+  paintStepText('recursion-description', step);
 }
 
 function renderRecursionMode() {
-  const demoN = 4;
-  const trace = traceRecursion(demoN);
-  const content = document.getElementById('visualize-content');
-  VizState.steps = trace.steps;
-  VizState.index = 0;
-
-  content.innerHTML = `
-    <div class="viz-panel">
-      <h3>Recursive function</h3>
-      <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode('int fact(int n) {\n    if (n <= 1) return 1;\n    return n * fact(n - 1);\n}\n\nprintf("%d", fact(' + demoN + '));', 'c')}</pre>
-      <p class="muted" style="margin-top:10px">Calls are produced by actually evaluating <code>fact(${demoN})</code>, not by playing back a scripted animation.</p>
-    </div>
-    <div>
-      <div class="viz-panel">
-        <h3>Call stack</h3>
-        <div id="recursion-stack"></div>
-      </div>
-      <div class="viz-panel" style="margin-top:16px">
-        <h3>Result</h3>
-        <div class="console" id="recursion-output"></div>
-      </div>
-    </div>
-  `;
-
-  renderVizControls({ stepped: true, total: trace.steps.length });
-  document.getElementById('viz-prev').addEventListener('click', () => recursionStep(-1));
-  document.getElementById('viz-next').addEventListener('click', () => recursionStep(1));
-  document.getElementById('viz-play').addEventListener('click', toggleRecursionPlay);
-  document.getElementById('viz-reset').addEventListener('click', () => { VizState.index = 0; paintRecursionStep(); });
-
-  paintRecursionStep();
-}
-
-function currentRecursionTrace() {
-  return traceRecursion(4);
-}
-
-function paintRecursionStep() {
-  const trace = currentRecursionTrace();
-  const step = trace.steps[VizState.index];
-  if (!step) return;
-
-  const stack = document.getElementById('recursion-stack');
-  if (stack) {
-    const active = callStackAt(trace.steps, VizState.index).slice(-5);
-    stack.innerHTML = active.length
-      ? active.map((entry, index) => `
-        <div class="stack-item ${index === active.length - 1 ? 'active' : ''}">
-          <div class="stack-call">${escapeHtml(entry.call)}</div>
-          <div class="stack-desc">${escapeHtml(entry.description)}</div>
-        </div>`).join('')
-      : '<p class="muted">Stack empty - recursion has fully unwound.</p>';
-  }
-
-  const output = document.getElementById('recursion-output');
-  if (output) {
-    const returns = trace.steps.slice(0, VizState.index + 1).filter((s) => s.returnValue !== null);
-    output.textContent = returns.length
-      ? returns.map((s) => `${s.call} returned ${s.returnValue}`).join('\n')
-      : 'Unwinding has not started yet';
-  }
-
-  const label = document.getElementById('viz-step-label');
-  if (label) label.textContent = `Call ${VizState.index + 1} / ${trace.steps.length}`;
-  const previous = document.getElementById('viz-prev');
-  if (previous) previous.disabled = VizState.index <= 0;
-  const next = document.getElementById('viz-next');
-  if (next) next.disabled = VizState.index >= trace.steps.length - 1;
-}
-
-function recursionStep(delta) {
-  const trace = currentRecursionTrace();
-  const next = VizState.index + delta;
-  if (next < 0 || next >= trace.steps.length) return;
-  VizState.index = next;
-  paintRecursionStep();
-}
-
-function toggleRecursionPlay() {
-  if (VizState.timer) {
-    clearInterval(VizState.timer);
-    VizState.timer = null;
-    return;
-  }
-  VizState.timer = setInterval(() => {
-    const trace = currentRecursionTrace();
-    if (VizState.index >= trace.steps.length - 1) {
-      clearInterval(VizState.timer);
-      VizState.timer = null;
-      return;
-    }
-    VizState.index += 1;
-    paintRecursionStep();
-  }, 1100);
+  vizWorkspace(vizCodeMarkup(RECURSION_CODE, 'c', 'factorial.c'), `
+    ${vizSourceMarkup('computed', `Every call and return comes from really evaluating fact(${RECURSION_DEMO_N}). The highlighted line is where each event happens.`)}
+    <section class="viz-section"><h3>Call stack</h3><ol id="recursion-stack" class="call-stack" aria-label="Call stack, newest frame first"></ol><p class="viz-note">Newest call on top. The marked frame is the one running.</p></section>
+    <section class="viz-section"><h3>Current step</h3><p id="recursion-description" class="viz-step-text"></p></section>
+    <section class="viz-section"><h3>Returns so far</h3>${vizTerminalMarkup('recursion-output', 'Returns')}</section>
+  `, { transport: true });
+  startVizPlayer(recursionSteps(), paintRecursionStep);
 }
 
 function renderLoopMode() {
   const topic = TOPICS_DB[VizState.topicKey];
-  const content = document.getElementById('visualize-content');
+  const language = languageForSubject(topic.subject);
   const trace = traceLoop(topic.code || '');
+  const left = vizCodeMarkup(topic.code, language, vizFileName(language));
 
   if (!trace) {
-    content.innerHTML = `
-      ${topicSelectorMarkup()}
-      <div class="viz-panel">
-        <h3>Loop trace</h3>
-        <p class="muted">This example can't be traced: the evaluator only handles a single <code>for</code> loop whose body is one <code>printf</code> printing the loop variable or numbers, with no nested loops.</p>
-        <p class="muted">Supported shape: <code>for (int i = 0; i &lt; 3; i++) { printf("%d ", i); }</code></p>
-        <button class="stitch-btn" data-nav="visualize/loops/loops">Open a loop example</button>
-      </div>`;
-    renderVizControls({ stepped: false, note: 'No supported loop found' });
+    vizWorkspace(left, unsupportedMarkup(
+      "This example can't be traced",
+      'The trace engine handles one for loop whose body is a single printf of the loop variable or numbers, with no nested loops. For example: for (int i = 0; i < 3; i++) { printf("%d ", i); }',
+      `<button class="stitch-btn" data-nav="visualize/loops/loops">Open a loop example</button>
+       <button class="text-btn" data-nav="visualize/code/${escapeHtml(VizState.topicKey)}">Back to step-by-step</button>`
+    ));
     return;
   }
 
   const headers = Object.keys(trace.rows[0] || {});
+  vizWorkspace(left, `
+    ${vizSourceMarkup('computed', 'Computed by executing the loop with the parsed start, condition and update values. The highlighted line is the statement that ran.')}
+    <section class="viz-section"><h3>Current step</h3><p id="viz-description" class="viz-step-text"></p></section>
+    <section class="viz-section">
+      <h3>Iterations (${trace.iterations})</h3>
+      <div class="table-scroll"><table class="viz-table">
+        <thead><tr>${headers.map((h) => `<th scope="col">${escapeHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${trace.rows.map((row, index) => `<tr data-row="${index}">${headers.map((h) => `<td>${escapeHtml(String(row[h]))}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>
+    </section>
+    <section class="viz-section"><h3>Output so far</h3>${vizTerminalMarkup('viz-console', 'Output')}</section>
+  `, { transport: true });
 
-  content.innerHTML = `
-    ${topicSelectorMarkup()}
-    <div class="viz-panel">
-      <h3>Source</h3>
-      <pre class="viz-code" style="padding:12px;max-height:none">${highlightCode(topic.code, languageForSubject(topic.subject))}</pre>
-    </div>
-    <div>
-      <div class="viz-panel" style="overflow-x:auto">
-        <h3>Iteration trace (${trace.iterations} iterations)</h3>
-        <table class="viz-table">
-          <thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
-          <tbody>
-            ${trace.rows.map((row, index) => `
-              <tr class="${index === VizState.index ? 'active' : ''}">
-                ${headers.map((h) => `<td>${escapeHtml(String(row[h]))}</td>`).join('')}
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div class="viz-panel" style="margin-top:16px">
-        <h3>Final output</h3>
-        <div class="console">${escapeHtml(trace.output || '(no output)')}</div>
-        <p class="muted" style="margin-top:8px">Computed by executing the loop with the parsed start, condition and update values.</p>
-      </div>
-    </div>
-  `;
-
-  renderVizControls({ stepped: false, note: `${trace.iterations} iterations` });
+  startVizPlayer(loopTraceSteps(trace), (step) => {
+    paintStepText('viz-description', step);
+    paintConsole('viz-console', step.console);
+    document.querySelectorAll('.viz-table tbody tr').forEach((row) => {
+      const on = Number(row.getAttribute('data-row')) === step.row;
+      row.classList.toggle('active', on);
+      if (on) row.setAttribute('aria-current', 'step'); else row.removeAttribute('aria-current');
+    });
+  });
 }
+

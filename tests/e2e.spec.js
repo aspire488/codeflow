@@ -119,15 +119,15 @@ test('output prediction reveals the answer and explains it', async ({ page }) =>
 test('visualizer steps forward, backward and resets', async ({ page }) => {
   await page.goto('/#visualize/code/loops');
   const label = page.locator('#viz-step-label');
-  await expect(label).toContainText('Step 1 /');
+  await expect(label).toContainText('Step 1 of');
 
   await page.locator('#viz-next').click();
-  await expect(label).toContainText('Step 2 /');
+  await expect(label).toContainText('Step 2 of');
   await page.locator('#viz-prev').click();
-  await expect(label).toContainText('Step 1 /');
+  await expect(label).toContainText('Step 1 of');
   await page.locator('#viz-next').click();
   await page.locator('#viz-reset').click();
-  await expect(label).toContainText('Step 1 /');
+  await expect(label).toContainText('Step 1 of');
 });
 
 test('flow, pointer, recursion and loop visualizations all render', async ({ page }) => {
@@ -142,7 +142,7 @@ test('flow, pointer, recursion and loop visualizations all render', async ({ pag
   await page.goto('/#visualize/recursion/recursion');
   await expect(page.locator('#recursion-stack')).toContainText('fact');
   await page.locator('#viz-next').click();
-  await expect(page.locator('#viz-step-label')).toContainText('Call 2');
+  await expect(page.locator('#viz-step-label')).toContainText('Step 2 of');
 
   await page.goto('/#visualize/loops/loops');
   await expect(page.locator('.viz-table')).toContainText('iteration');

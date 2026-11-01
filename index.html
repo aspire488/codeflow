@@ -79,11 +79,10 @@
                 <section id="visualize-screen" class="screen">
                     <div class="screen-scroll">
                         <div class="screen-inner">
-                            <div class="screen-heading">
+                            <div class="screen-heading viz-heading">
                                 <div>
-                                    <p class="eyebrow">Studio</p>
                                     <h2 class="screen-title">Execution Visualizer</h2>
-                                    <p class="screen-subtitle">Step through real program state: variables, output, control flow, memory addresses, the call stack and loop iterations.</p>
+                                    <p class="screen-subtitle">Step through authored walkthroughs of each example, plus computed traces for simple loops and factorial recursion.</p>
                                 </div>
                             </div>
                             <div class="viz-toolbar">
@@ -94,9 +93,9 @@
                                     <button class="viz-tab" data-viz-mode="recursion">Recursion</button>
                                     <button class="viz-tab" data-viz-mode="loops">Loop trace</button>
                                 </div>
+                                <div class="viz-topic" id="viz-example"></div>
                             </div>
-                            <div id="visualize-content" class="viz-body"></div>
-                            <div id="viz-controls" class="viz-controls"></div>
+                            <div id="visualize-content"></div>
                         </div>
                     </div>
                 </section>
@@ -108,36 +107,38 @@
                         <div class="screen-inner">
                             <div class="screen-heading">
                                 <div>
-                                    <p class="eyebrow">Studio</p>
                                     <h2 class="screen-title">Logic Analyzer</h2>
-                                    <p class="screen-subtitle">Structural inspection for C, JavaScript, HTML and CSS. This explains how code is structured. It is static analysis, not a compiler, and it does not check for bugs: a result here is not a sign that your code is correct.</p>
+                                    <p class="screen-subtitle">See how C, JavaScript, HTML or CSS code is structured.</p>
                                 </div>
                             </div>
+                            <p class="notice"><span aria-hidden="true" class="material-symbols-outlined">info</span><span><strong>Static analysis, not a compiler.</strong> It explains structure and does not check for bugs, so a result here is not a sign that your code is correct.</span></p>
                             <div class="analyzer-grid">
-                                <div class="stitch-card pad-lg">
-                                    <div class="row-between" style="margin-bottom:12px">
-                                        <h3 class="card-title" style="margin:0">Code input</h3>
-                                        <span class="badge muted-badge">Ctrl / Cmd + Enter to run</span>
+                                <section class="analyzer-pane" aria-labelledby="analyzer-input-title">
+                                    <div class="pane-head">
+                                        <h3 id="analyzer-input-title" class="pane-title">Code</h3>
+                                        <div class="field-inline">
+                                            <label class="field-label" for="analyzer-language">Language</label>
+                                            <select id="analyzer-language" class="select">
+                                                <option value="c">C</option>
+                                                <option value="javascript">JavaScript</option>
+                                                <option value="html">HTML</option>
+                                                <option value="css">CSS</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <textarea id="analyzer-code" class="code-textarea" spellcheck="false" maxlength="10000" aria-describedby="analyzer-limit" placeholder="Paste your code here..."></textarea>
-                                    <p class="faint" id="analyzer-limit" style="margin:6px 0 0;font-size:12px">Up to 10,000 characters.</p>
-                                    <div class="field" style="margin-top:16px">
-                                        <label class="field-label" for="analyzer-language">Language</label>
-                                        <select id="analyzer-language" class="select">
-                                            <option value="c">C Programming</option>
-                                            <option value="javascript">JavaScript</option>
-                                            <option value="html">HTML</option>
-                                            <option value="css">CSS</option>
-                                        </select>
+                                    <div class="pane-foot">
+                                        <p class="faint" id="analyzer-limit"><span id="analyzer-count">0</span> of 10,000 characters</p>
+                                        <div class="button-row">
+                                            <span class="faint analyzer-hint">Ctrl / Cmd + Enter</span>
+                                            <button class="stitch-btn" id="analyze-btn">Analyze code</button>
+                                        </div>
                                     </div>
-                                    <button class="stitch-btn full-width" id="analyze-btn">
-                                        <span aria-hidden="true" class="material-symbols-outlined">troubleshoot</span> Analyze code
-                                    </button>
-                                </div>
-                                <div class="stitch-card pad-lg">
-                                    <h3 class="card-title">Analysis results</h3>
-                                    <div id="analyzer-results"><p class="muted">Results will appear here.</p></div>
-                                </div>
+                                </section>
+                                <section class="analyzer-pane" aria-labelledby="analyzer-output-title">
+                                    <div class="pane-head"><h3 id="analyzer-output-title" class="pane-title">Structure</h3></div>
+                                    <div id="analyzer-results" aria-live="polite"></div>
+                                </section>
                             </div>
                         </div>
                     </div>
@@ -146,21 +147,16 @@
                 <section id="chatbot-screen" class="screen">
                     <div class="chat-shell">
                         <div class="chat-head">
-                            <div class="row-between">
-                                <div class="row">
-                                    <span aria-hidden="true" class="material-symbols-outlined" style="color:#58a6ff">forum</span>
-                                    <div>
-                                        <h2 class="card-title" style="margin:0">Study assistant</h2>
-                                        <p class="faint" style="margin:0">Rule-based knowledge base &middot; C, HTML, CSS, JavaScript</p>
-                                    </div>
-                                </div>
-                                <span class="badge muted-badge">Not an LLM</span>
-                            </div>
+                            <h2 class="screen-title chat-title">Study assistant</h2>
+                            <p class="chat-sub"><strong>Rule-based, not an LLM.</strong> It answers from a fixed C, HTML, CSS and JavaScript knowledge base, so it can be wrong or have no answer.</p>
                         </div>
                         <div class="chat-log" id="chat-messages" role="log" aria-live="polite" aria-label="Conversation"></div>
-                        <div class="suggestions" id="chat-suggestions"></div>
+                        <div class="suggestions" id="chat-suggestions" aria-label="Suggested questions"></div>
                         <div class="chat-composer">
-                            <input type="text" id="chat-input" class="input" autocomplete="off" maxlength="500" placeholder="Ask about pointers, flexbox, let vs var..." aria-label="Chat message"/>
+                            <div class="chat-field">
+                                <input type="text" id="chat-input" class="input" autocomplete="off" maxlength="500" placeholder="Ask about pointers, flexbox, let vs var..." aria-label="Chat message" aria-describedby="chat-count"/>
+                                <span class="chat-count faint" id="chat-count">0 / 500</span>
+                            </div>
                             <button class="stitch-btn chat-send" id="chat-send" aria-label="Send message"><span aria-hidden="true" class="material-symbols-outlined">send</span></button>
                         </div>
                     </div>
@@ -175,7 +171,7 @@
     <div class="modal-overlay" id="app-modal" role="dialog" aria-modal="true" aria-labelledby="app-modal-title" aria-hidden="true">
         <div class="modal-content" id="app-modal-panel" tabindex="-1">
             <div class="modal-head">
-                <h3 id="app-modal-title" class="card-title" style="margin:0">CodeFlow</h3>
+                <h3 id="app-modal-title" class="modal-title">CodeFlow</h3>
                 <button class="icon-button" id="app-modal-close" aria-label="Close dialog"><span aria-hidden="true" class="material-symbols-outlined">close</span></button>
             </div>
             <div id="app-modal-body" class="modal-body"></div>
