@@ -12,16 +12,11 @@ module.exports = defineConfig({
     baseURL: 'http://127.0.0.1:4179',
     trace: 'retain-on-failure'
   },
+  globalSetup: './tests/playwright-global-setup.cjs',
   projects: [
     { name: 'desktop-chromium', testMatch: 'e2e.spec.js', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
     { name: 'mobile-chromium', testMatch: 'e2e.spec.js', use: { ...devices['Pixel 5'] } },
     { name: 'regression', testMatch: 'regression.spec.js', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
     { name: 'qa', testMatch: 'qa.spec.js', use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } } }
-  ],
-  webServer: {
-    command: 'node tests/static-server.cjs 4179',
-    url: 'http://127.0.0.1:4179',
-    reuseExistingServer: false,
-    timeout: 20000
-  }
+  ]
 });

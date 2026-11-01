@@ -23,7 +23,24 @@ const csp = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8')).
   .flatMap((entry) => entry.headers)
   .find((header) => header.key === 'Content-Security-Policy').value;
 
+const testServerToken = process.env.CODEFLOW_TEST_SERVER_TOKEN;
+
+function closeServer() {
+  server.close(() => {
+    if (process.connected) process.disconnect();
+  });
+  server.closeAllConnections?.();
+}
+
+process.on('message', (message) => {
+  if (message?.type === 'shutdown') closeServer();
+});
+
 const server = http.createServer((req, res) => {
+  if (req.url === '/__codeflow_test_health') {
+    res.writeHead(200, { 'Content-Type': 'text/plain', 'X-CodeFlow-Test-Server': testServerToken || '' }).end('ready');
+    return;
+  }
   const requestPath = decodeURIComponent((req.url || '/').split('?')[0]);
   const relative = requestPath === '/' ? 'index.html' : requestPath.replace(/^\/+/, '');
   const filePath = path.join(root, relative);
