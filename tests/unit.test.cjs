@@ -387,3 +387,18 @@ test('logic analyzer nests JavaScript and C blocks and marks clipped details wit
   assert.deepEqual(c.nodes.map((n) => n.depth), [0, 0, 1, 2, 1, 2, 0]);
   assert.equal(analyzeCodeLogic('let x = 1;', 'js').nodes.find((n) => n.label === 'x').detail, 'Variable declaration', 'short details are untouched');
 });
+
+
+test('traceLoop declines loops that still satisfy the condition after the iteration guard', () => {
+  const engine = loadEngine('src/engines/visualizationEngine.js');
+  assert.equal(
+    engine.traceLoop('for (int i = 0; i < 3; i += 0) { printf("%d", i); }'),
+    null,
+    'a zero increment must not be reported as a completed loop'
+  );
+  assert.equal(
+    engine.traceLoop('for (int i = 0; i < 51; i++) { printf("%d", i); }'),
+    null,
+    'the evaluator guard must not be presented as a real loop exit'
+  );
+});
