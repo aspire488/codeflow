@@ -122,6 +122,11 @@ function traceLoop(source) {
     guard += 1;
   }
 
+  // The safety guard is not evidence that the loop condition became false.
+  // Decline to trace rather than inventing an exit row for non-terminating
+  // loops (for example, i += 0) or loops longer than the supported bound.
+  if (comparisonHolds(current, operator, bound)) return null;
+
   rows.push({
     iteration: rows.length + 1,
     [variable]: current,
