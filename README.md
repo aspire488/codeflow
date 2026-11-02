@@ -120,19 +120,6 @@ CodeFlow is a learning aid, not a general-purpose programming runtime.
 - **The Python backend and Electron folders are not part of the hosted product.** They are not covered by the production browser verification.
 - Automated accessibility checks are not a WCAG conformance certification. Performance has not been independently benchmarked.
 
-## Project structure
-
-```text
-.
-├── data/          # lesson, quiz and knowledge-base content
-├── styles.css     # shared design tokens and component styles
-├── scripts/       # application modules and runtime
-├── tests/         # unit and structural regression tests
-├── e2e/           # Playwright browser tests
-├── public/        # PWA manifest, icons and static assets
-└── index.html     # application entry point
-```
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Keep the frontend framework-free, keep learning content in the data layer, and run the unit and browser suites before submitting changes.
