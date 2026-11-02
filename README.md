@@ -1,101 +1,142 @@
 # CodeFlow
 
-**Execution-first learning for C Programming, HTML, CSS and JavaScript.**
+<p align="center">
+  <strong>Learn programming by following the execution, not memorising the syntax.</strong>
+  <br>
+  <a href="https://codeflow-app-sigma.vercel.app">Live app</a> ·
+  <a href="https://github.com/aspire488/codeflow">Source</a> ·
+  <a href="LICENSE">MIT License</a>
+</p>
 
-CodeFlow is a static, framework-free learning app for beginner programmers, built with KTU Computer Science students in mind. Read a lesson, step through what the program does, predict its output, then check understanding with a quiz and an adaptive practice loop.
+CodeFlow is a browser-based programming learning platform for beginners, built around an execution-first loop:
 
-**Live site:** https://codeflow-app-sigma.vercel.app
-**Repository:** https://github.com/aspire488/codeflow
+**Choose a topic → understand an example → predict the output → trace the logic → practise → review progress.**
 
-No framework, no runtime build step, no API keys, no tracking. Progress stays in `localStorage`.
+It covers C Programming, HTML, CSS and JavaScript. The content and interface are designed for self-paced learning, with a particular focus on the foundations taught to early-semester computer science students.
 
-## Content
+<p align="center">
+  <a href="https://codeflow-app-sigma.vercel.app"><img src="https://img.shields.io/badge/Live-v1.1.0-238636?style=for-the-badge" alt="Live version 1.1.0"></a>
+  <img src="https://img.shields.io/badge/Stack-Vanilla%20JS-f1e05a?style=for-the-badge" alt="Vanilla JavaScript">
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT license">
+</p>
 
-- 73 topics: 53 C Programming, 6 HTML, 7 CSS, 7 JavaScript
-- 44 quiz topics with 132 multiple-choice questions, each with an explanation
-- Output-prediction questions, a Logic Quest chapter map, a curated knowledge base
+## What you can do
 
-## What is implemented
+| Learning area | What it provides |
+| --- | --- |
+| Topic explorer | Browse 73 topics across C, HTML, CSS and JavaScript |
+| Guided lessons | Read structured explanations and worked examples, then mark topics complete |
+| Quiz centre | Attempt 132 explained multiple-choice questions across 44 quiz topics |
+| Output prediction | Work out what a snippet prints before revealing the answer |
+| Visualisation studio | Follow supported code through loop, flow, pointer and recursion visualisations |
+| Logic Quest | Progress through a chapter map with XP, unlocks and execution/prediction challenges |
+| Logic analyser | Inspect code with heuristic, beginner-oriented feedback |
+| Study assistant | Search a curated programming knowledge base using a rule-based assistant |
+| Adaptive practice | Get practice recommendations based on recorded correct and incorrect answers |
+| Progress dashboard | Review subject progress, quiz history and XP |
+| Installable PWA | Install the app and revisit its cached shell offline |
 
-| Area | Status | Notes |
-| --- | --- | --- |
-| Shell, routing, back/forward | Working | One hash router; every screen has a URL and active nav state; unknown routes fall back |
-| Lessons | Working | Real topic content, previous/next within a subject, completion persisted |
-| Quiz center | Working | MCQs with explanations, scoring, retry, persistence; feeds adaptive practice |
-| Output prediction | Working | Typed answers, whitespace-tolerant matching, reveal plus explanation |
-| Step-by-step visualizer | Working | Authored steps, or a computed trace for a supported `for` loop |
-| Flow diagram | Working | Statements parsed into decision, process and terminator nodes |
-| Pointer visualization | Working | Real address-of and dereference semantics for the bundled program |
-| Recursion stack | Working | Produced by evaluating `fact(n)` and recording calls and returns |
-| Loop trace | Working | The loop runs; the table shows each iteration, condition and output |
-| Logic Quest | Working (vertical slice) | Chapter map, XP, unlock chain, persistence; one execution-order challenge plus prediction levels |
-| Logic Analyzer | Working within scope | Heuristic static analysis. Not a compiler or interpreter |
-| Study assistant | Working, rule-based | Curated knowledge base. No model, no credentials |
-| Adaptive practice | Working | Recommendations from recorded right and wrong answers |
-| Progress dashboard | Working | Per-subject progress, quiz history, XP, reset |
-| PWA | Working | Service worker precaches the real tree, network-first navigation, real PNG icons |
-| Browser tests | Working | Playwright on desktop and Pixel 5 |
+## Content at a glance
 
-## What it is not
+- **73 topics:** 53 C Programming, 6 HTML, 7 CSS and 7 JavaScript.
+- **44 quiz topics** containing **132 multiple-choice questions**, with explanations.
+- Output-prediction exercises, a curated knowledge base and a Logic Quest chapter map.
 
-- **Not a C interpreter.** The visualizer covers a documented subset (a `for` loop with a `printf` body, factorial recursion, one pointer demo). Everything else replays authored step data.
-- **Not an LLM.** The Study assistant matches keywords against a knowledge base and makes no network calls.
-- **Not a compiler.** The analyzer explains structure with heuristics and does not check for bugs.
-- `backend/` (Python) and `electron/` are not part of the hosted product and are not covered by the tests.
+## How CodeFlow works
+
+1. Pick a topic from the subject explorer.
+2. Learn the concept through a focused lesson and example.
+3. Predict the result before revealing the answer.
+4. Use a visualiser to inspect supported execution paths.
+5. Test understanding with quizzes and practice.
+6. Track completion and performance in the progress dashboard.
+
+Progress is stored locally in the browser using `localStorage`. The hosted app does not require an account, API key or backend service.
+
+## Technology
+
+- HTML, CSS and vanilla JavaScript.
+- Hash-based client-side routing.
+- Local structured lesson and quiz data.
+- Browser `localStorage` for progress.
+- Service worker and web app manifest for PWA installation/offline shell support.
+- Node's built-in test runner and Playwright for automated checks.
+
+There is no frontend framework and no runtime API dependency.
 
 ## Run locally
 
+Requirements: Node.js and npm.
+
 ```bash
+git clone https://github.com/aspire488/codeflow.git
+cd codeflow
 npm install
-npm run dev        # Vite dev server
-npm run serve      # or: static server on http://127.0.0.1:4173
+npm run dev
 ```
 
-## Testing
+For a static-server run:
 
 ```bash
-npm test           # structural + unit checks (node:test)
-npx playwright install chromium
-npm run test:e2e   # browser tests: desktop 1280x800 and Pixel 5
-npm run build      # static build; fails if a referenced script is missing
+npm run serve
 ```
 
-`npm test` adds regression checks for the defects that broke the previous build: every `<script src>` must exist, every route must map to a real screen element, no global function may be declared twice, every precached file must exist, and manifest icons must be real files.
+The app is then served locally at the address printed by the command (the static server defaults to `http://127.0.0.1:4173`).
 
-## Install as a PWA
+## Test and build
 
-Use **Install** in Chrome or Edge, or *Add to Home Screen* on iOS. The service worker serves the shell offline after the first visit.
+```bash
+npm test
+npx playwright install chromium
+npm run test:e2e
+npm run build
+```
 
-## Known limitations
+The automated checks cover application structure and browser workflows. Regression checks include missing script references, route-to-screen mappings, duplicate global declarations, precache file existence and manifest icon files.
 
-- Computed visualization covers a narrow subset of C and otherwise falls back to authored steps.
-- Only one Logic Quest level is a full execution challenge; the rest are prediction challenges.
-- The analyzer is pattern-based and cannot prove correctness.
-- The assistant is keyword-driven and says so when it has no answer.
-- Accessibility is checked by automated tests only. This is not a WCAG conformance claim.
-- Performance was not benchmarked beyond build output and browser test runs.
+### Release verification — v1.1.0
+
+The v1.1.0 release was verified against the production deployment:
+
+| Check | Result |
+| --- | ---: |
+| Unit tests | 54 passed |
+| Local Playwright browser checks | 84 passed |
+| Production Playwright browser checks | 70 passed |
+| Production routes exercised | 11 |
+| Production console errors / failed requests in final capture | 0 |
+
+The browser suite covered desktop and mobile workflows, themes, lessons, quizzes, visualisations, Logic Quest, the study assistant, progress and responsive layouts.
+
+## Scope and honest limitations
+
+CodeFlow is a learning aid, not a general-purpose programming runtime.
+
+- **Visualisation is deliberately scoped.** Computed execution traces cover documented examples such as a supported `for` loop, factorial recursion and a pointer demonstration. Other lesson examples use authored walkthrough data.
+- **The logic analyser is heuristic.** It is not a compiler, static proof engine or complete bug detector.
+- **The study assistant is rule-based.** It searches a curated knowledge base; it is not an LLM and does not make model/API calls.
+- **Logic Quest is a vertical slice.** It includes a chapter map, progression and challenges, but not a complete game-sized curriculum.
+- **Progress is browser-local.** There is no account sync or cross-device persistence.
+- **The Python backend and Electron folders are not part of the hosted product.** They are not covered by the production browser verification.
+- Automated accessibility checks are not a WCAG conformance certification. Performance has not been independently benchmarked.
+
+## Project structure
+
+```text
+.
+├── data/          # lesson, quiz and knowledge-base content
+├── styles.css     # shared design tokens and component styles
+├── scripts/       # application modules and runtime
+├── tests/         # unit and structural regression tests
+├── e2e/           # Playwright browser tests
+├── public/        # PWA manifest, icons and static assets
+└── index.html     # application entry point
+```
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Keep the vanilla stack, keep content in `data/`, and run `npm test` plus `npm run test:e2e`.
-
-## Roadmap
-
-1. More Logic Quest execution challenges (arrays, pointers, recursion).
-2. A real tokeniser for the analyzer.
-3. Author traces alongside each lesson's code.
-4. Optional server-side model provider for free-form questions.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Keep the frontend framework-free, keep learning content in the data layer, and run the unit and browser suites before submitting changes.
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-## Design system
-
-`styles.css` is a single token layer - colour, typography, spacing, radius, elevation and motion are
-declared once at the top - followed by one component vocabulary (`.stitch-btn`, `.stitch-header`,
-`.badge`, `.filter-chip`, `.quiz-option`, `.rail` list rows, ...). Every screen is composed from those
-primitives rather than from per-screen overrides.
-
-The palette keeps the original Stitch identity: `#0d1117` canvas, `#58a6ff` accent, `#1c2026`
-surfaces, Material Symbols icons. There is no CSS framework at runtime and no build step for styles.
