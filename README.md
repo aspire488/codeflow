@@ -105,11 +105,11 @@ npm run build
 
 ### v1.1.0 release verification
 
-The release was checked against the production deployment.
+The release was checked against the production deployment and is tagged as [v1.1.0](https://github.com/aspire488/codeflow/releases/tag/v1.1.0) (commit fe328e6).
 
 | Verification | Result |
 | --- | ---: |
-| Unit tests | **54 passed** |
+| Unit tests | **55 passed** |
 | Local Playwright checks | **84 passed** |
 | Production Playwright checks | **70 passed** |
 | Production routes exercised | **11** |

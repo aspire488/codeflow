@@ -9,7 +9,7 @@
 
 const { test, expect } = require('@playwright/test');
 
-const BASE = 'http://127.0.0.1:4173';
+const BASE = 'http://127.0.0.1:4179'; // must match baseURL in playwright.config.cjs
 
 const ROUTES = [
   'dashboard', 'topics', 'lesson', 'quiz', 'predict',
