@@ -89,7 +89,7 @@ Rebuilt and refined; deployment verification is separate.
 
 These version numbers were used during development but never tagged or released; only v1.0.0 was.
 
-## [1.1.0] - 2026-09-10
+## 1.1.0 development build (untagged) - 2026-09-10
 
 ### Added
 
